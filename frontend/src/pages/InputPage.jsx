@@ -8,6 +8,7 @@ import { analyzeProfile, generateIdeas } from '@/services/api';
 import {
   Sparkles, ArrowRight, ArrowLeft, Check, X,
   Code, Heart, Target, DollarSign, Clock, Briefcase, Lightbulb,
+  Rocket, Zap,
 } from 'lucide-react';
 import {
   EXPERIENCE_OPTIONS, GOAL_OPTIONS, SUGGESTED_SKILLS, SUGGESTED_INTERESTS,
@@ -30,11 +31,12 @@ const slideVariants = (reducedMotion) => ({
     : { x: dir < 0 ? 60 : -60, opacity: 0 },
 });
 
-/* ── Chip Input ── */
+/* ── Premium Chip Input ── */
 function ChipInput({ label, value, onChange, placeholder, icon: Icon, error, suggestions }) {
   const [draft, setDraft] = useState('');
   const chips = value ? value.split(',').map((s) => s.trim()).filter(Boolean) : [];
   const [focused, setFocused] = useState(false);
+  const reducedMotion = useReducedMotion();
 
   const add = (raw) => {
     const t = raw.trim();
@@ -65,31 +67,47 @@ function ChipInput({ label, value, onChange, placeholder, icon: Icon, error, sug
         </span>
       </div>
 
-      <div className={`rounded-xl border bg-white p-4 transition-all duration-200 ${
+      <div className={`relative rounded-xl border bg-white p-4 transition-all duration-200 ${
         error
           ? 'border-danger/50'
           : focused
-          ? 'border-primary/40 ring-4 ring-primary/10'
+          ? 'border-primary/40 shadow-[0_4px_24px_rgba(99,102,241,0.12)]'
           : 'border-border'
       }`}>
+        {/* Top gradient line when focused */}
+        <motion.div
+          className="absolute top-0 left-4 right-4 h-[2px] bg-gradient-to-r from-primary via-accent-2 to-accent rounded-full origin-left"
+          initial={false}
+          animate={{ scaleX: focused ? 1 : 0 }}
+          transition={{ duration: reducedMotion ? 0 : 0.3, ease: 'easeOut' }}
+        />
+
         {/* Chips */}
         {chips.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-3">
+          <div className="flex flex-wrap gap-2 mb-3 pb-3 border-b border-border/60">
             {chips.map((chip) => (
-              <span
+              <motion.span
                 key={chip}
-                className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-primary/10 to-accent-2/10 border border-primary/20 px-3 py-1.5 text-xs font-medium text-primary"
+                layout
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                whileHover={reducedMotion ? {} : { scale: 1.05 }}
+                whileTap={reducedMotion ? {} : { scale: 0.97 }}
+                className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-primary/10 to-accent-2/10 border border-primary/20 px-3 py-1.5 text-xs font-medium text-primary transition-all duration-150 hover:shadow-[0_2px_8px_rgba(99,102,241,0.25)] hover:border-primary/40 cursor-default"
               >
                 {chip}
-                <button
+                <motion.button
                   type="button"
                   onClick={() => remove(chips.indexOf(chip))}
                   aria-label={`Remove ${chip}`}
-                  className="h-4 w-4 rounded-full flex items-center justify-center hover:bg-primary/20 text-primary/60 hover:text-danger transition-colors"
+                  className="h-4 w-4 rounded-full flex items-center justify-center text-primary/60 hover:text-danger transition-colors"
+                  whileHover={reducedMotion ? {} : { rotate: 90 }}
+                  transition={{ duration: 0.15 }}
                 >
                   <X className="h-3 w-3" />
-                </button>
-              </span>
+                </motion.button>
+              </motion.span>
             ))}
           </div>
         )}
@@ -102,7 +120,7 @@ function ChipInput({ label, value, onChange, placeholder, icon: Icon, error, sug
           onFocus={() => setFocused(true)}
           onBlur={() => { setFocused(false); if (draft.trim()) add(draft); }}
           placeholder={chips.length === 0 ? placeholder : 'Add another…'}
-          className="w-full bg-transparent text-sm text-ink placeholder:text-ink-faint focus:outline-none"
+          className="w-full bg-transparent text-sm text-ink placeholder:text-ink-faint focus:outline-none min-h-[24px]"
         />
 
         {/* Suggestions */}
@@ -111,22 +129,34 @@ function ChipInput({ label, value, onChange, placeholder, icon: Icon, error, sug
             <p className="text-[10px] font-semibold text-ink-faint uppercase tracking-wider mb-2">Suggestions</p>
             <div className="flex flex-wrap gap-1.5">
               {availableSuggestions.slice(0, 8).map((s) => (
-                <button
+                <motion.button
                   key={s}
                   type="button"
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => add(s)}
-                  className="rounded-full border border-border bg-slate-50 px-3 py-1 text-xs font-medium text-ink-muted hover:text-primary hover:border-primary/30 hover:bg-primary/5 transition-all duration-150"
+                  whileHover={reducedMotion ? {} : { scale: 1.05 }}
+                  whileTap={reducedMotion ? {} : { scale: 0.95 }}
+                  className="rounded-full border border-border bg-slate-50 px-3 py-1 text-xs font-medium text-ink-muted hover:text-primary hover:border-primary/30 hover:bg-primary/5 hover:shadow-sm hover:shadow-primary/10 transition-all duration-150"
                 >
                   + {s}
-                </button>
+                </motion.button>
               ))}
             </div>
           </div>
         )}
       </div>
 
-      {error && <p className="text-xs text-danger flex items-center gap-1" role="alert"><span className="inline-flex items-center justify-center h-4 w-4 rounded-full bg-danger/10 text-[10px]">⚠</span> {error}</p>}
+      {error && (
+        <motion.p
+          className="text-xs text-danger flex items-center gap-1"
+          role="alert"
+          initial={{ opacity: 0, y: -4 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: reducedMotion ? 0 : 0.2 }}
+        >
+          <span className="inline-flex items-center justify-center h-4 w-4 rounded-full bg-danger/10 text-[10px]">⚠</span> {error}
+        </motion.p>
+      )}
       {chips.length === 0 && !error && (
         <p className="text-xs text-ink-faint flex items-center gap-1">
           <Lightbulb className="h-3 w-3" /> Type your own or pick from suggestions
@@ -239,6 +269,9 @@ export default function InputPage() {
           <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 border border-primary/15 px-4 py-2 text-xs font-semibold text-primary mb-4">
             <Sparkles className="h-3.5 w-3.5" />
             Step {step} of 3
+            <span className="ml-1 px-1.5 py-0.5 rounded-md bg-primary/10 text-[10px] font-bold tabular-nums">
+              {Math.round((step / 3) * 100)}%
+            </span>
           </div>
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-ink mb-3">
             Let's find your <span className="gradient-text">perfect startup</span>
@@ -348,25 +381,36 @@ export default function InputPage() {
                     </label>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {EXPERIENCE_OPTIONS.map((opt) => (
-                        <button
+                        <motion.button
                           key={opt.value}
                           type="button"
                           onClick={() => update('experience_level', opt.value)}
-                          className={`flex flex-col items-start p-4 rounded-xl border text-left transition-all duration-200 ${
+                          whileHover={reducedMotion ? {} : { scale: 1.02 }}
+                          whileTap={reducedMotion ? {} : { scale: 0.98 }}
+                          className={`relative flex flex-col items-start p-4 rounded-xl border text-left transition-all duration-200 ${
                             form.experience_level === opt.value
-                              ? 'border-primary/40 bg-primary/5 ring-2 ring-primary/10'
-                              : 'border-border bg-white hover:border-border-strong'
+                              ? 'border-primary/60 bg-gradient-to-br from-primary/5 to-accent-2/5 shadow-[0_4px_16px_rgba(99,102,241,0.12)]'
+                              : 'border-border bg-white hover:border-border-strong hover:shadow-sm hover:shadow-slate-100'
                           }`}
                         >
-                          <span className="text-sm font-semibold text-ink leading-tight">{opt.label}</span>
-                          <span className="text-xs text-ink-faint mt-1">{opt.desc}</span>
-                        </button>
+                          {form.experience_level === opt.value && (
+                            <motion.div
+                              layoutId="experience-selection"
+                              className="absolute inset-0 rounded-xl border-2 border-primary/30"
+                              transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                            />
+                          )}
+                          <span className={`relative text-sm font-semibold leading-tight ${
+                            form.experience_level === opt.value ? 'text-primary' : 'text-ink'
+                          }`}>{opt.label}</span>
+                          <span className="relative text-xs text-ink-faint mt-1">{opt.desc}</span>
+                        </motion.button>
                       ))}
                     </div>
                   </div>
 
                   {/* Budget + Time */}
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Input
                       label="Budget ($)"
                       type="number"
@@ -416,26 +460,59 @@ export default function InputPage() {
                       What Do You Want to Build?
                     </label>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                      {GOAL_OPTIONS.map((opt) => (
-                        <button
-                          key={opt.value}
-                          type="button"
-                          onClick={() => update('goal', opt.value)}
-                          className={`flex flex-col items-center gap-2 p-4 rounded-xl border text-center transition-all duration-200 ${
-                            form.goal === opt.value
-                              ? 'border-primary/40 bg-primary/5 ring-2 ring-primary/10'
-                              : 'border-border bg-white hover:border-border-strong'
-                          }`}
-                        >
-                          <span className={`text-sm font-semibold leading-tight ${
-                            form.goal === opt.value ? 'text-primary' : 'text-ink-muted'
-                          }`}>
-                            {opt.label}
-                          </span>
-                        </button>
-                      ))}
+                      {GOAL_OPTIONS.map((opt) => {
+                        const isSelected = form.goal === opt.value;
+                        return (
+                          <motion.button
+                            key={opt.value}
+                            type="button"
+                            onClick={() => update('goal', opt.value)}
+                            whileHover={reducedMotion ? {} : { scale: 1.03 }}
+                            whileTap={reducedMotion ? {} : { scale: 0.97 }}
+                            className={`relative flex flex-col items-center gap-2 p-4 rounded-xl border text-center transition-all duration-200 min-h-[72px] justify-center ${
+                              isSelected
+                                ? 'border-primary/60 bg-gradient-to-br from-primary/5 to-accent-2/5 shadow-[0_4px_16px_rgba(99,102,241,0.12)]'
+                                : 'border-border bg-white hover:border-border-strong hover:shadow-sm hover:shadow-slate-100'
+                            }`}
+                          >
+                            {isSelected && (
+                              <motion.div
+                                layoutId="goal-selection"
+                                className="absolute inset-0 rounded-xl border-2 border-primary/30"
+                                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                              />
+                            )}
+                            <motion.span
+                              className={`relative text-sm font-semibold leading-tight ${
+                                isSelected ? 'text-primary' : 'text-ink-muted'
+                              }`}
+                              animate={isSelected && !reducedMotion ? { scale: [1, 1.05, 1] } : {}}
+                              transition={{ duration: 0.3 }}
+                            >
+                              {opt.label}
+                            </motion.span>
+                            {isSelected && (
+                              <motion.span
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                className="relative h-1.5 w-8 rounded-full bg-gradient-to-r from-primary to-accent-2"
+                              />
+                            )}
+                          </motion.button>
+                        );
+                      })}
                     </div>
-                    {errors.goal && <p className="text-xs text-danger flex items-center gap-1" role="alert"><span className="inline-flex items-center justify-center h-4 w-4 rounded-full bg-danger/10 text-[10px]">⚠</span> {errors.goal}</p>}
+                    {errors.goal && (
+                      <motion.p
+                        className="text-xs text-danger flex items-center gap-1"
+                        role="alert"
+                        initial={{ opacity: 0, y: -4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: reducedMotion ? 0 : 0.2 }}
+                      >
+                        <span className="inline-flex items-center justify-center h-4 w-4 rounded-full bg-danger/10 text-[10px]">⚠</span> {errors.goal}
+                      </motion.p>
+                    )}
                   </div>
 
                   {/* Summary */}

@@ -58,8 +58,8 @@
   --z-celebration: 60;
 
   /* ── Spacing ── */
-  --section-py: 5rem;
-  --section-py-sm: 3rem;
+  --section-py: 6rem;
+  --section-py-sm: 4rem;
 
   /* ── Shadows (light theme) ── */
   --shadow-sm:  0 1px 3px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(15, 23, 42, 0.03);
@@ -133,28 +133,35 @@ body {
 
 /* ── Section spacing ── */
 .section {
-  padding-top: var(--section-py-sm);
-  padding-bottom: var(--section-py-sm);
+  padding-top: 4rem;
+  padding-bottom: 4rem;
 }
 @media (min-width: 768px) {
   .section {
-    padding-top: var(--section-py);
-    padding-bottom: var(--section-py);
+    padding-top: 5rem;
+    padding-bottom: 5rem;
+  }
+}
+@media (min-width: 1024px) {
+  .section {
+    padding-top: 6rem;
+    padding-bottom: 6rem;
   }
 }
 
 /* ── Gradient text ── */
 .gradient-text {
-  background: linear-gradient(135deg, var(--primary) 0%, var(--accent-2) 50%, var(--accent) 100%);
-  background-size: 200% auto;
+  background: linear-gradient(90deg, var(--primary) 0%, var(--accent-2) 50%, var(--accent) 100%);
+  background-size: 200% 100%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  will-change: background-position;
   animation: gradient-text-shift 4s ease-in-out infinite;
 }
 @keyframes gradient-text-shift {
-  0%, 100% { background-position: 0% center; }
-  50%      { background-position: 100% center; }
+  0%, 100% { background-position: 0% 50%; }
+  50%      { background-position: 100% 50%; }
 }
 
 /* ── Glass effect (light) ── */
@@ -181,12 +188,19 @@ body {
 }
 .animate-pulse-glow {
   animation: pulse-glow 3s ease-in-out infinite;
+  will-change: box-shadow;
 }
 
 /* ── Shimmer for skeletons ── */
 @keyframes shimmer {
   0%   { transform: translateX(-100%); }
   100% { transform: translateX(100%); }
+}
+
+/* ── Shimmer for CTA buttons ── */
+@keyframes shimmer-btn {
+  0%   { transform: translateX(-200%); }
+  100% { transform: translateX(200%); }
 }
 
 /* ── Card hover lift ── */
@@ -260,6 +274,11 @@ input[type="number"] { -moz-appearance: textfield; }
   height: 1px;
   background: linear-gradient(90deg, transparent, var(--border), transparent);
   position: relative;
+}
+
+/* ── Safe area (mobile) ── */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 /* ── Reduced motion ── */

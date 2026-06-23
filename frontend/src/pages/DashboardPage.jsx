@@ -15,60 +15,81 @@ import { stagger } from '@/config/animations';
 
 /* ── Sidebar ── */
 function Sidebar({ plans, navigate }) {
+  const totalPlans = plans.length;
+  const bestScore = totalPlans ? Math.max(...plans.map((p) => p.plan?.opportunity_score || 0)).toFixed(1) : '—';
+  const highPotential = plans.filter((p) => (p.plan?.opportunity_score || 0) >= SCORE_HIGH).length;
+
   return (
-    <div className="hidden md:flex flex-col w-64 shrink-0 border-r border-border bg-white h-screen sticky top-0 overflow-y-auto">
-      {/* Header */}
-      <div className="p-6 border-b border-border">
+    <div className="hidden md:flex md:w-64 md:shrink-0 md:flex-col md:border-r md:border-border md:bg-white md:h-screen md:sticky md:top-0 md:overflow-y-auto">
+      <div className="border-b border-border p-6">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-accent-2 flex items-center justify-center shadow-md shadow-primary/20">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent-2 shadow-md shadow-primary/20">
             <Rocket className="h-5 w-5 text-white" />
           </div>
           <div>
-            <span className="text-base font-bold text-ink block">Skill2Startup</span>
+            <span className="block text-base font-bold text-ink">Skill2Startup</span>
             <span className="text-xs text-ink-faint">Dashboard</span>
           </div>
         </div>
       </div>
-
-      {/* Nav */}
-      <nav className="p-4 space-y-1" aria-label="Dashboard navigation">
-        <button className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-primary bg-primary/5 rounded-xl border border-primary/10">
+      <nav className="space-y-1 p-4" aria-label="Dashboard navigation">
+        <button className="flex w-full items-center gap-3 rounded-xl border border-primary/10 bg-primary/5 px-4 py-3 text-sm font-semibold text-primary">
           <BarChart3 className="h-5 w-5" />
           Dashboard
         </button>
         <button
           onClick={() => navigate('/input')}
-          className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-ink-muted hover:text-ink hover:bg-slate-100 rounded-xl transition-colors"
+          className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-ink-muted transition-colors hover:bg-slate-100 hover:text-ink"
         >
           <Sparkles className="h-5 w-5" />
           New Plan
         </button>
         <button
           onClick={() => navigate('/')}
-          className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-ink-muted hover:text-ink hover:bg-slate-100 rounded-xl transition-colors"
+          className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-ink-muted transition-colors hover:bg-slate-100 hover:text-ink"
         >
           <Home className="h-5 w-5" />
           Home
         </button>
       </nav>
-
-      {/* Stats */}
-      <div className="mt-auto p-6 border-t border-border space-y-5">
+      {totalPlans > 0 && (
+        <div className="px-6 py-4">
+          <div className="rounded-xl border border-border bg-gradient-to-br from-primary/5 to-accent-2/5 p-4 space-y-3">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-ink-faint">Portfolio</p>
+            <div className="flex items-end gap-1.5 h-12">
+              {plans.slice(0, 7).map((p, i) => {
+                const score = p.plan?.opportunity_score || 0;
+                const height = Math.max(15, (score / 10) * 100);
+                return (
+                  <motion.div
+                    key={i}
+                    initial={{ height: 0 }}
+                    animate={{ height: `${height}%` }}
+                    transition={{ delay: i * 0.05, duration: 0.4, ease: 'easeOut' }}
+                    className="flex-1 rounded-sm bg-gradient-to-t from-primary/40 to-primary"
+                    title={`${p.plan?.startup_name}: ${score.toFixed(1)}`}
+                  />
+                );
+              })}
+              {plans.length > 7 && (
+                <span className="text-[9px] text-ink-faint ml-1">+{plans.length - 7}</span>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      <div className="mt-auto border-t border-border p-6 space-y-5">
         <div>
-          <p className="text-[10px] text-ink-faint uppercase tracking-wider font-semibold mb-1">Total Plans</p>
-          <p className="text-2xl font-extrabold text-ink">{plans.length}</p>
+          <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-ink-faint">Total Plans</p>
+          <p className="text-2xl font-bold text-ink">{totalPlans}</p>
         </div>
         <div>
-          <p className="text-[10px] text-ink-faint uppercase tracking-wider font-semibold mb-1">Best Score</p>
-          <p className="text-2xl font-extrabold text-primary">
-            {plans.length ? Math.max(...plans.map((p) => p.plan?.opportunity_score || 0)).toFixed(1) : '—'}
-          </p>
+          <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-ink-faint">Best Score</p>
+          <p className="text-2xl font-bold text-primary">{bestScore}</p>
         </div>
         <div>
-          <p className="text-[10px] text-ink-faint uppercase tracking-wider font-semibold mb-1">High Potential</p>
-          <p className="text-2xl font-extrabold text-success">
-            {plans.filter((p) => (p.plan?.opportunity_score || 0) >= SCORE_HIGH).length}
-          </p>
+          <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-ink-faint">High Potential</p>
+          <p className="text-2xl font-bold text-success">{highPotential}</p>
         </div>
       </div>
     </div>
@@ -80,21 +101,14 @@ function MobileNav({ onNewPlan }) {
   return (
     <nav
       aria-label="Mobile navigation"
-      className="md:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-white safe-bottom"
-      style={{ zIndex: 'var(--z-sticky)' }}
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-white safe-bottom md:hidden"
     >
       <div className="flex items-center justify-around px-2 py-2">
-        <button
-          onClick={onNewPlan}
-          className="flex flex-col items-center gap-1 px-6 py-2 text-primary"
-        >
+        <button onClick={onNewPlan} className="flex flex-col items-center gap-1 px-6 py-2 text-primary">
           <Sparkles className="h-5 w-5" />
           <span className="text-[10px] font-semibold">New Plan</span>
         </button>
-        <a
-          href="/"
-          className="flex flex-col items-center gap-1 px-6 py-2 text-ink-faint"
-        >
+        <a href="/" className="flex flex-col items-center gap-1 px-6 py-2 text-ink-faint">
           <Home className="h-5 w-5" />
           <span className="text-[10px] font-semibold">Home</span>
         </a>
@@ -158,14 +172,13 @@ export default function DashboardPage() {
     ? Math.max(...plans.map((p) => p.plan?.opportunity_score || 0)).toFixed(1)
     : '—';
 
-  /* ── Loading ── */
   if (loading) {
     return (
       <div className="min-h-screen bg-bg pt-24 pb-12 md:pt-28 md:pb-16">
-        <div className="container">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="h-10 w-10 rounded-xl bg-primary/10 border border-primary/15 flex items-center justify-center">
-              <Loader2 className="h-5 w-5 text-primary animate-spin" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="mb-8 flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-primary/15 bg-primary/10">
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
             </div>
             <div>
               <h2 className="text-lg font-bold text-ink">Loading your plans…</h2>
@@ -180,29 +193,28 @@ export default function DashboardPage() {
     );
   }
 
-  /* ── Error ── */
   if (error) {
     return (
       <div className="min-h-screen bg-bg pt-24 pb-12 md:pt-28 md:pb-16">
-        <div className="container">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="h-10 w-10 rounded-xl bg-danger/10 border border-danger/15 flex items-center justify-center">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="mb-8 flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-danger/15 bg-danger/10">
               <AlertTriangle className="h-5 w-5 text-danger" />
             </div>
             <div>
               <h2 className="text-lg font-bold text-ink">Connection failed</h2>
-              <p className="text-sm text-ink-muted">Couldn't load your saved plans</p>
+              <p className="text-sm text-ink-muted">Couldn&apos;t load your saved plans</p>
             </div>
           </div>
-          <div className="text-center py-16 rounded-2xl border border-danger/20 bg-white">
-            <AlertTriangle className="h-12 w-12 text-danger/40 mx-auto mb-4" />
-            <h2 className="text-xl font-bold text-ink mb-2">Unable to connect</h2>
-            <p className="text-sm text-ink-muted mb-6 max-w-xs mx-auto">
+          <div className="rounded-2xl border border-danger/20 bg-white py-16 text-center">
+            <AlertTriangle className="mx-auto mb-4 h-12 w-12 text-danger/40" />
+            <h2 className="mb-2 text-xl font-bold text-ink">Unable to connect</h2>
+            <p className="mx-auto mb-6 max-w-xs text-sm text-ink-muted">
               Make sure the backend server is running and try again.
             </p>
             <button
               onClick={loadPlans}
-              className="inline-flex items-center gap-2 h-12 px-6 bg-gradient-to-r from-primary to-accent-2 text-white text-sm font-semibold rounded-xl hover:shadow-lg hover:shadow-primary/25 transition-all duration-200"
+              className="inline-flex h-12 items-center gap-2 rounded-xl bg-gradient-to-r from-primary to-accent-2 px-6 text-sm font-semibold text-white shadow-lg shadow-primary/20 transition-all duration-200 hover:shadow-xl hover:shadow-primary/30"
             >
               <Loader2 className="h-4 w-4" /> Retry
             </button>
@@ -213,23 +225,24 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-bg flex">
+    <div className="min-h-screen bg-bg flex overflow-x-hidden">
       <Sidebar plans={plans} navigate={navigate} />
 
-      {/* Main content */}
       <div className="flex-1 min-w-0 pb-20 md:pb-0">
         <div className="pt-24 pb-8 md:pt-28 md:pb-12">
-          <div className="max-w-3xl mx-auto px-4 sm:px-6">
+          <div className="mx-auto max-w-3xl px-4 sm:px-6">
 
-            {/* Header */}
-            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-              className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+            >
               <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary/10 to-accent-2/10 border border-primary/15 flex items-center justify-center">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-primary/15 bg-gradient-to-br from-primary/10 to-accent-2/10">
                   <Rocket className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                  <h1 className="text-2xl md:text-3xl font-extrabold text-ink">Saved Plans</h1>
+                  <h1 className="text-2xl font-bold text-ink md:text-3xl">Saved Plans</h1>
                   <p className="text-sm text-ink-muted">
                     {plans.length > 0
                       ? `${plans.length} startup ${plans.length === 1 ? 'blueprint' : 'blueprints'} saved`
@@ -239,16 +252,19 @@ export default function DashboardPage() {
               </div>
               <button
                 onClick={() => navigate('/input')}
-                className="hidden md:flex items-center gap-2 h-10 px-5 bg-gradient-to-r from-primary to-accent-2 text-white text-sm font-semibold rounded-xl hover:shadow-lg hover:shadow-primary/25 transition-all duration-200"
+                className="hidden h-10 items-center gap-2 rounded-xl bg-gradient-to-r from-primary to-accent-2 px-5 text-sm font-semibold text-white shadow-md shadow-primary/20 transition-all duration-200 hover:shadow-lg hover:shadow-primary/30 md:inline-flex"
               >
                 <Plus className="h-4 w-4" /> New Plan
               </button>
             </motion.div>
 
-            {/* Stats */}
             {plans.length > 0 && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}
-                className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8 pb-6 border-b border-border">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.1 }}
+                className="mb-8 grid grid-cols-2 gap-4 border-b border-border pb-6 sm:grid-cols-4"
+              >
                 {[
                   { value: plans.length, label: 'Total', color: 'text-ink' },
                   { value: avgScore, label: 'Avg Score', color: 'text-ink' },
@@ -256,33 +272,34 @@ export default function DashboardPage() {
                   { value: plans.filter((p) => (p.plan?.opportunity_score || 0) >= SCORE_HIGH).length, label: 'High Potential', color: 'text-success' },
                 ].map((stat, i) => (
                   <div key={i} className="rounded-xl border border-border bg-white p-4 shadow-sm">
-                    <p className={`text-2xl font-extrabold ${stat.color}`}>{stat.value}</p>
-                    <p className="text-xs font-semibold text-ink-faint uppercase tracking-wider">{stat.label}</p>
+                    <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-ink-faint">{stat.label}</p>
                   </div>
                 ))}
               </motion.div>
             )}
 
-            {/* Empty state */}
             {plans.length === 0 ? (
-              <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }}
-                className="text-center py-20 rounded-2xl border border-dashed border-border-strong bg-white">
-                <div className="h-16 w-16 rounded-2xl bg-primary/5 border border-primary/10 flex items-center justify-center mx-auto mb-5">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.97 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="rounded-2xl border border-dashed border-border-strong bg-white py-20 text-center"
+              >
+                <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-primary/10 bg-primary/5">
                   <Rocket className="h-7 w-7 text-ink-faint" />
                 </div>
-                <h2 className="text-xl font-bold text-ink mb-2">No saved plans yet</h2>
-                <p className="text-sm text-ink-muted mb-8 max-w-xs mx-auto">
+                <h2 className="mb-2 text-xl font-bold text-ink">No saved plans yet</h2>
+                <p className="mx-auto mb-8 max-w-xs text-sm text-ink-muted">
                   Generate your first startup idea and save it to see it here.
                 </p>
                 <button
                   onClick={() => navigate('/input')}
-                  className="inline-flex items-center gap-2 h-12 px-8 bg-gradient-to-r from-primary to-accent-2 text-white text-sm font-bold rounded-xl hover:shadow-lg hover:shadow-primary/25 transition-all duration-200"
+                  className="inline-flex h-12 items-center gap-2 rounded-xl bg-gradient-to-r from-primary to-accent-2 px-8 text-sm font-bold text-white shadow-lg shadow-primary/20 transition-all duration-200 hover:shadow-xl hover:shadow-primary/30"
                 >
                   <Sparkles className="h-4 w-4" /> Generate Your First Plan
                 </button>
               </motion.div>
             ) : (
-              /* Plan list */
               <motion.div initial="hidden" animate="visible" variants={stagger} className="space-y-3">
                 <AnimatePresence>
                   {plans.map((doc, i) => {
@@ -295,22 +312,22 @@ export default function DashboardPage() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, x: -20 }}
                         transition={{ delay: i * 0.03, duration: 0.25 }}
-                        className="group rounded-2xl border border-border bg-white p-5 hover:border-primary/30 card-hover"
+                        className="group rounded-2xl border border-border bg-white p-5 shadow-sm transition-all duration-250 hover:-translate-y-1 hover:border-primary/20 hover:shadow-md"
                       >
                         <div className="flex items-start gap-4">
                           <ScoreRing score={plan.opportunity_score} />
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between gap-3 mb-1">
+                            <div className="flex items-start justify-between gap-3">
                               <div className="min-w-0">
-                                <h3 className="font-bold text-base text-ink group-hover:text-primary transition-colors duration-200 truncate">
+                                <h3 className="truncate text-base font-bold text-ink transition-colors duration-200 group-hover:text-primary">
                                   {plan.startup_name}
                                 </h3>
-                                <p className="text-sm text-ink-muted mt-0.5 line-clamp-1">{plan.pitch}</p>
+                                <p className="mt-0.5 line-clamp-1 text-sm text-ink-muted">{plan.pitch}</p>
                               </div>
-                              <div className="flex items-center gap-2 shrink-0">
+                              <div className="flex shrink-0 items-center gap-2">
                                 <button
                                   onClick={() => handleView(doc)}
-                                  className="flex items-center gap-2 h-9 px-4 border border-border bg-slate-50 text-xs font-semibold text-ink-muted hover:bg-gradient-to-r hover:from-primary hover:to-accent-2 hover:text-white hover:border-transparent transition-all duration-200 rounded-lg"
+                                  className="inline-flex h-9 items-center gap-2 rounded-lg border border-border bg-slate-50 px-4 text-xs font-semibold text-ink-muted transition-all duration-200 hover:border-transparent hover:bg-gradient-to-r hover:from-primary hover:to-accent-2 hover:text-white"
                                   aria-label={`View ${plan.startup_name}`}
                                 >
                                   <Eye className="h-3.5 w-3.5" /> View
@@ -319,7 +336,7 @@ export default function DashboardPage() {
                                   onClick={() => handleDelete(doc._id, plan.startup_name)}
                                   disabled={deleting === doc._id}
                                   aria-label={`Delete ${plan.startup_name}`}
-                                  className="flex items-center justify-center h-9 w-9 border border-border bg-slate-50 text-ink-faint hover:text-danger hover:border-danger/20 transition-all duration-200 rounded-lg disabled:opacity-40"
+                                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-slate-50 text-ink-faint transition-all duration-200 hover:border-danger/20 hover:text-danger disabled:opacity-40"
                                 >
                                   {deleting === doc._id
                                     ? <Loader2 className="h-4 w-4 animate-spin" />
@@ -327,9 +344,9 @@ export default function DashboardPage() {
                                 </button>
                               </div>
                             </div>
-                            <div className="flex flex-wrap gap-1.5 mt-2">
+                            <div className="mt-2 flex flex-wrap gap-1.5">
                               <Badge variant="glow" className="text-[11px]">
-                                <TrendingUp className="h-3 w-3 mr-1" /> {(plan.opportunity_score || 0).toFixed(1) || '—'}
+                                <TrendingUp className="mr-1 h-3 w-3" /> {(plan.opportunity_score || 0).toFixed(1) || '—'}
                               </Badge>
                               {(plan.target_users || []).slice(0, 2).map((u, j) => (
                                 <Badge key={j} variant="secondary" className="text-[11px]">{u}</Badge>
@@ -348,10 +365,10 @@ export default function DashboardPage() {
             )}
 
             {plans.length > 0 && (
-              <div className="text-center mt-10">
+              <div className="mt-10 text-center">
                 <button
                   onClick={() => navigate('/input')}
-                  className="text-sm text-ink-muted hover:text-primary transition-colors font-medium"
+                  className="text-sm font-medium text-ink-muted transition-colors hover:text-primary"
                 >
                   ← Generate more ideas
                 </button>
