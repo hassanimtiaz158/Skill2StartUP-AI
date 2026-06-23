@@ -1,0 +1,272 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+:root {
+  /* ── Palette — Gradient SaaS (Light) ── */
+  --bg:           #F8FAFC;
+  --bg-alt:       #FFFFFF;
+  --bg-elevated:  #FFFFFF;
+  --bg-card:      #FFFFFF;
+  --ink:          #0F172A;
+  --ink-muted:    #64748B;
+  --ink-faint:    #94A3B8;
+  --ink-inverse:  #FFFFFF;
+  --primary:      #6366F1;
+  --primary-hover:#4F46E1;
+  --primary-soft: rgba(99, 102, 241, 0.08);
+  --primary-glow: rgba(99, 102, 241, 0.12);
+  --accent:       #EC4899;
+  --accent-2:     #8B5CF6;
+  --accent-soft:  rgba(236, 72, 153, 0.08);
+  --cyan:         #06B6D4;
+  --cyan-soft:    rgba(6, 182, 212, 0.08);
+  --success:      #10B981;
+  --success-soft: rgba(16, 185, 129, 0.08);
+  --warning:      #F59E0B;
+  --warning-soft: rgba(245, 158, 11, 0.08);
+  --danger:       #EF4444;
+  --danger-soft:  rgba(239, 68, 68, 0.08);
+  --border:       #E2E8F0;
+  --border-strong:#CBD5E1;
+
+  /* ── Typography ── */
+  --font-display:  'Inter', system-ui, sans-serif;
+  --font-body:     'Inter', system-ui, sans-serif;
+  --font-mono:     'JetBrains Mono', monospace;
+
+  /* ── Radii ── */
+  --r-sm:   8px;
+  --r-md:   12px;
+  --r-lg:   16px;
+  --r-xl:   20px;
+  --r-2xl:  28px;
+  --r-full: 9999px;
+
+  /* ── Layout ── */
+  --navbar-h: 72px;
+  --sidebar-w: 260px;
+  --container-max: 1120px;
+  --content-max: 896px;
+
+  /* ── Z-Index Scale ── */
+  --z-base:     0;
+  --z-dropdown: 10;
+  --z-sticky:   20;
+  --z-overlay:  30;
+  --z-modal:    40;
+  --z-toast:    50;
+  --z-celebration: 60;
+
+  /* ── Spacing ── */
+  --section-py: 5rem;
+  --section-py-sm: 3rem;
+
+  /* ── Shadows (light theme) ── */
+  --shadow-sm:  0 1px 3px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(15, 23, 42, 0.03);
+  --shadow-md:  0 4px 12px rgba(15, 23, 42, 0.06), 0 2px 4px rgba(15, 23, 42, 0.03);
+  --shadow-lg:  0 10px 30px rgba(15, 23, 42, 0.08), 0 4px 8px rgba(15, 23, 42, 0.04);
+  --shadow-glow: 0 0 24px rgba(99, 102, 241, 0.15);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: calc(var(--navbar-h) + 1rem);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--ink);
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+::selection {
+  background: rgba(99, 102, 241, 0.2);
+  color: var(--ink);
+}
+
+/* ── Scrollbar (light) ── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--ink-faint); }
+
+/* ── Utility classes ── */
+.font-display { font-family: var(--font-display); }
+.font-mono    { font-family: var(--font-mono); }
+
+.text-ink        { color: var(--ink); }
+.text-ink-muted  { color: var(--ink-muted); }
+.text-ink-faint  { color: var(--ink-faint); }
+.text-primary    { color: var(--primary); }
+.text-accent     { color: var(--accent); }
+.text-cyan       { color: var(--cyan); }
+
+.bg-elevated    { background: var(--bg-elevated); }
+.bg-alt         { background: var(--bg-alt); }
+.bg-primary-soft{ background: var(--primary-soft); }
+
+/* ── Container ── */
+.container {
+  width: 100%;
+  max-width: var(--container-max);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+@media (min-width: 640px) {
+  .container { padding-left: 1.5rem; padding-right: 1.5rem; }
+}
+@media (min-width: 1024px) {
+  .container { padding-left: 2rem; padding-right: 2rem; }
+}
+
+/* ── Section spacing ── */
+.section {
+  padding-top: var(--section-py-sm);
+  padding-bottom: var(--section-py-sm);
+}
+@media (min-width: 768px) {
+  .section {
+    padding-top: var(--section-py);
+    padding-bottom: var(--section-py);
+  }
+}
+
+/* ── Gradient text ── */
+.gradient-text {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--accent-2) 50%, var(--accent) 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradient-text-shift 4s ease-in-out infinite;
+}
+@keyframes gradient-text-shift {
+  0%, 100% { background-position: 0% center; }
+  50%      { background-position: 100% center; }
+}
+
+/* ── Glass effect (light) ── */
+.glass {
+  background: rgba(255, 255, 255, 0.80);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+/* ── Radial glow orbs ── */
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+/* ── Pulse glow for CTAs ── */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 15px rgba(99, 102, 241, 0.15), 0 4px 15px rgba(15, 23, 42, 0.1); }
+  50%      { box-shadow: 0 0 40px rgba(99, 102, 241, 0.3), 0 4px 20px rgba(15, 23, 42, 0.15); }
+}
+.animate-pulse-glow {
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+/* ── Shimmer for skeletons ── */
+@keyframes shimmer {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* ── Card hover lift ── */
+.card-hover {
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  box-shadow: var(--shadow-sm);
+}
+.card-hover:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+  border-color: rgba(99, 102, 241, 0.2);
+}
+
+/* ── Button press micro-interaction ── */
+.btn-press {
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+.btn-press:active {
+  transform: scale(0.97);
+}
+
+/* ── Focus ring ── */
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ── Number input spinners ── */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] { -moz-appearance: textfield; }
+
+/* ── Line clamp ── */
+.line-clamp-1 {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ── Section label ── */
+.section-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--primary);
+}
+
+/* ── Divider ── */
+.section-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border), transparent);
+  position: relative;
+}
+
+/* ── Reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

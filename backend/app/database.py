@@ -1,0 +1,26 @@
+import logging
+from pymongo import MongoClient, ASCENDING, DESCENDING
+from app.config import MONGODB_URL, DATABASE_NAME
+
+logger = logging.getLogger(__name__)
+
+client = MongoClient(MONGODB_URL)
+db = client[DATABASE_NAME]
+
+founder_profiles = db["founder_profiles"]
+startup_plans = db["startup_plans"]
+
+
+def ensure_indexes():
+    """Create indexes for performance. Safe to call multiple times."""
+    try:
+        startup_plans.create_index([("created_at", DESCENDING)])
+        startup_plans.create_index([("plan.startup_name", ASCENDING)])
+        founder_profiles.create_index([("created_at", DESCENDING)])
+        logger.info("MongoDB indexes ensured.")
+    except Exception as e:
+        logger.warning("Failed to create MongoDB indexes: %s", e)
+
+
+def get_db():
+    return db
