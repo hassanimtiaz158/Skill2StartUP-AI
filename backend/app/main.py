@@ -79,6 +79,15 @@ app.include_router(profile.router)
 app.include_router(startups.router)
 
 
+@app.get("/")
+async def root():
+    return {
+        "status": "online",
+        "service": "Skill2Startup AI",
+        "health": "/health",
+    }
+
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     logger.error("Unhandled exception: %s", exc, exc_info=True)
