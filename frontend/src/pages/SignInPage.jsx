@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Eye, EyeOff, Rocket } from 'lucide-react';
-import { signInAccount } from '../services/api.js';
+import { requestPasswordReset, signInAccount } from '../services/api.js';
 import { setSession } from '../services/storage.js';
 
 export default function SignInPage() {
@@ -9,11 +9,14 @@ export default function SignInPage() {
   const [form, setForm] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
 
   async function handleSubmit(event) {
     event.preventDefault();
     setError('');
+    setNotice('');
     if (!form.email || !form.password) {
       setError('Email and password are required.');
       return;
@@ -27,6 +30,24 @@ export default function SignInPage() {
       setError(requestError.message);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleForgotPassword() {
+    setError('');
+    setNotice('');
+    if (!form.email) {
+      setError('Enter your email first, then click forgot.');
+      return;
+    }
+    setResetLoading(true);
+    try {
+      const result = await requestPasswordReset(form.email);
+      setNotice(result.message);
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setResetLoading(false);
     }
   }
 
@@ -90,13 +111,16 @@ export default function SignInPage() {
               </div>
 
               {error && <p className="text-[10px] font-black uppercase tracking-wide border-l-2 border-[#0A0A0A] pl-2 mb-4">{error}</p>}
+              {notice && <p className="text-[10px] font-black uppercase tracking-wide border-l-2 border-[#0A0A0A] pl-2 mb-4">{notice}</p>}
 
               <div className="flex items-center justify-between mb-6">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" className="h-4 w-4 border-2 border-[#0A0A0A] appearance-none checked:bg-[#0A0A0A] cursor-pointer" />
                   <span className="text-xs font-bold text-[#3A3A3A] uppercase tracking-wide">Remember me</span>
                 </label>
-                <button type="button" className="text-xs font-black uppercase tracking-wide text-[#0A0A0A] underline">Forgot?</button>
+                <button type="button" onClick={handleForgotPassword} disabled={resetLoading} className="text-xs font-black uppercase tracking-wide text-[#0A0A0A] underline disabled:opacity-50">
+                  {resetLoading ? 'Sending...' : 'Forgot?'}
+                </button>
               </div>
 
               <button type="submit" disabled={loading} className="w-full h-12 bg-[#0A0A0A] text-[#F5F3EE] text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 border-2 border-[#0A0A0A] hover:bg-transparent hover:text-[#0A0A0A] transition-colors duration-150 disabled:opacity-50">

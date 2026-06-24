@@ -93,6 +93,18 @@ def authenticate_user(email: str, password: str) -> dict:
     return {"token": token, "user": _public_user(user)}
 
 
+def request_password_reset(email: str) -> bool:
+    clean_email = _normalize_email(email)
+    user = users.find_one({"email": clean_email})
+    if not user:
+        return False
+    users.update_one(
+        {"_id": user["_id"]},
+        {"$set": {"password_reset_requested_at": datetime.utcnow()}},
+    )
+    return True
+
+
 def get_user_by_token(token: str) -> dict | None:
     if not token:
         return None

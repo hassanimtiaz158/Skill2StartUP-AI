@@ -2,7 +2,7 @@ import logging
 
 from fastapi import APIRouter, Header, HTTPException
 
-from app.models.schemas import AuthResponse, SignInRequest, SignUpRequest, UserResponse
+from app.models.schemas import AuthResponse, ForgotPasswordRequest, SignInRequest, SignUpRequest, UserResponse
 from app.services.auth_service import (
     AuthError,
     DuplicateUserError,
@@ -10,6 +10,7 @@ from app.services.auth_service import (
     create_user,
     get_user_by_token,
     logout_user,
+    request_password_reset,
 )
 
 logger = logging.getLogger(__name__)
@@ -39,6 +40,19 @@ def signin(payload: SignInRequest):
     except Exception as exc:
         logger.error("Signin failed: %s", exc, exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to sign in. Please try again.")
+
+
+@router.post("/forgot-password")
+def forgot_password(payload: ForgotPasswordRequest):
+    try:
+        request_password_reset(payload.email)
+    except AuthError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except Exception as exc:
+        logger.error("Password reset request failed: %s", exc, exc_info=True)
+    return {
+        "message": "If an account exists for this email, password reset support will contact you. For now, create a new account if you cannot access the old one.",
+    }
 
 
 @router.get("/me", response_model=UserResponse)

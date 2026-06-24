@@ -62,6 +62,7 @@ GROQ_MODEL=llama-3.3-70b-versatile
 | `GET` | `/health` | Health check with database status |
 | `POST` | `/api/auth/signup` | Create account and return auth token |
 | `POST` | `/api/auth/signin` | Sign in and return auth token |
+| `POST` | `/api/auth/forgot-password` | Record a password reset support request |
 | `GET` | `/api/auth/me` | Return current user from bearer token |
 | `POST` | `/api/auth/logout` | Revoke current token |
 | `POST` | `/api/profile/analyze` | Analyze founder profile |
@@ -141,6 +142,8 @@ Set this Vercel environment variable:
 ```env
 VITE_API_URL=https://your-render-backend.onrender.com
 ```
+
+If signup returns `405 Method Not Allowed`, Vercel is likely receiving the API request instead of Render. Confirm `VITE_API_URL` is set to the Render backend URL, then redeploy the frontend.
 
 After Vercel deploys, update Render:
 

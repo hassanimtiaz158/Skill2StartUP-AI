@@ -189,6 +189,17 @@ async def test_signin_invalid_password_returns_401(client: AsyncClient, _mock_mo
 
 
 @pytest.mark.asyncio
+async def test_forgot_password_returns_generic_message(client: AsyncClient, _mock_mongo):
+    response = await client.post(
+        "/api/auth/forgot-password",
+        json={"email": "student@example.com"},
+    )
+
+    assert response.status_code == 200
+    assert "message" in response.json()
+
+
+@pytest.mark.asyncio
 async def test_me_and_logout_use_bearer_token(client: AsyncClient, _mock_mongo):
     user_id = ObjectId()
     _mock_mongo["users"].find_one.return_value = {
