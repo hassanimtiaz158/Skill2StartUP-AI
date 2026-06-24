@@ -2,7 +2,7 @@ import logging
 from fastapi import APIRouter, HTTPException
 from app.models.schemas import UserProfile, FounderProfileResponse
 from app.services.ai_service import analyze_profile
-from app.services.gemini_service import GeminiAPIError, GeminiRateLimitError
+from app.services.ai_errors import AIServiceError, AIRateLimitError
 
 logger = logging.getLogger(__name__)
 
@@ -13,9 +13,9 @@ router = APIRouter()
 async def analyze_user_profile(profile: UserProfile):
     try:
         result = await analyze_profile(profile.model_dump())
-    except GeminiRateLimitError:
+    except AIRateLimitError:
         raise HTTPException(status_code=429, detail="AI service rate limited. Please try again in a moment.")
-    except GeminiAPIError as e:
+    except AIServiceError as e:
         raise HTTPException(status_code=502, detail=f"AI service error: {str(e)}")
     except Exception as e:
         logger.error("Profile analysis failed: %s", e, exc_info=True)

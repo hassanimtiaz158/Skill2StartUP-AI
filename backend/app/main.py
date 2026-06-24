@@ -10,7 +10,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 import asyncio
 
 from app.database import client, db, ensure_indexes
-from app.routes import profile, startups
+from app.routes import auth, profile, startups
 
 logger = logging.getLogger(__name__)
 
@@ -72,6 +72,7 @@ app.add_middleware(
 )
 app.add_middleware(TimeoutMiddleware, timeout=60.0)
 
+app.include_router(auth.router)
 app.include_router(profile.router)
 app.include_router(startups.router)
 

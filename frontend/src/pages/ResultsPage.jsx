@@ -1,367 +1,299 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { motion, useReducedMotion } from 'framer-motion';
-import { Badge } from '@/components/Badge';
-import { CardSkeleton } from '@/components/Skeleton';
-import {
-  ArrowRight, TrendingUp, AlertTriangle, Star, PartyPopper, ArrowLeft, Loader2,
-} from 'lucide-react';
-import { STORAGE_KEYS, SCORE_HIGH, SCORE_MEDIUM, SCORE_LABELS } from '@/constants';
-import { User, Award } from 'lucide-react';
-import { ScoreRing } from '@/components/ScoreRing';
-import { fadeUp, stagger } from '@/config/animations';
+import { useMemo, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { ArrowRight, Brain, Check, Download, Rocket, Save, Sparkles } from 'lucide-react';
+import { AppNav } from '../components/PageShell.jsx';
+import { generateIdeas, generatePlan, savePlan } from '../services/api.js';
+import { getSession, readValue, saveValue } from '../services/storage.js';
 
-/* ── Container ── */
-const Section = ({ children, className = '', id }) => (
-  <section id={id} className={`py-16 md:py-20 lg:py-24 ${className}`}>
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      {children}
+function Score({ label, value }) {
+  const pct = Math.max(0, Math.min(100, Number(value || 0) * 10));
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-[9px] font-black uppercase tracking-widest text-[#6A6A6A]">{label}</span>
+        <span className="text-[10px] font-black text-[#0A0A0A]">{Number(value || 0).toFixed(1)}</span>
+      </div>
+      <div className="h-2 border border-[#0A0A0A] bg-[#F5F3EE]">
+        <div className="h-full bg-[#0A0A0A]" style={{ width: `${pct}%` }} />
+      </div>
     </div>
-  </section>
-);
-
-function getDifficulty(score) {
-  if (score >= SCORE_HIGH) return { label: SCORE_LABELS.high, variant: 'success' };
-  if (score >= SCORE_MEDIUM) return { label: SCORE_LABELS.medium, variant: 'warning' };
-  return { label: SCORE_LABELS.low, variant: 'danger' };
+  );
 }
 
-/* ── Celebration ── */
-function CelebrationBurst() {
-  const reducedMotion = useReducedMotion();
-  if (reducedMotion) return null;
-
+function ListBlock({ title, items }) {
+  if (!items?.length) return null;
   return (
-    <div
-      aria-hidden="true"
-      className="fixed inset-0 pointer-events-none overflow-hidden"
-      style={{ zIndex: 'var(--z-celebration)' }}
-    >
-      {Array.from({ length: 24 }, (_, i) => {
-        const left = Math.random() * 100;
-        const delay = Math.random() * 0.4;
-        const duration = 1.2 + Math.random() * 0.8;
-        const color = ['#6366F1', '#8B5CF6', '#EC4899', '#06B6D4'][i % 4];
-        const size = 4 + Math.random() * 4;
-
-        return (
-          <motion.div
-            key={i}
-            className="absolute rounded-sm"
-            style={{ left: `${left}%`, top: '-8px', width: size, height: size * 1.5, backgroundColor: color }}
-            initial={{ y: 0, opacity: 1, rotate: 0 }}
-            animate={{ y: '100vh', opacity: 0, rotate: 360 * (i % 2 === 0 ? 1 : -1) }}
-            transition={{ duration, delay, ease: 'easeIn' }}
-          />
-        );
-      })}
+    <div className="border-2 border-[#0A0A0A] p-5 bg-white">
+      <h3 className="text-xs font-black uppercase tracking-widest mb-4">{title}</h3>
+      <ul className="space-y-2">
+        {items.map((item, index) => (
+          <li key={`${item}-${index}`} className="flex gap-3 text-sm text-[#3A3A3A]">
+            <Check className="h-4 w-4 text-[#0A0A0A] shrink-0 mt-0.5" />
+            <span>{item}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
 
 export default function ResultsPage() {
   const navigate = useNavigate();
-  const [showCelebration, setShowCelebration] = useState(true);
-  const [loading, setLoading] = useState(true);
-  const [analysis, setAnalysis] = useState(() => {
-    try {
-      const raw = sessionStorage.getItem(STORAGE_KEYS.PROFILE_ANALYSIS);
-      return raw ? JSON.parse(raw) : null;
-    } catch { return null; }
-  });
-  const [ideas, setIdeas] = useState(() => {
-    try {
-      const raw = sessionStorage.getItem(STORAGE_KEYS.IDEAS);
-      if (!raw) return [];
-      const parsed = JSON.parse(raw);
-      const list = Array.isArray(parsed?.ideas) ? parsed.ideas : [];
-      return list.map((idea, idx) => ({
-        startup_name: idea.startup_name || `Startup Idea ${idx + 1}`,
-        pitch: idea.pitch || '',
-        problem: idea.problem || '',
-        solution: idea.solution || '',
-        target_users: Array.isArray(idea.target_users) ? idea.target_users : [],
-        why_now: idea.why_now || '',
-        opportunity_score: typeof idea.opportunity_score === 'number' ? idea.opportunity_score : 0,
-      }));
-    } catch { return []; }
-  });
+  const profile = readValue('profile');
+  const analysis = readValue('analysis');
+  const [ideas, setIdeas] = useState(readValue('ideas', []));
+  const cachedPlan = readValue('plan');
+  const [selectedIdea, setSelectedIdea] = useState(readValue('selectedIdea', ideas[0] || null));
+  const [plan, setPlan] = useState(cachedPlan);
+  const [loadingPlan, setLoadingPlan] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [notice, setNotice] = useState('');
+  const [error, setError] = useState('');
 
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 400);
-    return () => clearTimeout(timer);
-  }, []);
+  const planText = useMemo(() => (plan ? JSON.stringify(plan, null, 2) : ''), [plan]);
+  const markdownText = useMemo(() => {
+    if (!plan) return '';
+    const lines = [
+      `# ${plan.startup_name}`,
+      '',
+      `**Pitch:** ${plan.pitch}`,
+      '',
+      '## Problem',
+      plan.problem,
+      '',
+      '## Solution',
+      plan.solution,
+      '',
+      '## MVP Features',
+      ...(plan.mvp_features || []).map((item) => `- ${item}`),
+      '',
+      '## Roadmap',
+      ...(plan.roadmap || []).map((item) => `- Week ${item.week}: ${item.title} - ${(item.tasks || []).join(', ')}`),
+      '',
+      '## Revenue Model',
+      JSON.stringify(plan.revenue_model || {}, null, 2),
+      '',
+      '## Risks',
+      ...(plan.risks || []).map((item) => `- ${item}`),
+    ];
+    return lines.join('\n');
+  }, [plan]);
 
-  useEffect(() => {
-    if (showCelebration) {
-      const timer = setTimeout(() => setShowCelebration(false), 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [showCelebration]);
-
-  /* ── Loading ── */
-  if (loading) {
+  if (!profile || !ideas.length) {
     return (
-      <div className="min-h-screen bg-bg overflow-x-hidden">
-        <section className="pt-32 md:pt-40 lg:pt-48 pb-16 md:pb-24">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 border border-primary/15">
-                <Loader2 className="h-5 w-5 text-primary animate-spin" />
-              </div>
-              <div className="min-w-0">
-                <h2 className="text-lg font-bold text-ink">Preparing your ideas…</h2>
-                <p className="text-sm text-ink-muted">Loading generated startup blueprints</p>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl mx-auto">
-              {[1, 2, 3].map((i) => <CardSkeleton key={i} />)}
-            </div>
+      <main className="min-h-screen bg-[#F5F3EE] text-[#0A0A0A]">
+        <AppNav />
+        <section className="pt-32 px-6 max-w-3xl mx-auto">
+          <div className="border-2 border-[#0A0A0A] bg-white p-8">
+            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-[#6A6A6A] mb-3">No Results</p>
+            <h1 className="text-4xl font-black uppercase leading-none mb-4">Generate ideas first.</h1>
+            <Link to="/input" className="h-12 px-8 inline-flex items-center gap-2 bg-[#0A0A0A] text-[#F5F3EE] border-2 border-[#0A0A0A] text-xs font-black uppercase tracking-widest hover:bg-white hover:text-[#0A0A0A] transition-colors">
+              Start Form <ArrowRight className="h-4 w-4" />
+            </Link>
           </div>
         </section>
-      </div>
+      </main>
     );
   }
 
-  if (!ideas.length) {
-    return (
-      <div className="min-h-screen bg-bg overflow-x-hidden flex items-center justify-center">
-        <Section className="text-center">
-          <div className="max-w-sm mx-auto">
-            <AlertTriangle className="h-12 w-12 text-warning mx-auto mb-4" />
-            <h2 className="text-xl font-bold text-ink mb-2">No ideas found</h2>
-            <p className="text-ink-muted text-sm mb-6">Go back and enter your skills first.</p>
-            <button
-              onClick={() => navigate('/input')}
-              className="inline-flex h-14 min-w-[200px] items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-accent-2 text-white text-sm font-semibold shadow-lg shadow-primary/20 transition-all duration-200 hover:shadow-xl hover:shadow-primary/30 btn-press"
-            >
-              Get Started
-            </button>
-          </div>
-        </Section>
-      </div>
-    );
+  async function handlePlan() {
+    setError('');
+    setNotice('');
+    setLoadingPlan(true);
+    try {
+      const nextPlan = await generatePlan(profile, selectedIdea);
+      setPlan(nextPlan);
+      saveValue('selectedIdea', selectedIdea);
+      saveValue('plan', nextPlan);
+      setNotice('Full startup plan generated.');
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setLoadingPlan(false);
+    }
   }
 
-  const best = ideas.reduce((a, b) => (a.opportunity_score > b.opportunity_score ? a : b));
+  async function handleSave() {
+    if (!plan) return;
+    setError('');
+    setNotice('');
+    if (!getSession()?.token) {
+      setError('Sign in to save this plan to your dashboard.');
+      return;
+    }
+    setSaving(true);
+    try {
+      const result = await savePlan(profile, plan);
+      setNotice(result.message || 'Plan saved.');
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleRegenerateIdeas() {
+    setError('');
+    setNotice('');
+    setRegenerating(true);
+    try {
+      const nextIdeas = await generateIdeas(profile);
+      setIdeas(nextIdeas);
+      setSelectedIdea(nextIdeas[0] || null);
+      setPlan(null);
+      saveValue('ideas', nextIdeas);
+      saveValue('selectedIdea', nextIdeas[0] || null);
+      saveValue('plan', null);
+      setNotice('Startup ideas regenerated.');
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setRegenerating(false);
+    }
+  }
+
+  function handleDownload(format = 'json') {
+    const content = format === 'md' ? markdownText : planText;
+    if (!content) return;
+    const blob = new Blob([content], { type: format === 'md' ? 'text/markdown' : 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${plan.startup_name || 'startup-plan'}.${format}`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
 
   return (
-    <div className="min-h-screen bg-bg overflow-x-hidden">
-      {/* Background orb */}
-      <div className="orb w-[400px] h-[400px] bg-primary/10 -top-32 right-0" />
+    <main className="min-h-screen bg-[#F5F3EE] text-[#0A0A0A]">
+      <AppNav />
+      <section className="pt-32 pb-16 px-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-10">
+            <div>
+              <p className="section-label mb-4">AI Results</p>
+              <h1 className="text-4xl md:text-6xl font-black uppercase leading-none tracking-tight">Startup<br />Opportunities.</h1>
+            </div>
+            <div className="flex gap-3">
+              <button type="button" onClick={handleRegenerateIdeas} disabled={regenerating} className="h-12 px-6 border-2 border-[#0A0A0A] bg-white text-xs font-black uppercase tracking-widest inline-flex items-center justify-center hover:bg-[#0A0A0A] hover:text-[#F5F3EE] transition-colors disabled:opacity-50">
+                {regenerating ? 'Regenerating' : 'Regenerate Ideas'}
+              </button>
+              <Link to="/input" className="h-12 px-6 border-2 border-[#0A0A0A] bg-white text-xs font-black uppercase tracking-widest inline-flex items-center justify-center hover:bg-[#0A0A0A] hover:text-[#F5F3EE] transition-colors">Edit Inputs</Link>
+            </div>
+          </div>
 
-      {showCelebration && <CelebrationBurst />}
-
-      {/* ═══════════════════════════════════════════
-          HERO
-          ═══════════════════════════════════════════ */}
-      <section className="relative pt-32 md:pt-40 lg:pt-48 pb-16 md:pb-24 overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={stagger}
-            className="text-center mb-10 md:mb-12"
-          >
-            <motion.div
-              variants={fadeUp}
-              custom={0}
-              className="inline-flex items-center gap-2 rounded-full bg-success/10 border border-success/15 px-4 py-2 text-xs font-semibold text-success mb-4"
-            >
-              <PartyPopper className="h-4 w-4 shrink-0" />
-              {ideas.length} Ideas Generated
-            </motion.div>
-            <motion.h1
-              variants={fadeUp}
-              custom={1}
-              className="text-2xl sm:text-3xl md:text-4xl font-bold text-ink mb-3"
-            >
-              Your Ideas Are <span className="gradient-text">Ready!</span>
-            </motion.h1>
-            <motion.p
-              variants={fadeUp}
-              custom={2}
-              className="text-base text-ink-muted max-w-md mx-auto leading-relaxed"
-            >
-              We analyzed your profile and found these opportunities. Click any idea to see the full execution plan.
-            </motion.p>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════
-          FOUNDER PROFILE
-          ═══════════════════════════════════════════ */}
-      {analysis && (
-        <Section className="bg-white border-t border-border">
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 }}
-            className="max-w-4xl mx-auto"
-          >
-            <div className="rounded-2xl border border-primary/20 bg-white p-5 md:p-6 shadow-sm transition-all duration-250 hover:border-primary/20 hover:shadow-md">
-              <div className="flex items-start gap-4 mb-4">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent-2 shadow-md shadow-primary/20">
-                  <User className="h-5 w-5 text-white" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xs text-ink-faint font-medium mb-0.5">Your Founder Profile</p>
-                  <h3 className="text-lg font-bold text-ink truncate">{analysis.founder_type || 'Startup Builder'}</h3>
-                </div>
+          {analysis && (
+            <div className="grid lg:grid-cols-4 border-2 border-[#0A0A0A] bg-white mb-10">
+              <div className="p-5 border-b-2 lg:border-b-0 lg:border-r-2 border-[#0A0A0A]">
+                <Brain className="h-5 w-5 mb-3" />
+                <p className="text-[9px] font-black uppercase tracking-widest text-[#6A6A6A] mb-1">Founder Type</p>
+                <h2 className="text-lg font-black uppercase leading-tight">{analysis.founder_type}</h2>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {analysis.best_startup_categories?.length > 0 && (
-                  <div className="rounded-xl border border-border bg-slate-50 p-4">
-                    <p className="text-xs font-semibold text-ink-faint uppercase tracking-wider mb-2">Best Categories</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {analysis.best_startup_categories.map((cat, j) => (
-                        <Badge key={j} variant="glow" className="text-[11px]">{cat}</Badge>
-                      ))}
+              <ListBlock title="Strengths" items={analysis.strengths} />
+              <ListBlock title="Weaknesses" items={analysis.weaknesses} />
+              <ListBlock title="Categories" items={analysis.best_startup_categories} />
+            </div>
+          )}
+
+          <div className="grid lg:grid-cols-12 gap-8">
+            <div className="lg:col-span-5">
+              <h2 className="text-xs font-black uppercase tracking-widest mb-4">Generated Ideas</h2>
+              <div className="space-y-[-2px]">
+                {ideas.map((idea) => (
+                  <button
+                    key={idea.startup_name}
+                    type="button"
+                    onClick={() => {
+                      setSelectedIdea(idea);
+                      setPlan(null);
+                      saveValue('selectedIdea', idea);
+                    }}
+                    className={`w-full text-left border-2 border-[#0A0A0A] p-5 transition-colors ${selectedIdea?.startup_name === idea.startup_name ? 'bg-[#0A0A0A] text-[#F5F3EE]' : 'bg-white hover:bg-[#F5F3EE]'}`}
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <h3 className={`text-lg font-black uppercase tracking-tight ${selectedIdea?.startup_name === idea.startup_name ? 'text-[#F5F3EE]' : 'text-[#0A0A0A]'}`}>{idea.startup_name}</h3>
+                        <p className={`text-sm leading-relaxed mt-2 ${selectedIdea?.startup_name === idea.startup_name ? 'text-[#F5F3EE]/70' : 'text-[#6A6A6A]'}`}>{idea.pitch}</p>
+                      </div>
+                      <span className={`text-sm font-black border-2 px-2 py-1 ${selectedIdea?.startup_name === idea.startup_name ? 'border-[#F5F3EE]' : 'border-[#0A0A0A]'}`}>{Number(idea.opportunity_score || 0).toFixed(1)}</span>
                     </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="lg:col-span-7">
+              <div className="border-2 border-[#0A0A0A] bg-white p-6">
+                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 border-b-2 border-[#0A0A0A] pb-5 mb-6">
+                  <div>
+                    <p className="text-[9px] font-black uppercase tracking-widest text-[#6A6A6A] mb-2">Selected Idea</p>
+                    <h2 className="text-2xl font-black uppercase leading-none">{selectedIdea?.startup_name}</h2>
+                    <p className="text-sm text-[#3A3A3A] mt-3 leading-relaxed">{selectedIdea?.solution}</p>
                   </div>
-                )}
-                {analysis.strengths?.length > 0 && (
-                  <div className="rounded-xl border border-success/15 bg-success/5 p-4">
-                    <p className="text-xs font-semibold text-success uppercase tracking-wider mb-2">Strengths</p>
-                    <ul className="space-y-1">
-                      {analysis.strengths.slice(0, 3).map((s, j) => (
-                        <li key={j} className="text-xs text-ink-muted flex items-start gap-1.5">
-                          <Award className="h-3.5 w-3.5 text-success mt-0.5 shrink-0" />
-                          <span className="min-w-0">{s}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                {analysis.weaknesses?.length > 0 && (
-                  <div className="rounded-xl border border-warning/15 bg-warning/5 p-4">
-                    <p className="text-xs font-semibold text-warning uppercase tracking-wider mb-2">Growth Areas</p>
-                    <ul className="space-y-1">
-                      {analysis.weaknesses.slice(0, 3).map((w, j) => (
-                        <li key={j} className="text-xs text-ink-muted flex items-start gap-1.5">
-                          <span className="text-warning mt-0.5 shrink-0">•</span>
-                          <span className="min-w-0">{w}</span>
-                        </li>
-                      ))}
-                    </ul>
+                  <button onClick={handlePlan} disabled={loadingPlan} className="h-12 px-6 bg-[#0A0A0A] text-[#F5F3EE] border-2 border-[#0A0A0A] text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-white hover:text-[#0A0A0A] transition-colors disabled:opacity-50">
+                    {loadingPlan ? 'Generating...' : <>Full Plan <Sparkles className="h-4 w-4" /></>}
+                  </button>
+                </div>
+
+                <div className="grid sm:grid-cols-2 gap-4 mb-6">
+                  <Score label="Feasibility" value={selectedIdea?.feasibility_score} />
+                  <Score label="Demand" value={selectedIdea?.demand_score} />
+                  <Score label="Monetization" value={selectedIdea?.monetization_score} />
+                  <Score label="Founder Fit" value={selectedIdea?.founder_fit_score} />
+                </div>
+
+                <div className="grid sm:grid-cols-2 gap-4 mb-6">
+                  <ListBlock title="Target Users" items={selectedIdea?.target_users} />
+                  <ListBlock title="Why Now" items={selectedIdea?.why_now ? [selectedIdea.why_now] : []} />
+                </div>
+
+                {notice && <p className="text-xs font-black uppercase tracking-wide border-l-4 border-[#0A0A0A] pl-3 mb-4">{notice}</p>}
+                {error && <p className="text-xs font-black uppercase tracking-wide border-l-4 border-[#0A0A0A] pl-3 mb-4">{error}</p>}
+
+                {plan && (
+                  <div className="border-t-2 border-[#0A0A0A] pt-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
+                      <h3 className="text-xl font-black uppercase leading-none">{plan.startup_name} Plan</h3>
+                      <div className="flex gap-3">
+                        <button onClick={handleSave} disabled={saving} className="h-10 px-4 border-2 border-[#0A0A0A] bg-[#0A0A0A] text-[#F5F3EE] text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-white hover:text-[#0A0A0A] transition-colors disabled:opacity-50">
+                          <Save className="h-4 w-4" /> {saving ? 'Saving' : 'Save'}
+                        </button>
+                        <button onClick={() => handleDownload('json')} className="h-10 px-4 border-2 border-[#0A0A0A] bg-white text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-[#0A0A0A] hover:text-[#F5F3EE] transition-colors">
+                          <Download className="h-4 w-4" /> JSON
+                        </button>
+                        <button onClick={() => handleDownload('md')} className="h-10 px-4 border-2 border-[#0A0A0A] bg-white text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-[#0A0A0A] hover:text-[#F5F3EE] transition-colors">
+                          <Download className="h-4 w-4" /> MD
+                        </button>
+                      </div>
+                    </div>
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      <ListBlock title="MVP Features" items={plan.mvp_features} />
+                      <ListBlock title="Advantages" items={plan.our_advantages} />
+                      <ListBlock title="Risks" items={plan.risks} />
+                      <ListBlock title="Pitch" items={[plan.thirty_second_pitch]} />
+                    </div>
+                    <div className="mt-4 border-2 border-[#0A0A0A] bg-[#F5F3EE] p-5">
+                      <h4 className="text-xs font-black uppercase tracking-widest mb-3 flex items-center gap-2"><Rocket className="h-4 w-4" /> Roadmap</h4>
+                      <div className="grid sm:grid-cols-2 gap-3">
+                        {plan.roadmap?.map((item) => (
+                          <div key={`${item.week}-${item.title}`} className="border-2 border-[#0A0A0A] bg-white p-4">
+                            <p className="text-[9px] font-black uppercase tracking-widest text-[#6A6A6A]">Week {item.week}</p>
+                            <h5 className="text-sm font-black uppercase my-2">{item.title}</h5>
+                            <ul className="text-xs text-[#3A3A3A] space-y-1">
+                              {item.tasks?.map((task) => <li key={task}>{task}</li>)}
+                            </ul>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
             </div>
-          </motion.div>
-        </Section>
-      )}
-
-      {/* ═══════════════════════════════════════════
-          IDEAS GRID
-          ═══════════════════════════════════════════ */}
-      <Section className="bg-bg">
-        <motion.div
-          initial="hidden"
-          animate="visible"
-          variants={stagger}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
-        >
-          {ideas.map((idea, i) => {
-            const isBest = idea === best;
-            const diff = getDifficulty(idea.opportunity_score);
-
-            return (
-              <motion.div
-                key={i}
-                variants={fadeUp}
-                custom={i}
-                className={`group relative flex h-full flex-col rounded-2xl bg-white p-6 shadow-sm transition-all duration-250 hover:-translate-y-1 ${
-                  isBest
-                    ? 'border-2 border-transparent bg-clip-padding shadow-lg shadow-primary/10'
-                    : 'border border-border hover:border-primary/20 hover:shadow-md'
-                }`}
-                style={isBest ? {
-                  background: 'linear-gradient(white, white) padding-box, linear-gradient(135deg, var(--primary), var(--accent-2), var(--accent)) border-box',
-                } : undefined}
-              >
-                {isBest && (
-                  <div className="absolute -top-3 left-5">
-                    <div className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-primary to-accent-2 px-3 py-1 text-xs font-bold text-white shadow-lg shadow-primary/20">
-                      <Star className="h-3 w-3 shrink-0" /> Top Pick
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex items-start gap-4 mb-4">
-                  <ScoreRing score={idea.opportunity_score} size={60} />
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-lg font-bold text-ink mb-1 truncate">{idea.startup_name}</h3>
-                    <p className="text-sm text-primary line-clamp-2 font-medium">{idea.pitch}</p>
-                  </div>
-                </div>
-
-                <div className="space-y-3 mb-5 flex-1">
-                  <div>
-                    <p className="text-xs font-semibold text-ink-faint uppercase tracking-wider mb-1">Problem</p>
-                    <p className="text-sm text-ink-muted leading-relaxed line-clamp-2">{idea.problem}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold text-ink-faint uppercase tracking-wider mb-1">Solution</p>
-                    <p className="text-sm text-ink-muted leading-relaxed line-clamp-2">{idea.solution}</p>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap gap-2 mb-5">
-                  <Badge variant={diff.variant}>
-                    <TrendingUp className="h-3 w-3 mr-1 shrink-0" /> {diff.label}
-                  </Badge>
-                  {(idea.target_users || []).slice(0, 2).map((u, j) => (
-                    <Badge key={j} variant="secondary">{u}</Badge>
-                  ))}
-                </div>
-
-                <button
-                  onClick={() => {
-                    sessionStorage.setItem(STORAGE_KEYS.SELECTED_IDEA, JSON.stringify(idea));
-                    navigate(`/startup/${encodeURIComponent(idea.startup_name)}`);
-                  }}
-                  aria-label={`View full plan for ${idea.startup_name}`}
-                  className="w-full inline-flex items-center justify-center gap-2 h-14 rounded-xl border border-border bg-slate-50 text-sm font-semibold text-ink-muted transition-all duration-200 hover:bg-gradient-to-r hover:from-primary hover:to-accent-2 hover:text-white hover:border-transparent btn-press"
-                >
-                  View Full Plan
-                  <ArrowRight className="h-4 w-4 shrink-0" />
-                </button>
-              </motion.div>
-            );
-          })}
-        </motion.div>
-      </Section>
-
-      {/* ═══════════════════════════════════════════
-          FOOTER NAV
-          ═══════════════════════════════════════════ */}
-      <footer className="border-t border-border bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-10">
-          <div className="flex flex-col items-center gap-6 md:flex-row md:justify-between">
-            {/* Copyright */}
-            <p className="text-sm text-ink-faint">© 2026 Skill2Startup</p>
-
-            {/* Nav links — flex-wrap row */}
-            <nav className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
-              <button
-                onClick={() => navigate('/input')}
-                className="inline-flex items-center gap-2 text-sm font-medium text-ink-faint transition-colors hover:text-primary"
-              >
-                <ArrowLeft className="h-4 w-4 shrink-0" />
-                <span className="min-w-0">Generate different ideas</span>
-              </button>
-              <button
-                onClick={() => navigate('/dashboard')}
-                className="text-sm font-medium text-ink-faint transition-colors hover:text-primary"
-              >
-                View saved plans
-              </button>
-            </nav>
           </div>
         </div>
-      </footer>
-    </div>
+      </section>
+    </main>
   );
 }

@@ -1,624 +1,269 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { Input } from '@/components/Input';
-import { Badge } from '@/components/Badge';
-import { toast } from '@/components/Toast';
-import { analyzeProfile, generateIdeas } from '@/services/api';
-import {
-  Sparkles, ArrowRight, ArrowLeft, Check, X,
-  Code, Heart, Target, DollarSign, Clock, Briefcase, Lightbulb,
-  Rocket, Zap,
-} from 'lucide-react';
-import {
-  EXPERIENCE_OPTIONS, GOAL_OPTIONS, SUGGESTED_SKILLS, SUGGESTED_INTERESTS,
-  STORAGE_KEYS,
-} from '@/constants';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { ArrowLeft, ArrowRight, Briefcase, Clock, DollarSign, Factory, Target, X, Sparkles } from 'lucide-react';
+import Input from '../components/Input.jsx';
+import { AppNav } from '../components/PageShell.jsx';
+import { analyzeProfile, generateIdeas } from '../services/api.js';
+import { clearGeneratedState, saveValue } from '../services/storage.js';
 
 const steps = [
-  { id: 1, title: 'Skills & Interests', icon: Code },
-  { id: 2, title: 'Resources', icon: Briefcase },
-  { id: 3, title: 'Your Goal', icon: Target },
+  { id: 1, title: 'Skills' },
+  { id: 2, title: 'Context' },
+  { id: 3, title: 'Goal' },
 ];
 
-const slideVariants = (reducedMotion) => ({
-  enter: (dir) => reducedMotion
-    ? { opacity: 0 }
-    : { x: dir > 0 ? 60 : -60, opacity: 0 },
-  center: { x: 0, opacity: 1 },
-  exit: (dir) => reducedMotion
-    ? { opacity: 0 }
-    : { x: dir < 0 ? 60 : -60, opacity: 0 },
-});
+const skillSuggestions = ['Python', 'React', 'AI/ML', 'Marketing', 'Design', 'Sales', 'FastAPI', 'Data Analysis'];
+const interestSuggestions = ['Education', 'SaaS', 'Productivity', 'FinTech', 'Health', 'Creator Tools', 'Ecommerce', 'Climate'];
+const experienceOptions = [
+  { value: 'Beginner', label: 'Beginner', desc: 'Learning the basics and building first projects.' },
+  { value: 'Intermediate', label: 'Intermediate', desc: 'Can ship useful work with guidance.' },
+  { value: 'Advanced', label: 'Advanced', desc: 'Comfortable building and leading execution.' },
+  { value: 'Expert', label: 'Expert', desc: 'Deep domain skill and strong delivery history.' },
+];
+const goalOptions = [
+  { value: 'Hackathon MVP', label: 'Hackathon MVP', desc: 'Fast concept, demo, and pitch.' },
+  { value: 'Side project', label: 'Side Project', desc: 'Practical launch with low budget.' },
+  { value: 'Startup validation', label: 'Startup Validation', desc: 'Test demand before building big.' },
+  { value: 'Revenue-first business', label: 'Revenue First', desc: 'Prioritize paying customers early.' },
+];
 
-/* ── Premium Chip Input ── */
-function ChipInput({ label, value, onChange, placeholder, icon: Icon, error, suggestions }) {
-  const [draft, setDraft] = useState('');
-  const chips = value ? value.split(',').map((s) => s.trim()).filter(Boolean) : [];
+function ChipInput({ label, chips, setChips, suggestions, error }) {
+  const [value, setValue] = useState('');
   const [focused, setFocused] = useState(false);
-  const reducedMotion = useReducedMotion();
 
-  const add = (raw) => {
-    const t = raw.trim();
-    if (t && !chips.includes(t)) onChange({ target: { value: [...chips, t].join(', ') } });
-    setDraft('');
-  };
+  function add(nextValue) {
+    const clean = nextValue.trim();
+    if (!clean || chips.some((chip) => chip.toLowerCase() === clean.toLowerCase())) return;
+    setChips([...chips, clean]);
+    setValue('');
+  }
 
-  const remove = (idx) => {
-    onChange({ target: { value: chips.filter((_, i) => i !== idx).join(', ') } });
-  };
+  function remove(index) {
+    setChips(chips.filter((_, i) => i !== index));
+  }
 
-  const onKey = (e) => {
-    if ((e.key === 'Enter' || e.key === ',') && draft.trim()) { e.preventDefault(); add(draft); }
-    if (e.key === 'Backspace' && !draft && chips.length) remove(chips.length - 1);
-  };
-
-  const availableSuggestions = suggestions.filter((s) => !chips.includes(s));
+  function handleKeyDown(event) {
+    if (event.key === 'Enter' || event.key === ',') {
+      event.preventDefault();
+      add(value);
+    }
+    if (event.key === 'Backspace' && !value && chips.length) {
+      remove(chips.length - 1);
+    }
+  }
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <label className="text-sm font-semibold text-ink flex items-center gap-2">
-          {Icon && <Icon className="h-4 w-4 text-primary" />}
-          {label}
-        </label>
-        <span className={`text-xs font-semibold tabular-nums ${chips.length > 0 ? 'text-primary' : 'text-ink-faint'}`}>
-          {chips.length} added
-        </span>
-      </div>
-
-      <div className={`relative rounded-xl border bg-white p-4 transition-all duration-200 ${
-        error
-          ? 'border-danger/50'
-          : focused
-          ? 'border-primary/40 shadow-[0_4px_24px_rgba(99,102,241,0.12)]'
-          : 'border-border'
-      }`}>
-        {/* Top gradient line when focused */}
-        <motion.div
-          className="absolute top-0 left-4 right-4 h-[2px] bg-gradient-to-r from-primary via-accent-2 to-accent rounded-full origin-left"
-          initial={false}
-          animate={{ scaleX: focused ? 1 : 0 }}
-          transition={{ duration: reducedMotion ? 0 : 0.3, ease: 'easeOut' }}
-        />
-
-        {/* Chips */}
-        {chips.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-3 pb-3 border-b border-border/60">
-            {chips.map((chip) => (
-              <motion.span
-                key={chip}
-                layout
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.8 }}
-                whileHover={reducedMotion ? {} : { scale: 1.05 }}
-                whileTap={reducedMotion ? {} : { scale: 0.97 }}
-                className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-primary/10 to-accent-2/10 border border-primary/20 px-3 py-1.5 text-xs font-medium text-primary transition-all duration-150 hover:shadow-[0_2px_8px_rgba(99,102,241,0.25)] hover:border-primary/40 cursor-default"
-              >
-                {chip}
-                <motion.button
-                  type="button"
-                  onClick={() => remove(chips.indexOf(chip))}
-                  aria-label={`Remove ${chip}`}
-                  className="h-4 w-4 rounded-full flex items-center justify-center text-primary/60 hover:text-danger transition-colors"
-                  whileHover={reducedMotion ? {} : { rotate: 90 }}
-                  transition={{ duration: 0.15 }}
-                >
-                  <X className="h-3 w-3" />
-                </motion.button>
-              </motion.span>
-            ))}
-          </div>
-        )}
-
-        {/* Input */}
+    <div>
+      <label className="text-[9px] font-black uppercase tracking-[0.15em] text-[#6A6A6A] mb-2 block">{label}</label>
+      <div className={`border-2 bg-white p-4 transition-colors duration-150 ${error ? 'border-[#0A0A0A]' : focused ? 'border-[#0A0A0A] bg-[#FAFAF8]' : 'border-[#0A0A0A]'}`}>
+        <div className="flex flex-wrap gap-2 mb-3">
+          {chips.map((chip, index) => (
+            <span key={`${chip}-${index}`} className="inline-flex items-center gap-2 border-2 border-[#0A0A0A] px-2 py-1 text-xs font-black uppercase text-[#0A0A0A] hover:bg-[#0A0A0A] hover:text-[#F5F3EE] transition-colors duration-150 group">
+              {chip}
+              <button type="button" onClick={() => remove(index)} className="text-[#6A6A6A] group-hover:text-[#F5F3EE]" aria-label={`Remove ${chip}`}>
+                <X className="h-3 w-3" />
+              </button>
+            </span>
+          ))}
+        </div>
         <input
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={onKey}
+          value={value}
+          onChange={(event) => setValue(event.target.value)}
+          onKeyDown={handleKeyDown}
+          onBlur={() => {
+            setFocused(false);
+            add(value);
+          }}
           onFocus={() => setFocused(true)}
-          onBlur={() => { setFocused(false); if (draft.trim()) add(draft); }}
-          placeholder={chips.length === 0 ? placeholder : 'Add another…'}
-          className="w-full bg-transparent text-sm text-ink placeholder:text-ink-faint focus:outline-none min-h-[24px]"
+          placeholder="Type and press Enter"
+          className="w-full bg-transparent text-sm font-medium text-[#0A0A0A] placeholder:text-[#C0BDB6] focus:outline-none"
         />
-
-        {/* Suggestions */}
-        {focused && availableSuggestions.length > 0 && (
-          <div className="mt-3 pt-3 border-t border-border">
-            <p className="text-[10px] font-semibold text-ink-faint uppercase tracking-wider mb-2">Suggestions</p>
-            <div className="flex flex-wrap gap-1.5">
-              {availableSuggestions.slice(0, 8).map((s) => (
-                <motion.button
-                  key={s}
-                  type="button"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => add(s)}
-                  whileHover={reducedMotion ? {} : { scale: 1.05 }}
-                  whileTap={reducedMotion ? {} : { scale: 0.95 }}
-                  className="rounded-full border border-border bg-slate-50 px-3 py-1 text-xs font-medium text-ink-muted hover:text-primary hover:border-primary/30 hover:bg-primary/5 hover:shadow-sm hover:shadow-primary/10 transition-all duration-150"
-                >
-                  + {s}
-                </motion.button>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
-
-      {error && (
-        <motion.p
-          className="text-xs text-danger flex items-center gap-1"
-          role="alert"
-          initial={{ opacity: 0, y: -4 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: reducedMotion ? 0 : 0.2 }}
-        >
-          <span className="inline-flex items-center justify-center h-4 w-4 rounded-full bg-danger/10 text-[10px]">⚠</span> {error}
-        </motion.p>
-      )}
-      {chips.length === 0 && !error && (
-        <p className="text-xs text-ink-faint flex items-center gap-1">
-          <Lightbulb className="h-3 w-3" /> Type your own or pick from suggestions
-        </p>
-      )}
+      {error && <p className="text-[10px] font-black uppercase tracking-wide text-[#0A0A0A] border-l-2 border-[#0A0A0A] pl-2 mt-2">{error}</p>}
+      <div className="flex flex-wrap gap-2 mt-3">
+        {suggestions.filter((item) => !chips.includes(item)).slice(0, 6).map((suggestion) => (
+          <button key={suggestion} type="button" onClick={() => add(suggestion)} className="border border-[#0A0A0A] px-3 py-1 text-[10px] font-black uppercase tracking-wide text-[#0A0A0A] hover:bg-[#0A0A0A] hover:text-[#F5F3EE] transition-colors duration-150">
+            + {suggestion}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
 
-/* ── Page ── */
 export default function InputPage() {
   const navigate = useNavigate();
-  const reducedMotion = useReducedMotion();
-  const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState({});
+  const reduceMotion = useReducedMotion();
   const [step, setStep] = useState(1);
   const [dir, setDir] = useState(1);
-  const [form, setForm] = useState(() => {
-    try {
-      const saved = sessionStorage.getItem(STORAGE_KEYS.FORM_DRAFT);
-      return saved ? JSON.parse(saved) : {
-        skills: '', interests: '', experience_level: 'Intermediate',
-        budget: '', time_per_week: '', preferred_industry: '', goal: '',
-      };
-    } catch {
-      return {
-        skills: '', interests: '', experience_level: 'Intermediate',
-        budget: '', time_per_week: '', preferred_industry: '', goal: '',
-      };
-    }
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [form, setForm] = useState({
+    skills: [],
+    interests: [],
+    experience_level: 'Intermediate',
+    budget: '100',
+    time_per_week: '10',
+    preferred_industry: '',
+    goal: '',
   });
 
-  useEffect(() => {
-    sessionStorage.setItem(STORAGE_KEYS.FORM_DRAFT, JSON.stringify(form));
-  }, [form]);
+  function update(key, value) {
+    setForm((current) => ({ ...current, [key]: value }));
+    setFieldErrors((current) => ({ ...current, [key]: '' }));
+  }
 
-  const update = (key, value) => {
-    setForm((f) => ({ ...f, [key]: value }));
-    if (errors[key]) setErrors((e) => ({ ...e, [key]: '' }));
-  };
-
-  const isValid =
-    form.skills.trim().length > 0 && form.interests.trim().length > 0 &&
-    form.goal.length > 0 && Number(form.budget) > 0 && Number(form.time_per_week) > 0;
-
-  const validate = (s) => {
-    const e = {};
-    if (s === 1) {
-      if (!form.skills.trim()) e.skills = 'Add at least one skill to get started';
-      if (!form.interests.trim()) e.interests = 'Add at least one interest to personalize your ideas';
+  function validate(targetStep = step) {
+    const nextErrors = {};
+    if (targetStep === 1) {
+      if (!form.skills.length) nextErrors.skills = 'Add at least one skill.';
+      if (!form.interests.length) nextErrors.interests = 'Add at least one interest.';
     }
-    if (s === 2) {
-      if (!form.budget || Number(form.budget) <= 0) e.budget = "Every startup needs a budget — even $1 counts";
-      if (!form.time_per_week || Number(form.time_per_week) <= 0) e.time_per_week = 'How many hours can you commit per week?';
+    if (targetStep === 3 && !form.goal) nextErrors.goal = 'Choose one goal.';
+    setFieldErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
+  }
+
+  function next() {
+    if (!validate(step)) return;
+    setDir(1);
+    setStep((current) => Math.min(3, current + 1));
+  }
+
+  function prev() {
+    setDir(-1);
+    setStep((current) => Math.max(1, current - 1));
+  }
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+    setError('');
+    if (step < 3) {
+      next();
+      return;
     }
-    if (s === 3) if (!form.goal) e.goal = 'Pick what resonates most with you';
-    setErrors(e);
-    return Object.keys(e).length === 0;
-  };
-
-  const next = () => { if (!validate(step)) return; setDir(1); setStep((s) => Math.min(s + 1, 3)); };
-  const prev = () => { setDir(-1); setStep((s) => Math.max(s - 1, 1)); };
-
-  const submit = async () => {
     if (!validate(3)) return;
     setLoading(true);
+    clearGeneratedState();
     try {
-      const profile = {
-        skills: form.skills.split(',').map((s) => s.trim()).filter(Boolean),
-        interests: form.interests.split(',').map((s) => s.trim()).filter(Boolean),
-        experience_level: form.experience_level, budget: form.budget,
-        time_per_week: form.time_per_week, preferred_industry: form.preferred_industry, goal: form.goal,
-      };
-      const [analysis, ideas] = await Promise.allSettled([
-        analyzeProfile(profile),
-        generateIdeas(profile),
-      ]);
-      sessionStorage.removeItem(STORAGE_KEYS.FORM_DRAFT);
-      sessionStorage.setItem(STORAGE_KEYS.PROFILE, JSON.stringify(profile));
-      if (analysis.status === 'fulfilled') {
-        sessionStorage.setItem(STORAGE_KEYS.PROFILE_ANALYSIS, JSON.stringify(analysis.value));
-      }
-      if (ideas.status === 'fulfilled') {
-        sessionStorage.setItem(STORAGE_KEYS.IDEAS, JSON.stringify(ideas.value));
-        navigate('/results');
-      } else {
-        throw ideas.reason;
-      }
-    } catch (err) {
-      toast(err.message || 'Failed to generate ideas', 'error');
-    } finally { setLoading(false); }
-  };
+      const [analysis, ideas] = await Promise.all([analyzeProfile(form), generateIdeas(form)]);
+      saveValue('profile', form);
+      saveValue('analysis', analysis);
+      saveValue('ideas', ideas);
+      navigate('/results');
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setLoading(false);
+    }
+  }
 
-  const stepTitles = {
-    1: { emoji: '👋', title: "What's in your toolkit?", subtitle: 'Tell us what you know and what excites you. The more specific, the better your ideas will be.' },
-    2: { emoji: '💪', title: 'What resources do you have?', subtitle: "Be honest — we'll match ideas to what's realistic for you." },
-    3: { emoji: '🎯', title: 'What are you building toward?', subtitle: 'Pick the one that feels right. You can always explore others later.' },
-  };
+  const motionProps = reduceMotion
+    ? {}
+    : {
+        initial: { opacity: 0, x: dir * 24 },
+        animate: { opacity: 1, x: 0 },
+        exit: { opacity: 0, x: dir * -24 },
+        transition: { duration: 0.2 },
+      };
 
   return (
-    <div className="min-h-screen bg-bg pt-24 pb-12 md:pt-28 md:pb-16 relative">
-      {/* Background */}
-      <div className="orb w-[400px] h-[400px] bg-primary/10 -top-32 -right-32" />
-      <div className="orb w-[300px] h-[300px] bg-accent/10 bottom-0 -left-32" />
-
-      <div className="max-w-xl mx-auto px-4 sm:px-6 relative">
-
-        {/* ── Header ── */}
-        <div className="text-center mb-8 md:mb-10">
-          <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 border border-primary/15 px-4 py-2 text-xs font-semibold text-primary mb-4">
-            <Sparkles className="h-3.5 w-3.5" />
-            Step {step} of 3
-            <span className="ml-1 px-1.5 py-0.5 rounded-md bg-primary/10 text-[10px] font-bold tabular-nums">
-              {Math.round((step / 3) * 100)}%
-            </span>
+    <main className="min-h-screen bg-[#F5F3EE] text-[#0A0A0A]">
+      <AppNav />
+      <section className="pt-32 pb-16 px-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="inline-flex items-center gap-2 border-2 border-[#0A0A0A] px-3 py-1 mb-6 bg-white">
+            <span className="text-[9px] font-black uppercase tracking-[0.15em]">Step {step} of 3</span>
           </div>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-ink mb-3">
-            Let's find your <span className="gradient-text">perfect startup</span>
-          </h1>
-          <p className="text-base text-ink-muted max-w-sm mx-auto">
-            Answer a few questions and our AI will generate personalized startup ideas just for you.
-          </p>
-        </div>
+          <h1 className="text-4xl font-black uppercase tracking-tight text-[#0A0A0A] leading-none mb-3">Build Your<br />Startup Brief.</h1>
+          <p className="text-sm text-[#6A6A6A] border-l-2 border-[#0A0A0A] pl-3 mb-10 max-w-xl">This form sends your profile to the FastAPI backend and returns AI-generated startup ideas.</p>
 
-        {/* ── Step indicators ── */}
-        <div className="flex items-center justify-center mb-8 md:mb-10 relative">
-          {/* Track */}
-          <div className="absolute top-6 left-[20%] right-[20%] h-0.5 bg-border" />
-          <div
-            className="absolute top-6 left-[20%] h-0.5 bg-gradient-to-r from-primary to-accent-2 transition-all duration-500"
-            style={{ width: step === 1 ? '0%' : step === 2 ? '30%' : '60%' }}
-          />
-
-          {steps.map((s) => (
-            <div key={s.id} className="relative z-10 flex flex-col items-center flex-1">
+          <div className="flex mb-10 border-2 border-[#0A0A0A] overflow-x-auto">
+            {steps.map((item) => (
               <button
-                onClick={() => { if (s.id < step) { setDir(-1); setStep(s.id); } }}
-                className={`h-12 w-12 rounded-2xl flex items-center justify-center text-sm font-bold transition-all duration-300 ${
-                  step > s.id
-                    ? 'bg-success text-white shadow-lg shadow-success/20'
-                    : step === s.id
-                    ? 'bg-gradient-to-br from-primary to-accent-2 text-white shadow-lg shadow-primary/25'
-                    : 'bg-white border-2 border-border text-ink-faint'
-                }`}
-                aria-label={`Step ${s.id}: ${s.title}`}
-                aria-current={step === s.id ? 'step' : undefined}
+                key={item.id}
+                type="button"
+                onClick={() => {
+                  if (item.id < step) {
+                    setDir(-1);
+                    setStep(item.id);
+                  }
+                }}
+                className={`flex-1 min-w-[120px] py-3 px-4 text-[10px] font-black uppercase tracking-widest border-r-2 border-[#0A0A0A] last:border-r-0 transition-colors duration-150 ${step === item.id ? 'bg-[#0A0A0A] text-[#F5F3EE]' : step > item.id ? 'bg-[#E8E6E0] text-[#0A0A0A]' : 'bg-white text-[#C0BDB6]'}`}
+                aria-label={`Step ${item.id}`}
               >
-                {step > s.id ? <Check className="h-5 w-5" /> : <s.icon className="h-5 w-5" />}
+                {String(item.id).padStart(2, '0')} - {item.title}
               </button>
-              <span className={`mt-3 text-xs font-semibold hidden sm:block ${
-                step === s.id ? 'text-primary' : step > s.id ? 'text-success' : 'text-ink-faint'
-              }`}>
-                {s.title}
-              </span>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
 
-        {/* ── Form card ── */}
-        <form onSubmit={(e) => { e.preventDefault(); if (step < 3) next(); else submit(); }} className="rounded-2xl border border-border bg-white p-6 sm:p-8 shadow-lg shadow-slate-200/50">
-          {/* Step title */}
-          <div className="mb-6">
+          <form onSubmit={handleSubmit} className="border-2 border-[#0A0A0A] bg-white p-6 sm:p-8">
             <AnimatePresence mode="wait">
-              <motion.div
-                key={step}
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -6 }}
-                transition={{ duration: 0.15 }}
-              >
-                <h2 className="text-xl sm:text-2xl font-bold text-ink mb-1">
-                  {stepTitles[step].emoji} {stepTitles[step].title}
-                </h2>
-                <p className="text-sm text-ink-muted">{stepTitles[step].subtitle}</p>
-              </motion.div>
-            </AnimatePresence>
-          </div>
-
-          {/* Step content */}
-          <AnimatePresence mode="wait" custom={dir}>
-            <motion.div
-              key={step}
-              custom={dir}
-              variants={slideVariants(reducedMotion)}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={{ duration: reducedMotion ? 0.01 : 0.2, ease: [0.22, 1, 0.36, 1] }}
-            >
-              {/* Step 1: Skills & Interests */}
               {step === 1 && (
-                <div className="space-y-6">
-                  <ChipInput
-                    label="Your Skills"
-                    value={form.skills}
-                    onChange={(e) => update('skills', e.target.value)}
-                    placeholder="e.g. Python, React, Design, AI/ML…"
-                    icon={Code}
-                    error={errors.skills}
-                    suggestions={SUGGESTED_SKILLS}
-                  />
-                  <ChipInput
-                    label="Your Interests"
-                    value={form.interests}
-                    onChange={(e) => update('interests', e.target.value)}
-                    placeholder="e.g. Education, SaaS, Gaming, Health…"
-                    icon={Heart}
-                    error={errors.interests}
-                    suggestions={SUGGESTED_INTERESTS}
-                  />
-                </div>
+                <motion.div key="skills" {...motionProps}>
+                  <h2 className="text-xl font-black uppercase tracking-tight text-[#0A0A0A]">Skills and interests</h2>
+                  <p className="text-sm text-[#6A6A6A] border-l-2 border-[#0A0A0A] pl-3 mt-1 mb-8">Add the skills you can use and markets you care about.</p>
+                  <div className="space-y-8">
+                    <ChipInput label="Skills" chips={form.skills} setChips={(value) => update('skills', value)} suggestions={skillSuggestions} error={fieldErrors.skills} />
+                    <ChipInput label="Interests" chips={form.interests} setChips={(value) => update('interests', value)} suggestions={interestSuggestions} error={fieldErrors.interests} />
+                  </div>
+                </motion.div>
               )}
 
-              {/* Step 2: Resources */}
               {step === 2 && (
-                <div className="space-y-6">
-                  {/* Experience */}
-                  <div className="space-y-3">
-                    <label className="text-sm font-semibold text-ink flex items-center gap-2">
-                      <Code className="h-4 w-4 text-primary" />
-                      Experience Level
-                    </label>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {EXPERIENCE_OPTIONS.map((opt) => (
-                        <motion.button
-                          key={opt.value}
-                          type="button"
-                          onClick={() => update('experience_level', opt.value)}
-                          whileHover={reducedMotion ? {} : { scale: 1.02 }}
-                          whileTap={reducedMotion ? {} : { scale: 0.98 }}
-                          className={`relative flex flex-col items-start p-4 rounded-xl border text-left transition-all duration-200 ${
-                            form.experience_level === opt.value
-                              ? 'border-primary/60 bg-gradient-to-br from-primary/5 to-accent-2/5 shadow-[0_4px_16px_rgba(99,102,241,0.12)]'
-                              : 'border-border bg-white hover:border-border-strong hover:shadow-sm hover:shadow-slate-100'
-                          }`}
-                        >
-                          {form.experience_level === opt.value && (
-                            <motion.div
-                              layoutId="experience-selection"
-                              className="absolute inset-0 rounded-xl border-2 border-primary/30"
-                              transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                            />
-                          )}
-                          <span className={`relative text-sm font-semibold leading-tight ${
-                            form.experience_level === opt.value ? 'text-primary' : 'text-ink'
-                          }`}>{opt.label}</span>
-                          <span className="relative text-xs text-ink-faint mt-1">{opt.desc}</span>
-                        </motion.button>
-                      ))}
-                    </div>
+                <motion.div key="context" {...motionProps}>
+                  <h2 className="text-xl font-black uppercase tracking-tight text-[#0A0A0A]">Founder context</h2>
+                  <p className="text-sm text-[#6A6A6A] border-l-2 border-[#0A0A0A] pl-3 mt-1 mb-8">Set constraints so the backend can generate realistic ideas.</p>
+                  <div className="grid sm:grid-cols-2 gap-4 mb-8">
+                    {experienceOptions.map((opt) => (
+                      <button key={opt.value} type="button" onClick={() => update('experience_level', opt.value)} className={`p-4 border-2 border-[#0A0A0A] text-left transition-colors duration-150 w-full ${form.experience_level === opt.value ? 'bg-[#0A0A0A] text-[#F5F3EE]' : 'bg-white hover:bg-[#F5F3EE]'}`}>
+                        <span className={`text-sm font-black uppercase tracking-tight ${form.experience_level === opt.value ? 'text-[#F5F3EE]' : 'text-[#0A0A0A]'}`}>{opt.label}</span>
+                        <span className={`block text-xs mt-1 ${form.experience_level === opt.value ? 'text-[#F5F3EE]/60' : 'text-[#6A6A6A]'}`}>{opt.desc}</span>
+                      </button>
+                    ))}
                   </div>
-
-                  {/* Budget + Time */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <Input
-                      label="Budget ($)"
-                      type="number"
-                      min="1"
-                      step="1"
-                      value={form.budget}
-                      onChange={(e) => update('budget', e.target.value)}
-                      icon={DollarSign}
-                      error={errors.budget}
-                      hint="Even $50 is a start"
-                      id="budget-input"
-                    />
-                    <Input
-                      label="Hours / Week"
-                      type="number"
-                      min="1"
-                      step="1"
-                      value={form.time_per_week}
-                      onChange={(e) => update('time_per_week', e.target.value)}
-                      icon={Clock}
-                      error={errors.time_per_week}
-                      hint="Be realistic"
-                      id="time-input"
-                    />
+                  <div className="grid sm:grid-cols-3 gap-0">
+                    <Input label="Budget USD" icon={DollarSign} value={form.budget} onChange={(event) => update('budget', event.target.value)} placeholder="100" className="sm:mr-[-2px]" />
+                    <Input label="Hours weekly" icon={Clock} value={form.time_per_week} onChange={(event) => update('time_per_week', event.target.value)} placeholder="10" className="sm:mr-[-2px]" />
+                    <Input label="Industry" icon={Factory} value={form.preferred_industry} onChange={(event) => update('preferred_industry', event.target.value)} placeholder="EdTech" />
                   </div>
-
-                  {/* Industry */}
-                  <Input
-                    label="Preferred Industry"
-                    placeholder="e.g. EdTech, FinTech, HealthTech…"
-                    value={form.preferred_industry}
-                    onChange={(e) => update('preferred_industry', e.target.value)}
-                    icon={Briefcase}
-                    hint="Leave blank for broader suggestions"
-                    id="industry-input"
-                  />
-                </div>
+                </motion.div>
               )}
 
-              {/* Step 3: Goal */}
               {step === 3 && (
-                <div className="space-y-6">
-                  {/* Goal cards */}
-                  <div className="space-y-3">
-                    <label className="text-sm font-semibold text-ink flex items-center gap-2">
-                      <Target className="h-4 w-4 text-primary" />
-                      What Do You Want to Build?
-                    </label>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                      {GOAL_OPTIONS.map((opt) => {
-                        const isSelected = form.goal === opt.value;
-                        return (
-                          <motion.button
-                            key={opt.value}
-                            type="button"
-                            onClick={() => update('goal', opt.value)}
-                            whileHover={reducedMotion ? {} : { scale: 1.03 }}
-                            whileTap={reducedMotion ? {} : { scale: 0.97 }}
-                            className={`relative flex flex-col items-center gap-2 p-4 rounded-xl border text-center transition-all duration-200 min-h-[72px] justify-center ${
-                              isSelected
-                                ? 'border-primary/60 bg-gradient-to-br from-primary/5 to-accent-2/5 shadow-[0_4px_16px_rgba(99,102,241,0.12)]'
-                                : 'border-border bg-white hover:border-border-strong hover:shadow-sm hover:shadow-slate-100'
-                            }`}
-                          >
-                            {isSelected && (
-                              <motion.div
-                                layoutId="goal-selection"
-                                className="absolute inset-0 rounded-xl border-2 border-primary/30"
-                                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                              />
-                            )}
-                            <motion.span
-                              className={`relative text-sm font-semibold leading-tight ${
-                                isSelected ? 'text-primary' : 'text-ink-muted'
-                              }`}
-                              animate={isSelected && !reducedMotion ? { scale: [1, 1.05, 1] } : {}}
-                              transition={{ duration: 0.3 }}
-                            >
-                              {opt.label}
-                            </motion.span>
-                            {isSelected && (
-                              <motion.span
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                                className="relative h-1.5 w-8 rounded-full bg-gradient-to-r from-primary to-accent-2"
-                              />
-                            )}
-                          </motion.button>
-                        );
-                      })}
-                    </div>
-                    {errors.goal && (
-                      <motion.p
-                        className="text-xs text-danger flex items-center gap-1"
-                        role="alert"
-                        initial={{ opacity: 0, y: -4 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: reducedMotion ? 0 : 0.2 }}
-                      >
-                        <span className="inline-flex items-center justify-center h-4 w-4 rounded-full bg-danger/10 text-[10px]">⚠</span> {errors.goal}
-                      </motion.p>
-                    )}
+                <motion.div key="goal" {...motionProps}>
+                  <h2 className="text-xl font-black uppercase tracking-tight text-[#0A0A0A]">Execution goal</h2>
+                  <p className="text-sm text-[#6A6A6A] border-l-2 border-[#0A0A0A] pl-3 mt-1 mb-8">Choose the output style you want from the AI pipeline.</p>
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    {goalOptions.map((opt) => (
+                      <button key={opt.value} type="button" onClick={() => update('goal', opt.value)} className={`p-5 border-2 border-[#0A0A0A] text-left transition-colors duration-150 w-full ${form.goal === opt.value ? 'bg-[#0A0A0A]' : 'bg-white hover:bg-[#F5F3EE]'}`}>
+                        <p className={`text-sm font-black uppercase tracking-tight ${form.goal === opt.value ? 'text-[#F5F3EE]' : 'text-[#0A0A0A]'}`}>{opt.label}</p>
+                        {opt.desc && <p className={`text-xs mt-1 ${form.goal === opt.value ? 'text-[#F5F3EE]/60' : 'text-[#6A6A6A]'}`}>{opt.desc}</p>}
+                      </button>
+                    ))}
                   </div>
-
-                  {/* Summary */}
-                  {(form.skills || form.interests || form.goal) && (
-                    <div className="rounded-xl border border-border bg-slate-50 p-5">
-                      <h3 className="text-sm font-bold text-ink mb-4 flex items-center gap-2">
-                        <Lightbulb className="h-4 w-4 text-warning" />
-                        Quick Summary
-                      </h3>
-                      <div className="space-y-3 text-sm">
-                        {form.skills && (
-                          <div className="flex flex-wrap items-start gap-2">
-                            <span className="text-ink-faint shrink-0 w-16 text-xs pt-0.5 font-medium">Skills</span>
-                            <div className="flex flex-wrap gap-1.5">
-                              {form.skills.split(',').map((s) => s.trim()).filter(Boolean).map((s) => (
-                                <Badge key={s} variant="gradient" className="text-[11px]">{s}</Badge>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                        {form.interests && (
-                          <div className="flex flex-wrap items-start gap-2">
-                            <span className="text-ink-faint shrink-0 w-16 text-xs pt-0.5 font-medium">Interests</span>
-                            <div className="flex flex-wrap gap-1.5">
-                              {form.interests.split(',').map((s) => s.trim()).filter(Boolean).map((s) => (
-                                <Badge key={s} variant="secondary" className="text-[11px]">{s}</Badge>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                        {form.experience_level && (
-                          <div className="flex items-center gap-2">
-                            <span className="text-ink-faint shrink-0 w-16 text-xs font-medium">Level</span>
-                            <span className="text-ink text-xs font-semibold">{form.experience_level}</span>
-                          </div>
-                        )}
-                        {form.budget && (
-                          <div className="flex items-center gap-2">
-                            <span className="text-ink-faint shrink-0 w-16 text-xs font-medium">Budget</span>
-                            <span className="text-ink text-xs font-semibold">${form.budget}</span>
-                          </div>
-                        )}
-                        {form.time_per_week && (
-                          <div className="flex items-center gap-2">
-                            <span className="text-ink-faint shrink-0 w-16 text-xs font-medium">Time</span>
-                            <span className="text-ink text-xs font-semibold">{form.time_per_week}h / week</span>
-                          </div>
-                        )}
-                        {form.goal && (
-                          <div className="flex items-center gap-2">
-                            <span className="text-ink-faint shrink-0 w-16 text-xs font-medium">Goal</span>
-                            <span className="text-primary text-xs font-semibold">{form.goal}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
+                  {fieldErrors.goal && <p className="text-[10px] font-black uppercase tracking-wide text-[#0A0A0A] border-l-2 border-[#0A0A0A] pl-2 mt-4">{fieldErrors.goal}</p>}
+                </motion.div>
               )}
-            </motion.div>
-          </AnimatePresence>
+            </AnimatePresence>
 
-          {/* ── Navigation buttons ── */}
-          <div className="flex items-center justify-between mt-8 pt-6 border-t border-border gap-3">
-            {step > 1 ? (
-              <button
-                onClick={prev}
-                className="flex items-center gap-2 px-5 py-3 text-sm font-medium text-ink-muted hover:text-ink rounded-xl hover:bg-slate-100 transition-all duration-150"
-              >
-                <ArrowLeft className="h-4 w-4" /> Back
-              </button>
-            ) : <div />}
+            {error && <p className="mt-8 text-xs font-black uppercase tracking-wide text-[#0A0A0A] border-l-4 border-[#0A0A0A] pl-3">{error}</p>}
 
-            {step < 3 ? (
-              <button
-                onClick={next}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-primary to-accent-2 text-white text-sm font-semibold rounded-xl hover:shadow-lg hover:shadow-primary/25 transition-all duration-200 btn-press"
-              >
-                Continue <ArrowRight className="h-4 w-4" />
+            <div className="flex items-center gap-4 pt-8 mt-8 border-t-2 border-[#0A0A0A]">
+              {step > 1 && (
+                <button type="button" onClick={prev} className="h-12 px-6 border-2 border-[#0A0A0A] text-xs font-black uppercase tracking-widest text-[#0A0A0A] flex items-center gap-2 hover:bg-[#0A0A0A] hover:text-[#F5F3EE] transition-colors duration-150">
+                  <ArrowLeft className="h-4 w-4" /> Back
+                </button>
+              )}
+              <button type="submit" disabled={loading} className="h-12 px-8 bg-[#0A0A0A] text-[#F5F3EE] text-xs font-black uppercase tracking-widest flex items-center gap-2 border-2 border-[#0A0A0A] hover:bg-transparent hover:text-[#0A0A0A] transition-colors duration-150 disabled:opacity-50 ml-auto">
+                {loading ? 'Generating...' : step === 3 ? <>Generate My Startup <Sparkles className="h-4 w-4" /></> : <>Next Step <ArrowRight className="h-4 w-4" /></>}
               </button>
-            ) : (
-              <button
-                onClick={submit}
-                disabled={loading || !isValid}
-                className="flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-primary to-accent-2 text-white text-sm font-bold rounded-xl hover:shadow-lg hover:shadow-primary/25 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed btn-press"
-              >
-                {loading ? (
-                  <>
-                    <div className="h-4 w-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                    Generating…
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="h-4 w-4" />
-                    Generate Ideas ✨
-                  </>
-                )}
-              </button>
-            )}
-          </div>
-        </form>
-
-        <p className="text-center text-xs text-ink-faint mt-6">
-          🔒 Your data stays local. We never store your personal information.
-        </p>
-      </div>
-    </div>
+            </div>
+          </form>
+        </div>
+      </section>
+    </main>
   );
 }

@@ -6,6 +6,7 @@ Gemini API calls are mocked so no real API key is needed.
 """
 
 import asyncio
+from datetime import datetime
 from unittest.mock import AsyncMock, patch, MagicMock
 from typing import Any
 
@@ -13,8 +14,10 @@ import pytest
 import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
 from bson import ObjectId
+from pymongo.errors import DuplicateKeyError
 
 from app.main import app
+from app.services.auth_service import _hash_password
 
 
 # ---------------------------------------------------------------------------
@@ -68,7 +71,8 @@ def _mock_mongo():
     with patch("app.main.client") as mock_client, \
          patch("app.database.client", mock_client), \
          patch("app.services.database_service.founder_profiles") as mock_fp, \
-         patch("app.services.database_service.startup_plans") as mock_sp:
+         patch("app.services.database_service.startup_plans") as mock_sp, \
+         patch("app.services.auth_service.users") as mock_users:
         # Make the ping command used in lifespan and health check succeed
         mock_client.admin.command = MagicMock(return_value=True)
 
@@ -76,11 +80,15 @@ def _mock_mongo():
         mock_sp.insert_one.return_value = MagicMock(inserted_id=ObjectId())
         mock_sp.find.return_value = []
         mock_sp.delete_one.return_value = MagicMock(deleted_count=1)
+        mock_users.insert_one.return_value = MagicMock(inserted_id=ObjectId())
+        mock_users.find_one.return_value = None
+        mock_users.update_one.return_value = MagicMock(modified_count=1)
 
         yield {
             "client": mock_client,
             "founder_profiles": mock_fp,
             "startup_plans": mock_sp,
+            "users": mock_users,
         }
 
 
@@ -103,6 +111,101 @@ async def test_health_check(client: AsyncClient):
     data = response.json()
     assert data["status"] == "healthy"
     assert data["service"] == "Skill2Startup AI"
+
+
+# ---------------------------------------------------------------------------
+# 1b. Auth endpoints
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_signup_creates_user_session(client: AsyncClient, _mock_mongo):
+    response = await client.post(
+        "/api/auth/signup",
+        json={"name": "Student Builder", "email": "Student@Example.com", "password": "Password123"},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["token"]
+    assert data["user"]["name"] == "Student Builder"
+    assert data["user"]["email"] == "student@example.com"
+    _mock_mongo["users"].insert_one.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_signup_duplicate_email_returns_409(client: AsyncClient, _mock_mongo):
+    _mock_mongo["users"].insert_one.side_effect = DuplicateKeyError("duplicate email")
+
+    response = await client.post(
+        "/api/auth/signup",
+        json={"name": "Student Builder", "email": "student@example.com", "password": "Password123"},
+    )
+
+    assert response.status_code == 409
+
+
+@pytest.mark.asyncio
+async def test_signin_returns_user_session(client: AsyncClient, _mock_mongo):
+    salt, password_hash = _hash_password("Password123")
+    _mock_mongo["users"].find_one.return_value = {
+        "_id": ObjectId(),
+        "name": "Student Builder",
+        "email": "student@example.com",
+        "password_salt": salt,
+        "password_hash": password_hash,
+        "created_at": datetime.utcnow(),
+    }
+
+    response = await client.post(
+        "/api/auth/signin",
+        json={"email": "student@example.com", "password": "Password123"},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["token"]
+    assert data["user"]["email"] == "student@example.com"
+    _mock_mongo["users"].update_one.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_signin_invalid_password_returns_401(client: AsyncClient, _mock_mongo):
+    salt, password_hash = _hash_password("Password123")
+    _mock_mongo["users"].find_one.return_value = {
+        "_id": ObjectId(),
+        "name": "Student Builder",
+        "email": "student@example.com",
+        "password_salt": salt,
+        "password_hash": password_hash,
+        "created_at": datetime.utcnow(),
+    }
+
+    response = await client.post(
+        "/api/auth/signin",
+        json={"email": "student@example.com", "password": "wrong-password"},
+    )
+
+    assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_me_and_logout_use_bearer_token(client: AsyncClient, _mock_mongo):
+    user_id = ObjectId()
+    _mock_mongo["users"].find_one.return_value = {
+        "_id": user_id,
+        "name": "Student Builder",
+        "email": "student@example.com",
+        "tokens": ["token-123"],
+        "created_at": datetime.utcnow(),
+    }
+
+    me_response = await client.get("/api/auth/me", headers={"Authorization": "Bearer token-123"})
+    assert me_response.status_code == 200
+    assert me_response.json()["id"] == str(user_id)
+
+    logout_response = await client.post("/api/auth/logout", headers={"Authorization": "Bearer token-123"})
+    assert logout_response.status_code == 200
+    assert logout_response.json()["message"] == "Signed out successfully"
 
 
 # ---------------------------------------------------------------------------
@@ -225,10 +328,19 @@ async def test_generate_plan_returns_full_plan(client: AsyncClient, _mock_mongo)
 @pytest.mark.asyncio
 async def test_save_and_list_plans_roundtrip(client: AsyncClient, _mock_mongo):
     plan_id = str(ObjectId())
+    user_id = ObjectId()
+    _mock_mongo["users"].find_one.return_value = {
+        "_id": user_id,
+        "name": "Student Builder",
+        "email": "student@example.com",
+        "tokens": ["token-123"],
+        "created_at": datetime.utcnow(),
+    }
     mock_plan_doc = {
         "_id": str(ObjectId(plan_id)),
         "plan": {"startup_name": "TestStartup"},
         "profile": VALID_PROFILE,
+        "user_id": str(user_id),
     }
 
     # --- save ---
@@ -257,7 +369,11 @@ async def test_save_and_list_plans_roundtrip(client: AsyncClient, _mock_mongo):
             },
             "profile": VALID_PROFILE,
         }
-        save_response = await client.post("/api/startups/save", json=save_payload)
+        save_response = await client.post(
+            "/api/startups/save",
+            json=save_payload,
+            headers={"Authorization": "Bearer token-123"},
+        )
 
     assert save_response.status_code == 200
     save_data = save_response.json()
@@ -265,7 +381,10 @@ async def test_save_and_list_plans_roundtrip(client: AsyncClient, _mock_mongo):
 
     # --- list ---
     with patch("app.routes.startups.get_saved_plans", return_value=[mock_plan_doc]):
-        list_response = await client.get("/api/startups/saved")
+        list_response = await client.get(
+            "/api/startups/saved",
+            headers={"Authorization": "Bearer token-123"},
+        )
 
     assert list_response.status_code == 200
     list_data = list_response.json()
@@ -280,8 +399,18 @@ async def test_save_and_list_plans_roundtrip(client: AsyncClient, _mock_mongo):
 @pytest.mark.asyncio
 async def test_delete_plan(client: AsyncClient, _mock_mongo):
     plan_id = str(ObjectId())
+    _mock_mongo["users"].find_one.return_value = {
+        "_id": ObjectId(),
+        "name": "Student Builder",
+        "email": "student@example.com",
+        "tokens": ["token-123"],
+        "created_at": datetime.utcnow(),
+    }
     with patch("app.routes.startups.delete_startup_plan", return_value=True):
-        response = await client.delete(f"/api/startups/{plan_id}")
+        response = await client.delete(
+            f"/api/startups/{plan_id}",
+            headers={"Authorization": "Bearer token-123"},
+        )
 
     assert response.status_code == 200
     assert response.json()["message"] == "Plan deleted successfully"
@@ -290,10 +419,26 @@ async def test_delete_plan(client: AsyncClient, _mock_mongo):
 @pytest.mark.asyncio
 async def test_delete_plan_not_found(client: AsyncClient, _mock_mongo):
     plan_id = str(ObjectId())
+    _mock_mongo["users"].find_one.return_value = {
+        "_id": ObjectId(),
+        "name": "Student Builder",
+        "email": "student@example.com",
+        "tokens": ["token-123"],
+        "created_at": datetime.utcnow(),
+    }
     with patch("app.routes.startups.delete_startup_plan", return_value=False):
-        response = await client.delete(f"/api/startups/{plan_id}")
+        response = await client.delete(
+            f"/api/startups/{plan_id}",
+            headers={"Authorization": "Bearer token-123"},
+        )
 
     assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_saved_plans_requires_auth(client: AsyncClient, _mock_mongo):
+    response = await client.get("/api/startups/saved")
+    assert response.status_code == 401
 
 
 # ---------------------------------------------------------------------------

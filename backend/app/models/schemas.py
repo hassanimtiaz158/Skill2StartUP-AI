@@ -3,6 +3,29 @@ from typing import Optional
 from datetime import datetime
 
 
+class SignUpRequest(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
+    email: str = Field(..., min_length=3, max_length=254)
+    password: str = Field(..., min_length=8, max_length=128)
+
+
+class SignInRequest(BaseModel):
+    email: str = Field(..., min_length=3, max_length=254)
+    password: str = Field(..., min_length=1, max_length=128)
+
+
+class UserResponse(BaseModel):
+    id: str
+    name: str
+    email: str
+    created_at: datetime
+
+
+class AuthResponse(BaseModel):
+    token: str
+    user: UserResponse
+
+
 class UserProfile(BaseModel):
     skills: list[str] = Field(..., min_length=1)
     interests: list[str] = Field(..., min_length=1)

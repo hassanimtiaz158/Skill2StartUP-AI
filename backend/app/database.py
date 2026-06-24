@@ -9,6 +9,7 @@ db = client[DATABASE_NAME]
 
 founder_profiles = db["founder_profiles"]
 startup_plans = db["startup_plans"]
+users = db["users"]
 
 
 def ensure_indexes():
@@ -16,7 +17,10 @@ def ensure_indexes():
     try:
         startup_plans.create_index([("created_at", DESCENDING)])
         startup_plans.create_index([("plan.startup_name", ASCENDING)])
+        startup_plans.create_index([("user_id", ASCENDING), ("created_at", DESCENDING)])
         founder_profiles.create_index([("created_at", DESCENDING)])
+        users.create_index([("email", ASCENDING)], unique=True)
+        users.create_index([("created_at", DESCENDING)])
         logger.info("MongoDB indexes ensured.")
     except Exception as e:
         logger.warning("Failed to create MongoDB indexes: %s", e)
