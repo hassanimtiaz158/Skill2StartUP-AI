@@ -35,14 +35,16 @@ class TimeoutMiddleware(BaseHTTPMiddleware):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: verify MongoDB connection and create indexes
+    # Startup: verify MongoDB connection and create indexes when available.
+    # Do not fail the whole web process here; Render must see the app bind to $PORT.
     try:
         client.admin.command("ping")
         ensure_indexes()
         logger.info("MongoDB connection established successfully.")
     except (ConnectionFailure, ServerSelectionTimeoutError) as e:
         logger.error("MongoDB connection failed on startup: %s", e)
-        raise RuntimeError(f"Cannot connect to MongoDB: {e}") from e
+    except Exception as e:
+        logger.error("MongoDB startup check failed: %s", e, exc_info=True)
     yield
     # Shutdown: close MongoDB connection
     client.close()

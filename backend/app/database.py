@@ -4,7 +4,11 @@ from app.config import MONGODB_URL, DATABASE_NAME
 
 logger = logging.getLogger(__name__)
 
-client = MongoClient(MONGODB_URL)
+client = MongoClient(
+    MONGODB_URL,
+    serverSelectionTimeoutMS=5000,
+    connectTimeoutMS=5000,
+)
 db = client[DATABASE_NAME]
 
 founder_profiles = db["founder_profiles"]
