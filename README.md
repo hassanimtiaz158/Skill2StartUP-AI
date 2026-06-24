@@ -94,6 +94,8 @@ Build Command: pip install -r requirements.txt
 Start Command: uvicorn app.main:app --host 0.0.0.0 --port $PORT
 ```
 
+The backend includes `backend/runtime.txt` to pin Render to Python 3.11.9. Do not let Render build with Python 3.14, because older `pydantic-core` wheels may fail to build there.
+
 Set these Render environment variables:
 
 ```env
