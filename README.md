@@ -1,82 +1,74 @@
 # Skill2Startup AI
 
-An AI-powered startup incubator that transforms user skills, interests, experience, budget, and available time into validated startup opportunities with competitor analysis, MVP plans, revenue models, and execution roadmaps.
+An AI-powered startup incubator that turns user skills, interests, experience, budget, and available time into startup ideas, MVP plans, competitor analysis, revenue models, and launch roadmaps.
 
 ## Tech Stack
 
-**Frontend:** React 19, Vite, Tailwind CSS 4, React Router 7, Axios, Framer Motion
-**Backend:** FastAPI, Python, Pydantic, Uvicorn
-**Database:** MongoDB Atlas
-**AI:** Google Gemini API
+**Frontend:** React 18, Vite, Tailwind CSS 4, React Router 7, Axios, Framer Motion  
+**Backend:** FastAPI, Python, Pydantic, Uvicorn  
+**Database:** MongoDB Atlas or local MongoDB  
+**AI:** Google Gemini or Groq
 
 ## Quick Start
 
-### Prerequisites
-
-- Node.js 18+
-- Python 3.10+
-- MongoDB Atlas account
-- Google Gemini API key ([get one](https://aistudio.google.com/app/apikey))
-
-### 1. Clone & Install
-
-```bash
-git clone https://github.com/your-username/skill2startup-ai.git
-cd skill2startup-ai
-```
-
-### 2. Backend Setup
+### Backend
 
 ```bash
 cd backend
 python -m venv venv
-venv\Scripts\activate      # Windows
-# source venv/bin/activate # macOS/Linux
+venv\Scripts\activate
 pip install -r requirements.txt
-cp .env.example .env       # Edit .env with your keys
+copy .env.example .env
 uvicorn app.main:app --reload --port 8000
 ```
 
-### 3. Frontend Setup
+### Frontend
 
 ```bash
 cd frontend
 npm install
-cp .env.example .env       # Optional: set VITE_API_URL for production
 npm run dev
 ```
 
-The frontend runs on `http://localhost:5173` and proxies API calls to `http://localhost:8000`.
+Open `http://127.0.0.1:5173`. In development, Vite proxies API requests to `http://127.0.0.1:8000`.
 
-## Environment Variables
-
-### Backend (`backend/.env`)
+## Backend Environment
 
 | Variable | Required | Description |
 |---|---|---|
-| `MONGODB_URL` | Yes | MongoDB Atlas connection string |
-| `DATABASE_NAME` | No | Database name (default: `skill2startup`) |
-| `GEMINI_API_KEY` | Yes | Google Gemini API key |
-| `GEMINI_MODEL` | No | Model name (default: `gemini-1.5-flash`) |
-| `ALLOWED_ORIGINS` | No | Comma-separated frontend URLs (default: localhost) |
+| `MONGODB_URL` | Yes | MongoDB connection string |
+| `DATABASE_NAME` | No | Database name, default `skill2startup` |
+| `AI_PROVIDER` | No | `gemini` or `groq`, default `gemini` |
+| `GEMINI_API_KEY` | If Gemini | Google Gemini API key |
+| `GEMINI_MODEL` | No | Default `gemini-1.5-flash` |
+| `GROQ_API_KEY` | If Groq | Groq API key |
+| `GROQ_MODEL` | No | Default `llama-3.3-70b-versatile` |
+| `GROQ_BASE_URL` | No | Default `https://api.groq.com/openai/v1` |
+| `ALLOWED_ORIGINS` | No | Comma-separated frontend origins |
 
-### Frontend (`frontend/.env`)
+To use Groq:
 
-| Variable | Required | Description |
-|---|---|---|
-| `VITE_API_URL` | No | Backend URL. Leave empty to use Vite proxy in dev. Set for production builds. |
+```env
+AI_PROVIDER=groq
+GROQ_API_KEY=your_groq_api_key_here
+GROQ_MODEL=llama-3.3-70b-versatile
+```
 
 ## API Endpoints
 
 | Method | Endpoint | Description |
 |---|---|---|
-| GET | `/health` | Health check (includes DB status) |
-| POST | `/api/profile/analyze` | Analyze user profile → founder type |
-| POST | `/api/startups/generate` | Generate 4 startup ideas |
-| POST | `/api/startups/plan` | Generate full startup plan |
-| POST | `/api/startups/save` | Save startup plan to MongoDB |
-| GET | `/api/startups/saved` | List all saved plans |
-| DELETE | `/api/startups/{plan_id}` | Delete a saved plan |
+| `GET` | `/health` | Health check with database status |
+| `POST` | `/api/auth/signup` | Create account and return auth token |
+| `POST` | `/api/auth/signin` | Sign in and return auth token |
+| `GET` | `/api/auth/me` | Return current user from bearer token |
+| `POST` | `/api/auth/logout` | Revoke current token |
+| `POST` | `/api/profile/analyze` | Analyze founder profile |
+| `POST` | `/api/startups/generate` | Generate startup ideas |
+| `POST` | `/api/startups/plan` | Generate full startup plan |
+| `POST` | `/api/startups/save` | Save plan for signed-in user |
+| `GET` | `/api/startups/saved` | List signed-in user plans |
+| `DELETE` | `/api/startups/{plan_id}` | Delete signed-in user plan |
 
 ## Testing
 
@@ -85,76 +77,4 @@ cd backend
 pytest tests/ -v
 ```
 
-Tests cover all endpoints with mocked MongoDB and Gemini. No real API keys needed.
-
-## Project Structure
-
-```
-skill2startup-ai/
-├── frontend/
-│   ├── src/
-│   │   ├── components/   # Reusable UI components
-│   │   ├── pages/        # Route pages
-│   │   ├── services/     # API client
-│   │   ├── lib/          # Utilities (cn)
-│   │   ├── App.jsx       # Router + layout
-│   │   └── main.jsx      # Entry point
-│   ├── index.html
-│   ├── vite.config.js
-│   └── package.json
-├── backend/
-│   ├── app/
-│   │   ├── main.py       # FastAPI app + middleware
-│   │   ├── config.py     # Env config + validation
-│   │   ├── database.py   # MongoDB connection + indexes
-│   │   ├── models/       # Pydantic schemas
-│   │   ├── routes/       # API route handlers
-│   │   ├── services/     # AI + DB services
-│   │   └── prompts/      # AI prompt templates
-│   ├── tests/
-│   │   ├── test_api.py   # 14 API tests
-│   │   └── conftest.py
-│   ├── .env.example
-│   └── requirements.txt
-├── README.md
-├── PRD.md
-├── TDD.md
-└── CLAUDE.md
-```
-
-## Deployment
-
-### Frontend → Vercel
-
-1. Push to GitHub
-2. Import project in Vercel
-3. Set root directory to `frontend`
-4. Add env variable: `VITE_API_URL` = your Render backend URL
-5. Deploy
-
-### Backend → Render
-
-1. Push to GitHub
-2. Create a new Web Service on Render
-3. Set root directory to `backend`
-4. Set start command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
-5. Add all environment variables from `.env.example`
-6. Deploy
-
-### Database → MongoDB Atlas
-
-1. Create a free cluster
-2. Get connection string
-3. Add your IP to Network Access
-4. Set the string as `MONGODB_URL`
-
-## Production Checklist
-
-- [ ] `GEMINI_API_KEY` set in backend env
-- [ ] `MONGODB_URL` set in backend env
-- [ ] `ALLOWED_ORIGINS` set to production frontend URL(s)
-- [ ] `VITE_API_URL` set in frontend env
-- [ ] Backend health check returns `"database": "connected"`
-- [ ] CORS errors resolved in browser console
-- [ ] Tests pass: `pytest tests/ -v`
-- [ ] Frontend builds: `npm run build`
+Tests mock MongoDB and AI calls; no real API keys are required when test env vars override provider settings.

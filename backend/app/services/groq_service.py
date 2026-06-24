@@ -49,6 +49,8 @@ def _generate_sync(prompt: str) -> dict:
         headers={
             "Authorization": f"Bearer {GROQ_API_KEY}",
             "Content-Type": "application/json",
+            "Accept": "application/json",
+            "User-Agent": "Skill2Startup-AI/1.0",
         },
         method="POST",
     )
@@ -59,6 +61,10 @@ def _generate_sync(prompt: str) -> dict:
         body = exc.read().decode("utf-8", errors="replace")
         if exc.code == 429:
             raise AIRateLimitError("Groq API rate limit exceeded.") from exc
+        if exc.code == 403 and "1010" in body:
+            raise AIServiceError(
+                "Groq blocked this request with 403/1010. This is usually an account, region, network, or provider access restriction rather than a bad API key. Try another network/VPN, confirm the key works in Groq Playground, or switch AI_PROVIDER back to gemini."
+            ) from exc
         raise AIServiceError(f"Groq API error {exc.code}: {body}") from exc
     except urllib.error.URLError as exc:
         raise AIServiceError(f"Groq API connection failed: {exc.reason}") from exc

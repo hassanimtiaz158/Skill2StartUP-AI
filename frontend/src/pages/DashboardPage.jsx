@@ -1,17 +1,23 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { ArrowRight, RefreshCcw, Trash2 } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { ArrowRight, Eye, RefreshCcw, Trash2 } from 'lucide-react';
 import { AppNav } from '../components/PageShell.jsx';
 import { deletePlan, getSavedPlans } from '../services/api.js';
 import { getSession } from '../services/storage.js';
 
 export default function DashboardPage() {
+  const navigate = useNavigate();
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const session = getSession();
 
   async function loadPlans() {
+    if (!getSession()?.token) {
+      setLoading(false);
+      setError('Sign in to view your saved plans.');
+      return;
+    }
     setLoading(true);
     setError('');
     try {
@@ -92,6 +98,9 @@ export default function DashboardPage() {
                       <span className="border border-[#0A0A0A] p-2">Score {Number(plan.opportunity_score || 0).toFixed(1)}</span>
                       <span className="border border-[#0A0A0A] p-2">{plan.mvp_features?.length || 0} MVP Items</span>
                     </div>
+                    <button type="button" onClick={() => navigate(`/startups/${id}`)} className="mt-4 h-10 w-full border-2 border-[#0A0A0A] bg-white text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-[#0A0A0A] hover:text-[#F5F3EE] transition-colors">
+                      <Eye className="h-4 w-4" /> View Detail
+                    </button>
                   </article>
                 );
               })}

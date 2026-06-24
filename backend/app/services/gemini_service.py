@@ -67,7 +67,7 @@ async def generate_with_gemini(prompt: str, max_retries: int = 2) -> dict:
         except GeminiRateLimitError:
             if attempt < max_retries:
                 wait = 2 ** attempt  # 1s, 2s
-                logger.warning("Gemini rate limited, retrying in %ds…", wait)
+                logger.warning("Gemini rate limited, retrying in %ds...", wait)
                 await asyncio.sleep(wait)
                 continue
             raise
@@ -78,7 +78,7 @@ async def generate_with_gemini(prompt: str, max_retries: int = 2) -> dict:
             if "rate limit" in error_message or "quota" in error_message or "429" in error_message:
                 if attempt < max_retries:
                     wait = 2 ** attempt
-                    logger.warning("Gemini rate limited, retrying in %ds…", wait)
+                    logger.warning("Gemini rate limited, retrying in %ds...", wait)
                     await asyncio.sleep(wait)
                     continue
                 raise GeminiRateLimitError(
