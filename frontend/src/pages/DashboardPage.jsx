@@ -11,6 +11,10 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const session = getSession();
+  const totalMvpItems = plans.reduce((sum, entry) => sum + Number((entry.plan || entry).mvp_features?.length || 0), 0);
+  const avgScore = plans.length
+    ? plans.reduce((sum, entry) => sum + Number((entry.plan || entry).opportunity_score || 0), 0) / plans.length
+    : 0;
 
   async function loadPlans() {
     if (!getSession()?.token) {
@@ -65,6 +69,21 @@ export default function DashboardPage() {
           </div>
 
           {error && <p className="text-xs font-black uppercase tracking-wide border-l-4 border-[#0A0A0A] pl-3 mb-6">{error}</p>}
+
+          {!loading && plans.length > 0 && (
+            <div className="grid sm:grid-cols-3 border-2 border-[#0A0A0A] bg-white mb-8">
+              {[
+                { label: 'Saved Plans', value: plans.length },
+                { label: 'Avg Score', value: avgScore.toFixed(1) },
+                { label: 'MVP Items', value: totalMvpItems },
+              ].map((item, index) => (
+                <div key={item.label} className={`p-5 ${index > 0 ? 'sm:border-l-2 border-[#0A0A0A]' : ''}`}>
+                  <p className="text-4xl font-black leading-none">{item.value}</p>
+                  <p className="text-[9px] font-black uppercase tracking-widest text-[#6A6A6A] mt-2">{item.label}</p>
+                </div>
+              ))}
+            </div>
+          )}
 
           {loading ? (
             <div className="border-2 border-[#0A0A0A] bg-white p-8 text-sm font-black uppercase tracking-widest">Loading plans...</div>

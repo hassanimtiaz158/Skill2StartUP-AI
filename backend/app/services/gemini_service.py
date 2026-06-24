@@ -47,7 +47,10 @@ def _clean_json_response(text: str) -> dict:
 def _generate_sync(prompt: str) -> dict:
     """Synchronous helper that calls the Gemini API and parses the JSON response."""
     model = genai.GenerativeModel(GEMINI_MODEL)
-    response = model.generate_content(prompt)
+    response = model.generate_content(
+        prompt,
+        generation_config={"temperature": 0.85, "top_p": 0.9},
+    )
 
     if not response.text:
         raise GeminiAPIError("Gemini API returned an empty response.")

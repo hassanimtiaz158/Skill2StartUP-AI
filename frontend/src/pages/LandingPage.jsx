@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowRight, Brain, Code, Lightbulb, Play, Rocket, Search, ShieldCheck, Sparkles, Target, TrendingUp } from 'lucide-react';
+import { ArrowRight, Brain, Code, Lightbulb, Play, Rocket, Search, Sparkles, Target, TrendingUp } from 'lucide-react';
 import { AppNav, BrandLink } from '../components/PageShell.jsx';
 
 const steps = [
@@ -18,6 +18,20 @@ const features = [
   { title: 'MVP Scope', desc: 'Turn an idea into buildable v1 features and later v2 expansion.', icon: Target },
   { title: 'Revenue Models', desc: 'Get pricing, monetization methods, and first-customer strategy.', icon: TrendingUp },
   { title: 'Pitch Content', desc: 'Create hackathon and thirty-second pitches for fast validation.', icon: Sparkles },
+];
+
+const exampleProfiles = [
+  { skill: 'React + Design', interest: 'Creator Tools', idea: 'TemplateOps Studio' },
+  { skill: 'Python + Data', interest: 'Local Services', idea: 'ReviewPulse AI' },
+  { skill: 'Marketing + Sales', interest: 'Fitness', idea: 'CoachLead Engine' },
+  { skill: 'No-Code + Research', interest: 'Education', idea: 'MicroCourse Scout' },
+];
+
+const metrics = [
+  { value: '04', label: 'Ideas per run' },
+  { value: '10+', label: 'Scoring signals' },
+  { value: '01', label: 'MVP roadmap' },
+  { value: '02', label: 'Pitch formats' },
 ];
 
 function Section({ id, className = '', children }) {
@@ -117,9 +131,22 @@ export default function LandingPage() {
                   <p className="text-xs text-[#6A6A6A] font-medium">from 2,000+ builders</p>
                 </div>
               </div>
+              <div className="mt-10 grid grid-cols-2 sm:grid-cols-4 border-2 border-[#0A0A0A] bg-white max-w-2xl">
+                {metrics.map((item, index) => (
+                  <div key={item.label} className={`p-4 ${index > 0 ? 'border-l-2 border-[#0A0A0A]' : ''}`}>
+                    <p className="text-2xl font-black leading-none">{item.value}</p>
+                    <p className="text-[9px] font-black uppercase tracking-widest text-[#6A6A6A] mt-2">{item.label}</p>
+                  </div>
+                ))}
+              </div>
             </div>
             <div className="hidden lg:block lg:col-span-5">
-              <div className="border-2 border-[#0A0A0A] bg-white p-6">
+              <motion.div
+                className="border-2 border-[#0A0A0A] bg-white p-6"
+                initial={{ y: 12, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.35 }}
+              >
                 <div className="border-b-2 border-[#0A0A0A] pb-4 mb-5 flex items-center justify-between">
                   <div>
                     <p className="text-[9px] font-black uppercase tracking-[0.15em] text-[#6A6A6A]">AI Output Preview</p>
@@ -148,7 +175,16 @@ export default function LandingPage() {
                     </div>
                   ))}
                 </div>
-              </div>
+                <div className="mt-5 border-2 border-[#0A0A0A]">
+                  {exampleProfiles.map((item, index) => (
+                    <div key={item.idea} className={`grid grid-cols-12 gap-2 p-3 text-[10px] font-black uppercase tracking-wide ${index > 0 ? 'border-t-2 border-[#0A0A0A]' : ''}`}>
+                      <span className="col-span-4 text-[#6A6A6A]">{item.skill}</span>
+                      <span className="col-span-4">{item.interest}</span>
+                      <span className="col-span-4 text-right">{item.idea}</span>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
             </div>
           </div>
         </div>
@@ -218,6 +254,23 @@ export default function LandingPage() {
               <f.icon className="h-5 w-5 text-[#0A0A0A] group-hover:text-[#F5F3EE] mb-4" />
               <h3 className="text-sm font-black uppercase tracking-tight text-[#0A0A0A] group-hover:text-[#F5F3EE] mb-2">{f.title}</h3>
               <p className="text-xs text-[#6A6A6A] group-hover:text-[#F5F3EE]/60 leading-relaxed">{f.desc}</p>
+            </div>
+          ))}
+        </div>
+      </Section>
+
+      <Section className="bg-white border-y-2 border-[#0A0A0A]">
+        <SectionHeading badge="What You Get" title="From raw skill to launch packet" description="The output is not a generic paragraph. It is a structured founder-ready workspace." />
+        <div className="grid md:grid-cols-3">
+          {[
+            { title: 'Decision', body: 'Compare ideas by opportunity, feasibility, demand, monetization, competition gap, and founder fit.' },
+            { title: 'Execution', body: 'Convert the selected idea into MVP scope, launch plan, week-by-week roadmap, and risks.' },
+            { title: 'Presentation', body: 'Export pitch-ready copy, hackathon narrative, elevator pitch, and a saved dashboard plan.' },
+          ].map((item, index) => (
+            <div key={item.title} className={`border-2 border-[#0A0A0A] bg-[#F5F3EE] p-6 ${index > 0 ? 'md:border-l-0' : ''}`}>
+              <p className="text-5xl font-black text-[#E8E6E0] leading-none mb-5">{String(index + 1).padStart(2, '0')}</p>
+              <h3 className="text-lg font-black uppercase mb-3">{item.title}</h3>
+              <p className="text-sm text-[#3A3A3A] leading-relaxed">{item.body}</p>
             </div>
           ))}
         </div>

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { ArrowLeft, ArrowRight, Briefcase, Clock, DollarSign, Factory, Target, X, Sparkles } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Clock, DollarSign, Factory, X, Sparkles } from 'lucide-react';
 import Input from '../components/Input.jsx';
 import { AppNav } from '../components/PageShell.jsx';
 import { analyzeProfile, generateIdeas } from '../services/api.js';
@@ -13,8 +13,20 @@ const steps = [
   { id: 3, title: 'Goal' },
 ];
 
-const skillSuggestions = ['Python', 'React', 'AI/ML', 'Marketing', 'Design', 'Sales', 'FastAPI', 'Data Analysis'];
-const interestSuggestions = ['Education', 'SaaS', 'Productivity', 'FinTech', 'Health', 'Creator Tools', 'Ecommerce', 'Climate'];
+const skillSuggestions = [
+  'Python', 'JavaScript', 'React', 'Node.js', 'FastAPI', 'Django', 'Flask', 'AI/ML',
+  'Data Analysis', 'SQL', 'MongoDB', 'UI/UX Design', 'Product Design', 'No-Code',
+  'Marketing', 'SEO', 'Content Writing', 'Copywriting', 'Sales', 'Customer Support',
+  'Finance', 'Operations', 'Project Management', 'Video Editing', 'Graphic Design',
+  'Cybersecurity', 'Cloud', 'Automation', 'Prompt Engineering', 'Research',
+];
+const interestSuggestions = [
+  'Education', 'SaaS', 'Productivity', 'FinTech', 'Health', 'Creator Tools',
+  'Ecommerce', 'Climate', 'Gaming', 'Travel', 'Food', 'Fitness', 'Real Estate',
+  'LegalTech', 'HRTech', 'EdTech', 'AI Tools', 'Developer Tools', 'Marketplaces',
+  'Local Services', 'Remote Work', 'Mental Health', 'Personal Finance',
+  'Logistics', 'Agriculture', 'Fashion', 'Music', 'Sports', 'Nonprofits', 'B2B',
+];
 const experienceOptions = [
   { value: 'Beginner', label: 'Beginner', desc: 'Learning the basics and building first projects.' },
   { value: 'Intermediate', label: 'Intermediate', desc: 'Can ship useful work with guidance.' },
@@ -26,6 +38,30 @@ const goalOptions = [
   { value: 'Side project', label: 'Side Project', desc: 'Practical launch with low budget.' },
   { value: 'Startup validation', label: 'Startup Validation', desc: 'Test demand before building big.' },
   { value: 'Revenue-first business', label: 'Revenue First', desc: 'Prioritize paying customers early.' },
+];
+
+const starterProfiles = [
+  {
+    label: 'Student Builder',
+    skills: ['Python', 'React', 'AI/ML'],
+    interests: ['Education', 'Productivity', 'AI Tools'],
+    preferred_industry: 'EdTech',
+    goal: 'Hackathon MVP',
+  },
+  {
+    label: 'Solo Service Pro',
+    skills: ['Marketing', 'Sales', 'Automation'],
+    interests: ['Local Services', 'B2B', 'Creator Tools'],
+    preferred_industry: 'B2B',
+    goal: 'Revenue-first business',
+  },
+  {
+    label: 'Design Founder',
+    skills: ['UI/UX Design', 'Product Design', 'No-Code'],
+    interests: ['SaaS', 'Marketplaces', 'Remote Work'],
+    preferred_industry: 'SaaS',
+    goal: 'Startup validation',
+  },
 ];
 
 function ChipInput({ label, chips, setChips, suggestions, error }) {
@@ -82,7 +118,7 @@ function ChipInput({ label, chips, setChips, suggestions, error }) {
       </div>
       {error && <p className="text-[10px] font-black uppercase tracking-wide text-[#0A0A0A] border-l-2 border-[#0A0A0A] pl-2 mt-2">{error}</p>}
       <div className="flex flex-wrap gap-2 mt-3">
-        {suggestions.filter((item) => !chips.includes(item)).slice(0, 6).map((suggestion) => (
+        {suggestions.filter((item) => !chips.includes(item)).slice(0, 18).map((suggestion) => (
           <button key={suggestion} type="button" onClick={() => add(suggestion)} className="border border-[#0A0A0A] px-3 py-1 text-[10px] font-black uppercase tracking-wide text-[#0A0A0A] hover:bg-[#0A0A0A] hover:text-[#F5F3EE] transition-colors duration-150">
             + {suggestion}
           </button>
@@ -113,6 +149,17 @@ export default function InputPage() {
   function update(key, value) {
     setForm((current) => ({ ...current, [key]: value }));
     setFieldErrors((current) => ({ ...current, [key]: '' }));
+  }
+
+  function applyStarter(profile) {
+    setForm((current) => ({
+      ...current,
+      skills: profile.skills,
+      interests: profile.interests,
+      preferred_industry: profile.preferred_industry,
+      goal: profile.goal,
+    }));
+    setFieldErrors({});
   }
 
   function validate(targetStep = step) {
@@ -179,6 +226,20 @@ export default function InputPage() {
           </div>
           <h1 className="text-4xl font-black uppercase tracking-tight text-[#0A0A0A] leading-none mb-3">Build Your<br />Startup Brief.</h1>
           <p className="text-sm text-[#6A6A6A] border-l-2 border-[#0A0A0A] pl-3 mb-10 max-w-xl">This form sends your profile to the FastAPI backend and returns AI-generated startup ideas.</p>
+
+          <div className="grid md:grid-cols-3 mb-10">
+            {starterProfiles.map((profile, index) => (
+              <button
+                key={profile.label}
+                type="button"
+                onClick={() => applyStarter(profile)}
+                className={`border-2 border-[#0A0A0A] bg-white p-4 text-left hover:bg-[#0A0A0A] hover:text-[#F5F3EE] transition-colors ${index > 0 ? 'md:border-l-0' : ''}`}
+              >
+                <p className="text-[10px] font-black uppercase tracking-widest mb-2">{profile.label}</p>
+                <p className="text-xs leading-relaxed opacity-70">{profile.skills.join(' / ')}</p>
+              </button>
+            ))}
+          </div>
 
           <div className="flex mb-10 border-2 border-[#0A0A0A] overflow-x-auto">
             {steps.map((item) => (
@@ -250,6 +311,20 @@ export default function InputPage() {
             </AnimatePresence>
 
             {error && <p className="mt-8 text-xs font-black uppercase tracking-wide text-[#0A0A0A] border-l-4 border-[#0A0A0A] pl-3">{error}</p>}
+
+            {loading && (
+              <div className="mt-8 border-2 border-[#0A0A0A] bg-[#F5F3EE] p-5">
+                <p className="text-[10px] font-black uppercase tracking-widest mb-3">Generation Pipeline</p>
+                <div className="grid sm:grid-cols-3 gap-2">
+                  {['Analyzing founder fit', 'Scoring market angles', 'Drafting startup ideas'].map((item) => (
+                    <div key={item} className="border-2 border-[#0A0A0A] bg-white p-3">
+                      <div className="h-2 bg-[#0A0A0A] mb-3" />
+                      <p className="text-[10px] font-black uppercase tracking-wide">{item}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="flex items-center gap-4 pt-8 mt-8 border-t-2 border-[#0A0A0A]">
               {step > 1 && (

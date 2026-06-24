@@ -113,15 +113,6 @@ export default function SignUpPage() {
               </button>
             </form>
 
-            <div className="flex items-center gap-4 my-6">
-              <div className="flex-1 h-[2px] bg-[#0A0A0A]" />
-              <span className="text-[9px] font-black uppercase tracking-widest text-[#6A6A6A]">or</span>
-              <div className="flex-1 h-[2px] bg-[#0A0A0A]" />
-            </div>
-            <div className="grid grid-cols-2 gap-0">
-              <button type="button" className="h-11 border-2 border-[#0A0A0A] text-xs font-black uppercase tracking-wide text-[#0A0A0A] hover:bg-[#0A0A0A] hover:text-[#F5F3EE] transition-colors duration-150 flex items-center justify-center gap-2 mr-[-2px]">Google</button>
-              <button type="button" className="h-11 border-2 border-[#0A0A0A] text-xs font-black uppercase tracking-wide text-[#0A0A0A] hover:bg-[#0A0A0A] hover:text-[#F5F3EE] transition-colors duration-150 flex items-center justify-center gap-2">GitHub</button>
-            </div>
             <p className="text-center text-xs font-bold text-[#6A6A6A] mt-8 uppercase tracking-wide">
               Have account? <Link to="/signin" className="text-[#0A0A0A] underline font-black">Sign in</Link>
             </p>

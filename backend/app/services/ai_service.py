@@ -1,3 +1,6 @@
+import random
+import secrets
+
 from app.config import AI_PROVIDER
 from app.services.ai_errors import AIServiceError, AIRateLimitError
 from app.services.gemini_service import GeminiAPIError, GeminiRateLimitError, generate_with_gemini
@@ -29,6 +32,24 @@ def _stringify_profile(profile: dict) -> dict:
     return result
 
 
+def _with_variation(data: dict) -> dict:
+    angles = [
+        "underserved niche",
+        "boring business automation",
+        "student-friendly MVP",
+        "local market wedge",
+        "community-led product",
+        "B2B workflow pain",
+        "mobile-first habit",
+        "low-budget solo founder",
+        "marketplace wedge",
+        "AI-assisted service",
+    ]
+    result = dict(data)
+    result["variation_seed"] = f"{secrets.token_hex(4)}-{random.choice(angles)}"
+    return result
+
+
 async def analyze_profile(profile: dict) -> dict:
     data = _stringify_profile(profile)
     prompt = SKILL_ANALYSIS_PROMPT.format(**data)
@@ -36,7 +57,7 @@ async def analyze_profile(profile: dict) -> dict:
 
 
 async def generate_startup_ideas(profile: dict) -> dict:
-    data = _stringify_profile(profile)
+    data = _with_variation(_stringify_profile(profile))
     prompt = STARTUP_GENERATION_PROMPT.format(**data)
     return await _generate(prompt)
 

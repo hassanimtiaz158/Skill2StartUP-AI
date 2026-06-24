@@ -29,6 +29,13 @@ User Profile:
 - Available Time: {time_per_week} hours/week
 - Preferred Industry: {preferred_industry}
 - Goal: {goal}
+- Variation Seed: {variation_seed}
+
+Novelty requirement:
+- Generate fresh ideas for this exact request, guided by the variation seed.
+- Avoid generic repeats like "AI mentor", "roadmap generator", or "productivity app" unless the user's profile strongly demands it.
+- Mix at least 2 different business models or customer segments across the 4 ideas.
+- Make names, users, and market angles distinct from each other.
 
 For each idea, calculate opportunity scores using these weights:
 - Feasibility (25%): How feasible is this given the user's skills and budget?

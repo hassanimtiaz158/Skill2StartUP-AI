@@ -40,7 +40,8 @@ def _generate_sync(prompt: str) -> dict:
             {"role": "system", "content": "Return only valid JSON. Do not wrap JSON in markdown."},
             {"role": "user", "content": prompt},
         ],
-        "temperature": 0.2,
+        "temperature": 0.85,
+        "top_p": 0.9,
         "response_format": {"type": "json_object"},
     }
     request = urllib.request.Request(

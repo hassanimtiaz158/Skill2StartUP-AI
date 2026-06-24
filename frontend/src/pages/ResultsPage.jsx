@@ -50,6 +50,13 @@ export default function ResultsPage() {
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
+  const topIdea = useMemo(() => {
+    return [...ideas].sort((a, b) => Number(b.opportunity_score || 0) - Number(a.opportunity_score || 0))[0];
+  }, [ideas]);
+  const averageScore = useMemo(() => {
+    if (!ideas.length) return 0;
+    return ideas.reduce((sum, idea) => sum + Number(idea.opportunity_score || 0), 0) / ideas.length;
+  }, [ideas]);
 
   const planText = useMemo(() => (plan ? JSON.stringify(plan, null, 2) : ''), [plan]);
   const markdownText = useMemo(() => {
@@ -196,6 +203,21 @@ export default function ResultsPage() {
             </div>
           )}
 
+          <div className="grid md:grid-cols-3 border-2 border-[#0A0A0A] bg-white mb-10">
+            <div className="p-5 border-b-2 md:border-b-0 md:border-r-2 border-[#0A0A0A]">
+              <p className="text-[9px] font-black uppercase tracking-widest text-[#6A6A6A] mb-2">Best Candidate</p>
+              <h2 className="text-lg font-black uppercase leading-tight">{topIdea?.startup_name || 'No idea'}</h2>
+            </div>
+            <div className="p-5 border-b-2 md:border-b-0 md:border-r-2 border-[#0A0A0A]">
+              <p className="text-[9px] font-black uppercase tracking-widest text-[#6A6A6A] mb-2">Average Score</p>
+              <p className="text-4xl font-black leading-none">{averageScore.toFixed(1)}</p>
+            </div>
+            <div className="p-5">
+              <p className="text-[9px] font-black uppercase tracking-widest text-[#6A6A6A] mb-2">Next Move</p>
+              <p className="text-sm text-[#3A3A3A] leading-relaxed">Pick the strongest idea, generate a full plan, then save it to your dashboard before regenerating.</p>
+            </div>
+          </div>
+
           <div className="grid lg:grid-cols-12 gap-8">
             <div className="lg:col-span-5">
               <h2 className="text-xs font-black uppercase tracking-widest mb-4">Generated Ideas</h2>
@@ -235,6 +257,19 @@ export default function ResultsPage() {
                     {loadingPlan ? 'Generating...' : <>Full Plan <Sparkles className="h-4 w-4" /></>}
                   </button>
                 </div>
+
+                {loadingPlan && (
+                  <div className="border-2 border-[#0A0A0A] bg-[#F5F3EE] p-4 mb-6">
+                    <p className="text-[10px] font-black uppercase tracking-widest mb-3">Building Plan</p>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                      {['MVP', 'Competitors', 'Revenue', 'Roadmap'].map((item) => (
+                        <div key={item} className="border-2 border-[#0A0A0A] bg-white p-3 text-center">
+                          <p className="text-[10px] font-black uppercase tracking-wide">{item}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 <div className="grid sm:grid-cols-2 gap-4 mb-6">
                   <Score label="Feasibility" value={selectedIdea?.feasibility_score} />

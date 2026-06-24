@@ -45,6 +45,7 @@ Open `http://127.0.0.1:5173`. In development, Vite proxies API requests to `http
 | `GROQ_MODEL` | No | Default `llama-3.3-70b-versatile` |
 | `GROQ_BASE_URL` | No | Default `https://api.groq.com/openai/v1` |
 | `ALLOWED_ORIGINS` | No | Comma-separated frontend origins |
+| `FRONTEND_URL` | No | Frontend URL for deployment references |
 
 To use Groq:
 
@@ -78,3 +79,71 @@ pytest tests/ -v
 ```
 
 Tests mock MongoDB and AI calls; no real API keys are required when test env vars override provider settings.
+
+## Deployment
+
+### Backend on Render
+
+Create a Render Web Service from this repository.
+
+Use these settings:
+
+```text
+Root Directory: backend
+Build Command: pip install -r requirements.txt
+Start Command: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+```
+
+Set these Render environment variables:
+
+```env
+MONGODB_URL=your_mongodb_connection_string
+DATABASE_NAME=skill2startup
+AI_PROVIDER=groq
+GROQ_API_KEY=your_groq_key
+GROQ_MODEL=llama-3.3-70b-versatile
+ALLOWED_ORIGINS=https://your-vercel-app.vercel.app
+FRONTEND_URL=https://your-vercel-app.vercel.app
+```
+
+If using Gemini instead:
+
+```env
+AI_PROVIDER=gemini
+GEMINI_API_KEY=your_gemini_key
+GEMINI_MODEL=gemini-1.5-flash
+```
+
+After deploy, copy the Render backend URL, for example:
+
+```text
+https://skill2startup-api.onrender.com
+```
+
+### Frontend on Vercel
+
+Import this repository in Vercel.
+
+Use these settings:
+
+```text
+Root Directory: frontend
+Framework Preset: Vite
+Build Command: npm run build
+Output Directory: dist
+```
+
+Set this Vercel environment variable:
+
+```env
+VITE_API_URL=https://your-render-backend.onrender.com
+```
+
+After Vercel deploys, update Render:
+
+```env
+ALLOWED_ORIGINS=https://your-vercel-app.vercel.app
+FRONTEND_URL=https://your-vercel-app.vercel.app
+```
+
+Redeploy the Render backend after changing these values.
