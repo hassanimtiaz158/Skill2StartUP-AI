@@ -1,11 +1,34 @@
 import axios from 'axios';
 
-const API_BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+const API_URL_STORAGE_KEY = 'skill2startup.apiUrl';
+
+function cleanApiUrl(value) {
+  return (value || '').trim().replace(/\/$/, '');
+}
+
+function readRuntimeApiUrl() {
+  if (typeof window === 'undefined') {
+    return '';
+  }
+  const params = new URLSearchParams(window.location.search);
+  const urlFromQuery = cleanApiUrl(params.get('apiUrl'));
+  if (urlFromQuery) {
+    window.localStorage.setItem(API_URL_STORAGE_KEY, urlFromQuery);
+    params.delete('apiUrl');
+    const nextSearch = params.toString();
+    const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ''}${window.location.hash}`;
+    window.history.replaceState({}, '', nextUrl);
+    return urlFromQuery;
+  }
+  return cleanApiUrl(window.localStorage.getItem(API_URL_STORAGE_KEY));
+}
+
+const API_BASE_URL = cleanApiUrl(import.meta.env.VITE_API_URL) || readRuntimeApiUrl();
 const isProduction = import.meta.env.PROD;
 
 function assertApiConfigured() {
   if (isProduction && !API_BASE_URL) {
-    throw new Error('Frontend is missing VITE_API_URL. Set it in Vercel to your Render backend URL, then redeploy.');
+    throw new Error('Frontend is missing VITE_API_URL. Set it in Vercel Project Settings > Environment Variables for Production, then redeploy. You can also open the site once with ?apiUrl=https://your-render-backend.onrender.com.');
   }
 }
 
@@ -37,7 +60,7 @@ function apiError(error) {
     return error.message;
   }
   if (error.response?.status === 405 && !API_BASE_URL) {
-    return 'API URL is not configured. Set VITE_API_URL in Vercel to your Render backend URL.';
+    return 'API URL is not configured. Set VITE_API_URL in Vercel to your Render backend URL, or open the site with ?apiUrl=https://your-render-backend.onrender.com.';
   }
   const detail = error.response?.data?.detail || error.response?.data?.message;
   return detail || error.message || 'Request failed. Please try again.';
