@@ -94,13 +94,14 @@ Build Command: pip install -r requirements.txt
 Start Command: uvicorn app.main:app --host 0.0.0.0 --port $PORT
 ```
 
-The backend includes `backend/runtime.txt` to pin Render to Python 3.11.9. Do not let Render build with Python 3.14, because older `pydantic-core` wheels may fail to build there.
+The repo includes `.python-version` files to pin Render to Python 3.11.9. Also set `PYTHON_VERSION=3.11.9` in Render environment variables. Do not let Render build with Python 3.14, because older `pydantic-core` wheels can fail to build there.
 
 Set these Render environment variables:
 
 ```env
 MONGODB_URL=your_mongodb_connection_string
 DATABASE_NAME=skill2startup
+PYTHON_VERSION=3.11.9
 AI_PROVIDER=groq
 GROQ_API_KEY=your_groq_key
 GROQ_MODEL=llama-3.3-70b-versatile
