@@ -577,3 +577,55 @@ Generate a detailed plan and return it as a JSON object with this exact structur
 }}
 
 Return ONLY the JSON object. No other text."""
+
+
+FIRST_100_CUSTOMERS_PROMPT = """You are a growth marketing strategist. Based on this startup's details, generate a practical "First 100 Customers" acquisition plan that is specific, actionable, and tailored to the idea — not generic advice.
+
+STARTUP DETAILS:
+- Name: {startup_name}
+- Pitch: {pitch}
+- Problem: {problem}
+- Solution: {solution}
+- Target Users: {target_users}
+- MVP Features: {mvp_features}
+- Competitors: {competitors}
+- Industry: {industry}
+
+## RULES:
+1. Every recommendation must be specific to this startup's target users, industry, and competitors.
+2. Cold message templates must include actual subject lines and body text that reference the startup's value proposition.
+3. The 7-day action plan must have concrete, daily tasks the founder can execute immediately.
+4. Do not give generic advice like "post on social media" — specify which platforms and what type of content.
+
+Return a JSON object with this exact structure:
+{{
+    "ideal_early_adopters": "Detailed description of the ideal first 100 customers, who they are, and why they would buy first (2-3 sentences)",
+    "where_to_find_them": ["specific online community or platform 1", "specific community 2", "specific community 3", "specific community 4"],
+    "outreach_channels": ["outreach channel 1 with brief rationale", "channel 2 with brief rationale", "channel 3 with brief rationale"],
+    "cold_message_templates": [
+        {{
+            "channel": "Email",
+            "subject": "Specific subject line referencing the startup's value prop",
+            "body": "Full cold email body (3-4 sentences) personalized to the target user"
+        }},
+        {{
+            "channel": "LinkedIn / Social DM",
+            "subject": "Message subject or first line",
+            "body": "Direct message body that is conversational and specific"
+        }}
+    ],
+    "social_media_launch_plan": "Step-by-step social media launch strategy specific to this startup's audience and industry (3-5 sentences)",
+    "referral_strategy": "Specific referral mechanics — what incentive, how to ask, and when to trigger the ask (2-3 sentences)",
+    "seven_day_action_plan": [
+        {{"day": 1, "title": "Day 1 objective", "tasks": ["concrete task 1", "concrete task 2", "concrete task 3"]}},
+        {{"day": 2, "title": "Day 2 objective", "tasks": ["concrete task 1", "concrete task 2"]}},
+        {{"day": 3, "title": "Day 3 objective", "tasks": ["concrete task 1", "concrete task 2", "concrete task 3"]}},
+        {{"day": 4, "title": "Day 4 objective", "tasks": ["concrete task 1", "concrete task 2"]}},
+        {{"day": 5, "title": "Day 5 objective", "tasks": ["concrete task 1", "concrete task 2", "concrete task 3"]}},
+        {{"day": 6, "title": "Day 6 objective", "tasks": ["concrete task 1", "concrete task 2"]}},
+        {{"day": 7, "title": "Day 7 objective", "tasks": ["concrete task 1", "concrete task 2", "concrete task 3"]}}
+    ],
+    "metrics_to_track": ["specific metric 1", "metric 2", "metric 3", "metric 4", "metric 5"]
+}}
+
+Return ONLY the JSON object. No other text."""

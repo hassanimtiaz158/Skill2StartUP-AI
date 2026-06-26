@@ -24,6 +24,8 @@ from app.models.schemas import (
     ComparisonResponse,
     EmailReportRequest,
     EmailReportResponse,
+    First100CustomersRequest,
+    First100CustomersResponse,
     ProgressSaveRequest,
     ProgressLoadResponse,
     AnalyticsEvent,
@@ -43,6 +45,7 @@ from app.services.ai_service import (
     debate_idea,
     compare_ideas,
     generate_email_report,
+    generate_first_100_customers,
 )
 from app.services.ai_errors import AIServiceError, AIRateLimitError
 from app.services.auth_service import get_user_by_token
@@ -281,6 +284,32 @@ async def chat_about_startup_idea_stream(request: IdeaChatRequest):
     return StreamingResponse(event_stream(), media_type="text/event-stream")
 
 
+@router.post("/api/startups/first-100-customers", response_model=First100CustomersResponse)
+async def generate_first_100_customers_plan(request: First100CustomersRequest):
+    try:
+        track_event("first_100_customers", {"idea_preview": request.startup_name[:50] if request.startup_name else request.pitch[:50]})
+        result = await generate_first_100_customers(request.model_dump())
+    except AIRateLimitError:
+        raise HTTPException(status_code=429, detail="AI service rate limited. Please try again in a moment.")
+    except AIServiceError as e:
+        raise HTTPException(status_code=502, detail=f"AI service error: {str(e)}")
+    except Exception as e:
+        logger.error("First 100 customers failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to generate customer acquisition plan. Please try again.")
+
+    required = ("ideal_early_adopters", "where_to_find_them", "outreach_channels", "cold_message_templates", "social_media_launch_plan", "referral_strategy", "seven_day_action_plan", "metrics_to_track")
+    missing = [f for f in required if f not in result]
+    if missing:
+        logger.error("First 100 customers missing fields: %s", missing)
+        raise HTTPException(status_code=502, detail="AI returned an incomplete plan. Please try again.")
+
+    try:
+        return First100CustomersResponse(**result)
+    except Exception as e:
+        logger.error("First 100 customers response validation failed: %s", e)
+        raise HTTPException(status_code=502, detail="AI returned an invalid response format.")
+
+
 @router.post("/api/startups/analyze-idea/share", response_model=ShareLinkResponse)
 async def share_idea_analysis(request: ShareLinkRequest):
     try:
@@ -456,6 +485,50 @@ def _require_user_id(authorization: str = Header(default="")) -> str:
     if not user_id:
         raise HTTPException(status_code=401, detail="Sign in required.")
     return user_id
+
+
+@router.post("/api/startups/first-100-customers/save")
+async def save_customer_strategy(body: dict, user_id: str = Depends(_require_user_id)):
+    try:
+        track_event("save_customer_strategy", {"user_id": user_id})
+        strategy = body.get("strategy", {})
+        idea_context = body.get("idea_context", {})
+        if not strategy:
+            raise HTTPException(status_code=400, detail="Strategy data is required.")
+        from app.services.database_service import save_customer_strategy as db_save
+        strategy_id = db_save(strategy, idea_context, user_id=user_id)
+        return {"strategy_id": strategy_id, "message": "Customer strategy saved successfully."}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Save customer strategy failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to save strategy.")
+
+
+@router.get("/api/startups/first-100-customers/saved")
+async def list_saved_customer_strategies(user_id: str = Depends(_require_user_id)):
+    try:
+        from app.services.database_service import get_customer_strategies
+        strategies = get_customer_strategies(user_id=user_id)
+        return {"strategies": strategies}
+    except Exception as e:
+        logger.error("List customer strategies failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to fetch saved strategies.")
+
+
+@router.delete("/api/startups/first-100-customers/{strategy_id}")
+async def remove_customer_strategy(strategy_id: str, user_id: str = Depends(_require_user_id)):
+    try:
+        from app.services.database_service import delete_customer_strategy
+        deleted = delete_customer_strategy(strategy_id, user_id=user_id)
+        if not deleted:
+            raise HTTPException(status_code=404, detail="Strategy not found")
+        return {"message": "Strategy deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Delete customer strategy failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to delete strategy.")
 
 
 @router.post("/api/startups/analyze-idea/save")

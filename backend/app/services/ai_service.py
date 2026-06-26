@@ -24,6 +24,7 @@ from app.prompts.prompts import (
     DEBATE_ROOM_PROMPT,
     COMPARISON_PROMPT,
     EMAIL_REPORT_PROMPT,
+    FIRST_100_CUSTOMERS_PROMPT,
 )
 
 
@@ -328,4 +329,17 @@ async def generate_readme(profile: dict, idea: dict, plan: dict) -> dict:
         data["revenue_model"] = data["revenue_model"].get("pricing_model", str(data["revenue_model"]))
 
     prompt = README_GENERATOR_PROMPT.format(**data)
+    return await _generate(prompt)
+
+
+async def generate_first_100_customers(data: dict) -> dict:
+    for key in ("target_users", "mvp_features"):
+        if isinstance(data.get(key), list):
+            data[key] = ", ".join(data[key])
+    if isinstance(data.get("competitors"), list):
+        data["competitors"] = ", ".join(
+            c.get("name", str(c)) if isinstance(c, dict) else str(c)
+            for c in data["competitors"]
+        )
+    prompt = FIRST_100_CUSTOMERS_PROMPT.format(**data)
     return await _generate(prompt)

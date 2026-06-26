@@ -2,7 +2,7 @@ import logging
 import secrets
 from datetime import datetime
 from bson import ObjectId, errors as bson_errors
-from app.database import founder_profiles, startup_plans, saved_analyses, db
+from app.database import founder_profiles, startup_plans, saved_analyses, customer_strategies, db
 
 logger = logging.getLogger(__name__)
 
@@ -156,4 +156,34 @@ def delete_startup_plan(plan_id: str, user_id: str | None = None) -> bool:
     if user_id:
         query["user_id"] = user_id
     result = startup_plans.delete_one(query)
+    return result.deleted_count > 0
+
+
+def save_customer_strategy(strategy: dict, idea_context: dict, user_id: str | None = None) -> str:
+    doc = {
+        "strategy": strategy,
+        "idea_context": idea_context,
+        "user_id": user_id,
+        "created_at": datetime.utcnow(),
+    }
+    result = customer_strategies.insert_one(doc)
+    return str(result.inserted_id)
+
+
+def get_customer_strategies(user_id: str | None = None) -> list:
+    query = {"user_id": user_id} if user_id else {}
+    docs = list(customer_strategies.find(query).sort("created_at", -1))
+    return [serialize_doc(d) for d in docs]
+
+
+def delete_customer_strategy(strategy_id: str, user_id: str | None = None) -> bool:
+    try:
+        obj_id = ObjectId(strategy_id)
+    except (bson_errors.InvalidId, TypeError):
+        logger.warning("Invalid strategy_id format: %s", strategy_id)
+        return False
+    query = {"_id": obj_id}
+    if user_id:
+        query["user_id"] = user_id
+    result = customer_strategies.delete_one(query)
     return result.deleted_count > 0

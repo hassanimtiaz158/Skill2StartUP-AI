@@ -423,6 +423,46 @@ export async function getAnalytics() {
   }
 }
 
+export async function generateFirst100Customers(data) {
+  try {
+    assertApiConfigured();
+    const { data: result } = await api.post('/api/startups/first-100-customers', data);
+    return result;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function saveCustomerStrategy(strategy, ideaContext = {}) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.post('/api/startups/first-100-customers/save', { strategy, idea_context: ideaContext });
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function getSavedCustomerStrategies() {
+  try {
+    assertApiConfigured();
+    const { data } = await api.get('/api/startups/first-100-customers/saved');
+    return data.strategies || [];
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function deleteCustomerStrategy(strategyId) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.delete(`/api/startups/first-100-customers/${strategyId}`);
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
 export async function trackEvent(event, properties = {}) {
   try {
     assertApiConfigured();

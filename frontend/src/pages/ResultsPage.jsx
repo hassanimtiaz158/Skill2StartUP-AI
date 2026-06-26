@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, Brain, Check, Download, Rocket, Save, Sparkles } from 'lucide-react';
+import { ArrowRight, Brain, Check, Download, Rocket, Save, Sparkles, Users } from 'lucide-react';
 import { AppNav } from '../components/PageShell.jsx';
-import { generateIdeas, generatePlan, savePlan } from '../services/api.js';
+import { generateIdeas, generatePlan, savePlan, generateFirst100Customers, saveCustomerStrategy } from '../services/api.js';
 import { getSession, readValue, saveValue } from '../services/storage.js';
 
 function Score({ label, value }) {
@@ -50,6 +50,9 @@ export default function ResultsPage() {
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
+  const [customerPlan, setCustomerPlan] = useState(readValue('customerPlan'));
+  const [loadingCustomer, setLoadingCustomer] = useState(false);
+  const [savingCustomer, setSavingCustomer] = useState(false);
   const topIdea = useMemo(() => {
     return [...ideas].sort((a, b) => Number(b.opportunity_score || 0) - Number(a.opportunity_score || 0))[0];
   }, [ideas]);
@@ -157,6 +160,57 @@ export default function ResultsPage() {
       setError(requestError.message);
     } finally {
       setRegenerating(false);
+    }
+  }
+
+  async function handleFirst100Customers() {
+    if (!selectedIdea) return;
+    setError('');
+    setNotice('');
+    setLoadingCustomer(true);
+    try {
+      const data = {
+        startup_name: selectedIdea.startup_name,
+        pitch: selectedIdea.pitch,
+        problem: selectedIdea.problem,
+        solution: selectedIdea.solution,
+        target_users: selectedIdea.target_users,
+        mvp_features: selectedIdea.mvp_features,
+        competitors: selectedIdea.competitors || [],
+        industry: profile?.preferred_industry || '',
+      };
+      const result = await generateFirst100Customers(data);
+      setCustomerPlan(result);
+      saveValue('customerPlan', result);
+      setNotice('First 100 Customers strategy generated.');
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setLoadingCustomer(false);
+    }
+  }
+
+  async function handleSaveCustomerPlan() {
+    if (!customerPlan || !selectedIdea) return;
+    setError('');
+    setNotice('');
+    if (!getSession()?.token) {
+      setError('Sign in to save this strategy to your dashboard.');
+      return;
+    }
+    setSavingCustomer(true);
+    try {
+      const ideaContext = {
+        startup_name: selectedIdea.startup_name,
+        pitch: selectedIdea.pitch,
+        industry: profile?.preferred_industry || '',
+      };
+      const result = await saveCustomerStrategy(customerPlan, ideaContext);
+      setNotice(result.message || 'Strategy saved.');
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setSavingCustomer(false);
     }
   }
 
@@ -324,6 +378,93 @@ export default function ResultsPage() {
                     </div>
                   </div>
                 )}
+
+                <div className="border-t-2 border-[#0A0A0A] pt-6 mt-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
+                    <h3 className="text-xl font-black uppercase leading-none flex items-center gap-3"><Users className="h-6 w-6" /> First 100 Customers</h3>
+                    <div className="flex gap-3">
+                      {customerPlan && (
+                        <button onClick={handleSaveCustomerPlan} disabled={savingCustomer} className="h-10 px-4 border-2 border-[#0A0A0A] bg-[#0A0A0A] text-[#F5F3EE] text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-white hover:text-[#0A0A0A] transition-colors disabled:opacity-50">
+                          <Save className="h-4 w-4" /> {savingCustomer ? 'Saving' : 'Save'}
+                        </button>
+                      )}
+                      <button onClick={handleFirst100Customers} disabled={loadingCustomer} className="h-10 px-4 border-2 border-[#0A0A0A] bg-white text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-[#0A0A0A] hover:text-[#F5F3EE] transition-colors disabled:opacity-50">
+                        {loadingCustomer ? 'Generating...' : <><Sparkles className="h-4 w-4" /> Generate Strategy</>}
+                      </button>
+                    </div>
+                  </div>
+
+                  {loadingCustomer && (
+                    <div className="border-2 border-[#0A0A0A] bg-[#F5F3EE] p-4 mb-4">
+                      <p className="text-[10px] font-black uppercase tracking-widest mb-3">Building Acquisition Plan</p>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                        {['Early Adopters', 'Channels', 'Templates', 'Metrics'].map((item) => (
+                          <div key={item} className="border-2 border-[#0A0A0A] bg-white p-3 text-center">
+                            <p className="text-[10px] font-black uppercase tracking-wide">{item}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {customerPlan && (
+                    <div className="space-y-4">
+                      <div className="border-2 border-[#0A0A0A] bg-white p-5">
+                        <p className="text-[9px] font-black uppercase tracking-widest text-[#6A6A6A] mb-2">Ideal Early Adopters</p>
+                        <p className="text-sm text-[#3A3A3A] leading-relaxed">{customerPlan.ideal_early_adopters}</p>
+                      </div>
+
+                      <div className="grid sm:grid-cols-2 gap-4">
+                        <ListBlock title="Where to Find Them" items={customerPlan.where_to_find_them} />
+                        <ListBlock title="Outreach Channels" items={customerPlan.outreach_channels} />
+                      </div>
+
+                      {customerPlan.cold_message_templates?.length > 0 && (
+                        <div>
+                          <h4 className="text-xs font-black uppercase tracking-widest mb-3">Cold Message Templates</h4>
+                          <div className="grid sm:grid-cols-2 gap-4">
+                            {customerPlan.cold_message_templates.map((tmpl, i) => (
+                              <div key={i} className="border-2 border-[#0A0A0A] bg-white p-4">
+                                <span className="text-[9px] font-black uppercase tracking-widest text-[#6A6A6A]">{tmpl.channel}</span>
+                                <p className="text-xs font-bold mt-2 mb-1">Subject:</p>
+                                <p className="text-xs text-[#3A3A3A] italic mb-3">{tmpl.subject}</p>
+                                <p className="text-xs font-bold mb-1">Body:</p>
+                                <p className="text-xs text-[#3A3A3A] leading-relaxed whitespace-pre-line">{tmpl.body}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="border-2 border-[#0A0A0A] bg-white p-5">
+                        <p className="text-[9px] font-black uppercase tracking-widest text-[#6A6A6A] mb-2">Social Media Launch Plan</p>
+                        <p className="text-sm text-[#3A3A3A] leading-relaxed">{customerPlan.social_media_launch_plan}</p>
+                      </div>
+
+                      <div className="border-2 border-[#0A0A0A] bg-white p-5">
+                        <p className="text-[9px] font-black uppercase tracking-widest text-[#6A6A6A] mb-2">Referral Strategy</p>
+                        <p className="text-sm text-[#3A3A3A] leading-relaxed">{customerPlan.referral_strategy}</p>
+                      </div>
+
+                      <div className="border-2 border-[#0A0A0A] bg-[#F5F3EE] p-5">
+                        <h4 className="text-xs font-black uppercase tracking-widest mb-3">7-Day Action Plan</h4>
+                        <div className="grid sm:grid-cols-2 gap-3">
+                          {customerPlan.seven_day_action_plan?.map((day) => (
+                            <div key={day.day} className="border-2 border-[#0A0A0A] bg-white p-4">
+                              <p className="text-[9px] font-black uppercase tracking-widest text-[#6A6A6A]">Day {day.day}</p>
+                              <h5 className="text-sm font-black uppercase my-2">{day.title}</h5>
+                              <ul className="text-xs text-[#3A3A3A] space-y-1">
+                                {day.tasks?.map((task) => <li key={task}>{task}</li>)}
+                              </ul>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <ListBlock title="Metrics to Track" items={customerPlan.metrics_to_track} />
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>

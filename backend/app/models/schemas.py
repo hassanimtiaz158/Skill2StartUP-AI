@@ -302,6 +302,40 @@ class ProgressLoadResponse(BaseModel):
     days: dict
 
 
+class ColdMessageTemplate(BaseModel):
+    channel: str
+    subject: str
+    body: str
+
+
+class ActionDay(BaseModel):
+    day: int
+    title: str
+    tasks: list[str]
+
+
+class First100CustomersRequest(BaseModel):
+    startup_name: str = ""
+    pitch: str = ""
+    problem: str = ""
+    solution: str = ""
+    target_users: list[str] = []
+    mvp_features: list[str] = []
+    competitors: list = []
+    industry: str = ""
+
+
+class First100CustomersResponse(BaseModel):
+    ideal_early_adopters: str
+    where_to_find_them: list[str]
+    outreach_channels: list[str]
+    cold_message_templates: list[ColdMessageTemplate]
+    social_media_launch_plan: str
+    referral_strategy: str
+    seven_day_action_plan: list[ActionDay]
+    metrics_to_track: list[str]
+
+
 class AnalyticsEvent(BaseModel):
     event: str = Field(..., min_length=1)
     properties: dict = {}
