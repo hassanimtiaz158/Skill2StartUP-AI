@@ -336,6 +336,47 @@ class First100CustomersResponse(BaseModel):
     metrics_to_track: list[str]
 
 
+class RiskAnalysis(BaseModel):
+    overall_risk_level: Literal["Low", "Medium", "High"]
+    key_business_risks: list[str]
+    technical_risks: list[str]
+    market_risks: list[str]
+    financial_risks: list[str]
+
+
+class SuccessProbability(BaseModel):
+    percentage: int = Field(..., ge=0, le=100)
+    reason: str
+
+
+class Recommendation(BaseModel):
+    decision: Literal["Go", "Pivot", "Drop"]
+    explanation: str
+    action_steps: list[str]
+
+
+class DecisionEngineRequest(BaseModel):
+    startup_name: str = ""
+    pitch: str = ""
+    problem: str = ""
+    solution: str = ""
+    target_users: list[str] = []
+    industry: str = ""
+    mvp_features: list[str] = []
+    competitors: list = []
+    market_demand: float = 0
+    uniqueness: float = 0
+    feasibility: float = 0
+    revenue_potential: float = 0
+    risks: list[str] = []
+
+
+class DecisionEngineResponse(BaseModel):
+    risk_analysis: RiskAnalysis
+    success_probability: SuccessProbability
+    recommendation: Recommendation
+
+
 class AnalyticsEvent(BaseModel):
     event: str = Field(..., min_length=1)
     properties: dict = {}

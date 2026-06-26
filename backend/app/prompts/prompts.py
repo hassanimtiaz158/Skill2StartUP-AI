@@ -629,3 +629,55 @@ Return a JSON object with this exact structure:
 }}
 
 Return ONLY the JSON object. No other text."""
+
+
+DECISION_ENGINE_PROMPT = """You are a venture analyst and startup strategist. Based on the startup idea details below, generate a comprehensive decision report with risk analysis, success probability, and a clear Go/Pivot/Drop recommendation. Every assessment must be specific to this idea — no generic advice.
+
+STARTUP DETAILS:
+- Name: {startup_name}
+- Pitch: {pitch}
+- Problem: {problem}
+- Solution: {solution}
+- Target Users: {target_users}
+- Industry: {industry}
+- MVP Features: {mvp_features}
+- Competitors: {competitors}
+- Market Demand Score (0-10): {market_demand}
+- Uniqueness Score (0-10): {uniqueness}
+- Feasibility Score (0-10): {feasibility}
+- Revenue Potential Score (0-10): {revenue_potential}
+- Key Risks: {risks}
+
+## RULES:
+1. Every risk, score, and recommendation must reference specific details about this startup (name, features, users, competitors, scores).
+2. The success probability should use the formula: `percentage = min(92, (market_demand * 3 + uniqueness * 2.5 + feasibility * 2 + revenue_potential * 2.5) + 12)` as a starting point, then adjust +-3 based on specific risks and strengths. This produces a baseline of 70-92% for typical scores. Be optimistic — focus on upside potential and the founder's ability to execute.
+3. The final recommendation (Go/Pivot/Drop) must include a clear, specific reason tied to the idea. Favor "Go" unless there are critical red flags.
+4. Action steps must be concrete and immediately actionable for this specific startup.
+5. Overall risk level should default to "Low" or "Medium" — only assign "High" for genuinely severe red flags.
+
+Return a JSON object with this exact structure:
+{{
+    "risk_analysis": {{
+        "overall_risk_level": "Low" or "Medium" or "High",
+        "key_business_risks": ["risk specific to this startup's business model", "risk 2", "risk 3"],
+        "technical_risks": ["risk specific to building this product", "risk 2", "risk 3"],
+        "market_risks": ["risk specific to this startup's market", "risk 2", "risk 3"],
+        "financial_risks": ["risk specific to this startup's finances", "risk 2", "risk 3"]
+    }},
+    "success_probability": {{
+        "percentage": <0-100 integer>,
+        "reason": "2-3 sentence explanation of why this probability, referencing specific aspects of the idea"
+    }},
+    "recommendation": {{
+        "decision": "Go" or "Pivot" or "Drop",
+        "explanation": "2-3 sentence explanation of why this recommendation, specific to this startup",
+        "action_steps": [
+            "specific actionable step 1",
+            "specific actionable step 2",
+            "specific actionable step 3",
+            "specific actionable step 4"
+        ]
+    }}
+}}
+
+Return ONLY the JSON object. No other text."""

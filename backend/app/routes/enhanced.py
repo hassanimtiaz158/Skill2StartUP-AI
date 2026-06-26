@@ -26,8 +26,9 @@ from app.models.schemas import (
     EmailReportResponse,
     First100CustomersRequest,
     First100CustomersResponse,
+    DecisionEngineRequest,
+    DecisionEngineResponse,
     ProgressSaveRequest,
-    ProgressLoadResponse,
     AnalyticsEvent,
     AnalyticsResponse,
 )
@@ -46,10 +47,11 @@ from app.services.ai_service import (
     compare_ideas,
     generate_email_report,
     generate_first_100_customers,
+    generate_decision_engine,
 )
 from app.services.ai_errors import AIServiceError, AIRateLimitError
 from app.services.auth_service import get_user_by_token
-from app.services.database_service import save_shared_analysis, get_shared_analysis, save_build_progress, get_build_progress, track_event, get_analytics_summary, save_idea_analysis, get_saved_idea_analyses, delete_saved_idea_analysis
+from app.services.database_service import save_shared_analysis, get_shared_analysis, save_build_progress, get_build_progress, track_event, get_analytics_summary, save_idea_analysis, get_saved_idea_analyses, delete_saved_idea_analysis, save_customer_strategy, get_customer_strategies, delete_customer_strategy, save_decision_report, get_decision_reports, delete_decision_report
 from app.services.email_service import send_email
 
 logger = logging.getLogger(__name__)
@@ -310,6 +312,32 @@ async def generate_first_100_customers_plan(request: First100CustomersRequest):
         raise HTTPException(status_code=502, detail="AI returned an invalid response format.")
 
 
+@router.post("/api/startups/decision-engine", response_model=DecisionEngineResponse)
+async def generate_decision_engine_report(request: DecisionEngineRequest):
+    try:
+        track_event("decision_engine", {"idea_preview": request.startup_name[:50] if request.startup_name else request.pitch[:50]})
+        result = await generate_decision_engine(request.model_dump())
+    except AIRateLimitError:
+        raise HTTPException(status_code=429, detail="AI service rate limited. Please try again in a moment.")
+    except AIServiceError as e:
+        raise HTTPException(status_code=502, detail=f"AI service error: {str(e)}")
+    except Exception as e:
+        logger.error("Decision engine failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to generate decision report. Please try again.")
+
+    required = ("risk_analysis", "success_probability", "recommendation")
+    missing = [f for f in required if f not in result]
+    if missing:
+        logger.error("Decision engine missing fields: %s", missing)
+        raise HTTPException(status_code=502, detail="AI returned an incomplete report. Please try again.")
+
+    try:
+        return DecisionEngineResponse(**result)
+    except Exception as e:
+        logger.error("Decision engine response validation failed: %s", e)
+        raise HTTPException(status_code=502, detail="AI returned an invalid response format.")
+
+
 @router.post("/api/startups/analyze-idea/share", response_model=ShareLinkResponse)
 async def share_idea_analysis(request: ShareLinkRequest):
     try:
@@ -364,7 +392,7 @@ async def estimate_startup_market(request: MarketSizeRequest):
         track_event("market_size", {"industry": request.industry, "idea_preview": request.startup_idea[:50]})
         result = await estimate_market_size(request.model_dump())
     except AIRateLimitError:
-        raise HTTPException(status_code=429, detail="AI service rate limited.")
+        raise HTTPException(status_code=429, detail="AI service rate limited. Please try again in a moment.")
     except AIServiceError as e:
         raise HTTPException(status_code=502, detail=f"AI service error: {str(e)}")
     except Exception as e:
@@ -396,7 +424,7 @@ async def debate_startup_idea(request: DebateRequest):
         track_event("debate", {"industry": request.industry, "idea_preview": request.startup_idea[:50]})
         result = await debate_idea(request.model_dump())
     except AIRateLimitError:
-        raise HTTPException(status_code=429, detail="AI service rate limited.")
+        raise HTTPException(status_code=429, detail="AI service rate limited. Please try again in a moment.")
     except AIServiceError as e:
         raise HTTPException(status_code=502, detail=f"AI service error: {str(e)}")
     except Exception as e:
@@ -424,7 +452,7 @@ async def compare_startup_ideas(request: ComparisonRequest):
         track_event("comparison", {"idea_a_preview": request.idea_a[:50], "idea_b_preview": request.idea_b[:50]})
         result = await compare_ideas(request.model_dump())
     except AIRateLimitError:
-        raise HTTPException(status_code=429, detail="AI service rate limited.")
+        raise HTTPException(status_code=429, detail="AI service rate limited. Please try again in a moment.")
     except AIServiceError as e:
         raise HTTPException(status_code=502, detail=f"AI service error: {str(e)}")
     except Exception as e:
@@ -457,7 +485,7 @@ async def email_startup_report(request: EmailReportRequest):
         track_event("email_report", {"recipient": request.recipient_email[:30]})
         html_content = await generate_email_report(request.analysis)
     except AIRateLimitError:
-        raise HTTPException(status_code=429, detail="AI service rate limited.")
+        raise HTTPException(status_code=429, detail="AI service rate limited. Please try again in a moment.")
     except AIServiceError as e:
         raise HTTPException(status_code=502, detail=f"AI service error: {str(e)}")
     except Exception as e:
@@ -495,8 +523,7 @@ async def save_customer_strategy(body: dict, user_id: str = Depends(_require_use
         idea_context = body.get("idea_context", {})
         if not strategy:
             raise HTTPException(status_code=400, detail="Strategy data is required.")
-        from app.services.database_service import save_customer_strategy as db_save
-        strategy_id = db_save(strategy, idea_context, user_id=user_id)
+        strategy_id = save_customer_strategy(strategy, idea_context, user_id=user_id)
         return {"strategy_id": strategy_id, "message": "Customer strategy saved successfully."}
     except HTTPException:
         raise
@@ -508,7 +535,6 @@ async def save_customer_strategy(body: dict, user_id: str = Depends(_require_use
 @router.get("/api/startups/first-100-customers/saved")
 async def list_saved_customer_strategies(user_id: str = Depends(_require_user_id)):
     try:
-        from app.services.database_service import get_customer_strategies
         strategies = get_customer_strategies(user_id=user_id)
         return {"strategies": strategies}
     except Exception as e:
@@ -519,7 +545,6 @@ async def list_saved_customer_strategies(user_id: str = Depends(_require_user_id
 @router.delete("/api/startups/first-100-customers/{strategy_id}")
 async def remove_customer_strategy(strategy_id: str, user_id: str = Depends(_require_user_id)):
     try:
-        from app.services.database_service import delete_customer_strategy
         deleted = delete_customer_strategy(strategy_id, user_id=user_id)
         if not deleted:
             raise HTTPException(status_code=404, detail="Strategy not found")
@@ -529,6 +554,47 @@ async def remove_customer_strategy(strategy_id: str, user_id: str = Depends(_req
     except Exception as e:
         logger.error("Delete customer strategy failed: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to delete strategy.")
+
+
+@router.post("/api/startups/decision-engine/save")
+async def save_decision_report(body: dict, user_id: str = Depends(_require_user_id)):
+    try:
+        track_event("save_decision_report", {"user_id": user_id})
+        report = body.get("report", {})
+        idea_context = body.get("idea_context", {})
+        if not report:
+            raise HTTPException(status_code=400, detail="Report data is required.")
+        report_id = save_decision_report(report, idea_context, user_id=user_id)
+        return {"report_id": report_id, "message": "Decision report saved successfully."}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Save decision report failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to save report.")
+
+
+@router.get("/api/startups/decision-engine/saved")
+async def list_saved_decision_reports(user_id: str = Depends(_require_user_id)):
+    try:
+        reports = get_decision_reports(user_id=user_id)
+        return {"reports": reports}
+    except Exception as e:
+        logger.error("List decision reports failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to fetch saved reports.")
+
+
+@router.delete("/api/startups/decision-engine/{report_id}")
+async def remove_decision_report(report_id: str, user_id: str = Depends(_require_user_id)):
+    try:
+        deleted = delete_decision_report(report_id, user_id=user_id)
+        if not deleted:
+            raise HTTPException(status_code=404, detail="Report not found")
+        return {"message": "Report deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Delete decision report failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to delete report.")
 
 
 @router.post("/api/startups/analyze-idea/save")

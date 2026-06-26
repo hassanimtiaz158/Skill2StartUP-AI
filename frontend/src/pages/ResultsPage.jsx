@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, Brain, Check, Download, Rocket, Save, Sparkles, Users } from 'lucide-react';
+import { ArrowRight, Brain, Check, Download, Rocket, Save, Sparkles, Users, AlertTriangle, BarChart3, ThumbsUp, ThumbsDown, RotateCcw } from 'lucide-react';
 import { AppNav } from '../components/PageShell.jsx';
-import { generateIdeas, generatePlan, savePlan, generateFirst100Customers, saveCustomerStrategy } from '../services/api.js';
+import { generateIdeas, generatePlan, savePlan, generateFirst100Customers, saveCustomerStrategy, generateDecisionEngine, saveDecisionReport } from '../services/api.js';
 import { getSession, readValue, saveValue } from '../services/storage.js';
 
 function Score({ label, value }) {
@@ -37,6 +37,21 @@ function ListBlock({ title, items }) {
   );
 }
 
+function LoadingSkeleton({ title, items }) {
+  return (
+    <div className="border-2 border-[#0A0A0A] bg-[#F5F3EE] p-4 mb-4">
+      <p className="text-[10px] font-black uppercase tracking-widest mb-3">{title}</p>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+        {items.map((item) => (
+          <div key={item} className="border-2 border-[#0A0A0A] bg-white p-3 text-center">
+            <p className="text-[10px] font-black uppercase tracking-wide">{item}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function ResultsPage() {
   const navigate = useNavigate();
   const profile = readValue('profile');
@@ -53,6 +68,9 @@ export default function ResultsPage() {
   const [customerPlan, setCustomerPlan] = useState(readValue('customerPlan'));
   const [loadingCustomer, setLoadingCustomer] = useState(false);
   const [savingCustomer, setSavingCustomer] = useState(false);
+  const [decisionReport, setDecisionReport] = useState(readValue('decisionReport'));
+  const [loadingDecision, setLoadingDecision] = useState(false);
+  const [savingDecision, setSavingDecision] = useState(false);
   const topIdea = useMemo(() => {
     return [...ideas].sort((a, b) => Number(b.opportunity_score || 0) - Number(a.opportunity_score || 0))[0];
   }, [ideas]);
@@ -214,6 +232,62 @@ export default function ResultsPage() {
     }
   }
 
+  async function handleDecisionEngine() {
+    if (!selectedIdea) return;
+    setError('');
+    setNotice('');
+    setLoadingDecision(true);
+    try {
+      const data = {
+        startup_name: selectedIdea.startup_name,
+        pitch: selectedIdea.pitch,
+        problem: selectedIdea.problem,
+        solution: selectedIdea.solution,
+        target_users: selectedIdea.target_users,
+        industry: profile?.preferred_industry || '',
+        mvp_features: plan?.mvp_features || selectedIdea.mvp_features || [],
+        competitors: plan?.competitors || selectedIdea.competitors || [],
+        market_demand: Number(analysis?.market_demand_score || 0),
+        uniqueness: Number(analysis?.uniqueness_score || 0),
+        feasibility: Number(analysis?.feasibility_score || 0),
+        revenue_potential: Number(analysis?.revenue_potential_score || 0),
+        risks: plan?.risks || analysis?.risks || [],
+      };
+      const result = await generateDecisionEngine(data);
+      setDecisionReport(result);
+      saveValue('decisionReport', result);
+      setNotice('Decision report generated.');
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setLoadingDecision(false);
+    }
+  }
+
+  async function handleSaveDecisionReport() {
+    if (!decisionReport || !selectedIdea) return;
+    setError('');
+    setNotice('');
+    if (!getSession()?.token) {
+      setError('Sign in to save this report to your dashboard.');
+      return;
+    }
+    setSavingDecision(true);
+    try {
+      const ideaContext = {
+        startup_name: selectedIdea.startup_name,
+        pitch: selectedIdea.pitch,
+        industry: profile?.preferred_industry || '',
+      };
+      const result = await saveDecisionReport(decisionReport, ideaContext);
+      setNotice(result.message || 'Report saved.');
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setSavingDecision(false);
+    }
+  }
+
   function handleDownload(format = 'json') {
     const content = format === 'md' ? markdownText : planText;
     if (!content) return;
@@ -283,7 +357,11 @@ export default function ResultsPage() {
                     onClick={() => {
                       setSelectedIdea(idea);
                       setPlan(null);
+                      setCustomerPlan(null);
+                      setDecisionReport(null);
                       saveValue('selectedIdea', idea);
+                      saveValue('customerPlan', null);
+                      saveValue('decisionReport', null);
                     }}
                     className={`w-full text-left border-2 border-[#0A0A0A] p-5 transition-colors ${selectedIdea?.startup_name === idea.startup_name ? 'bg-[#0A0A0A] text-[#F5F3EE]' : 'bg-white hover:bg-[#F5F3EE]'}`}
                   >
@@ -312,18 +390,7 @@ export default function ResultsPage() {
                   </button>
                 </div>
 
-                {loadingPlan && (
-                  <div className="border-2 border-[#0A0A0A] bg-[#F5F3EE] p-4 mb-6">
-                    <p className="text-[10px] font-black uppercase tracking-widest mb-3">Building Plan</p>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                      {['MVP', 'Competitors', 'Revenue', 'Roadmap'].map((item) => (
-                        <div key={item} className="border-2 border-[#0A0A0A] bg-white p-3 text-center">
-                          <p className="text-[10px] font-black uppercase tracking-wide">{item}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                {loadingPlan && <LoadingSkeleton title="Building Your Startup Plan" items={["MVP Features", "Revenue Model", "Launch Strategy", "Roadmap"]} />}
 
                 <div className="grid sm:grid-cols-2 gap-4 mb-6">
                   <Score label="Feasibility" value={selectedIdea?.feasibility_score} />
@@ -338,7 +405,7 @@ export default function ResultsPage() {
                 </div>
 
                 {notice && <p className="text-xs font-black uppercase tracking-wide border-l-4 border-[#0A0A0A] pl-3 mb-4">{notice}</p>}
-                {error && <p className="text-xs font-black uppercase tracking-wide border-l-4 border-[#0A0A0A] pl-3 mb-4">{error}</p>}
+                {error && <p className="text-xs font-black uppercase tracking-wide border-l-4 border-red-500 text-red-600 pl-3 mb-4">{error}</p>}
 
                 {plan && (
                   <div className="border-t-2 border-[#0A0A0A] pt-6">
@@ -394,18 +461,7 @@ export default function ResultsPage() {
                     </div>
                   </div>
 
-                  {loadingCustomer && (
-                    <div className="border-2 border-[#0A0A0A] bg-[#F5F3EE] p-4 mb-4">
-                      <p className="text-[10px] font-black uppercase tracking-widest mb-3">Building Acquisition Plan</p>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                        {['Early Adopters', 'Channels', 'Templates', 'Metrics'].map((item) => (
-                          <div key={item} className="border-2 border-[#0A0A0A] bg-white p-3 text-center">
-                            <p className="text-[10px] font-black uppercase tracking-wide">{item}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                  {loadingCustomer && <LoadingSkeleton title="Building Acquisition Plan" items={["Early Adopters", "Channels", "Templates", "Metrics"]} />}
 
                   {customerPlan && (
                     <div className="space-y-4">
@@ -419,7 +475,7 @@ export default function ResultsPage() {
                         <ListBlock title="Outreach Channels" items={customerPlan.outreach_channels} />
                       </div>
 
-                      {customerPlan.cold_message_templates?.length > 0 && (
+                      {Array.isArray(customerPlan.cold_message_templates) && customerPlan.cold_message_templates.length > 0 && (
                         <div>
                           <h4 className="text-xs font-black uppercase tracking-widest mb-3">Cold Message Templates</h4>
                           <div className="grid sm:grid-cols-2 gap-4">
@@ -462,6 +518,76 @@ export default function ResultsPage() {
                       </div>
 
                       <ListBlock title="Metrics to Track" items={customerPlan.metrics_to_track} />
+                    </div>
+                  )}
+                </div>
+
+                <div className="border-t-2 border-[#0A0A0A] pt-6 mt-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
+                    <h3 className="text-xl font-black uppercase leading-none flex items-center gap-3"><BarChart3 className="h-6 w-6" /> Startup Decision Engine</h3>
+                    <div className="flex gap-3">
+                      {decisionReport && (
+                        <button onClick={handleSaveDecisionReport} disabled={savingDecision} className="h-10 px-4 border-2 border-[#0A0A0A] bg-[#0A0A0A] text-[#F5F3EE] text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-white hover:text-[#0A0A0A] transition-colors disabled:opacity-50">
+                          <Save className="h-4 w-4" /> {savingDecision ? 'Saving' : 'Save'}
+                        </button>
+                      )}
+                      <button onClick={handleDecisionEngine} disabled={loadingDecision} className="h-10 px-4 border-2 border-[#0A0A0A] bg-white text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-[#0A0A0A] hover:text-[#F5F3EE] transition-colors disabled:opacity-50">
+                        {loadingDecision ? 'Analyzing...' : <><Brain className="h-4 w-4" /> Run Analysis</>}
+                      </button>
+                    </div>
+                  </div>
+
+                  {loadingDecision && <LoadingSkeleton title="Evaluating Your Startup" items={["Risk Analysis", "Success Probability", "Recommendation", "Action Steps"]} />}
+
+                  {decisionReport && (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                        <div className={`border-2 p-4 text-center ${decisionReport?.risk_analysis?.overall_risk_level === 'High' ? 'border-red-500 bg-red-50' : decisionReport?.risk_analysis?.overall_risk_level === 'Medium' ? 'border-yellow-500 bg-yellow-50' : 'border-green-500 bg-green-50'}`}>
+                          <div className="flex items-center justify-center gap-2 mb-1">
+                            <AlertTriangle className={`h-5 w-5 ${decisionReport?.risk_analysis?.overall_risk_level === 'High' ? 'text-red-600' : decisionReport?.risk_analysis?.overall_risk_level === 'Medium' ? 'text-yellow-600' : 'text-green-600'}`} />
+                            <span className={`text-xs font-black uppercase tracking-widest ${decisionReport?.risk_analysis?.overall_risk_level === 'High' ? 'text-red-600' : decisionReport?.risk_analysis?.overall_risk_level === 'Medium' ? 'text-yellow-600' : 'text-green-600'}`}>{decisionReport?.risk_analysis?.overall_risk_level}</span>
+                          </div>
+                          <p className="text-[9px] font-black uppercase tracking-widest text-[#6A6A6A]">Risk Level</p>
+                        </div>
+                        <div className="border-2 border-[#0A0A0A] bg-white p-4 text-center sm:col-span-2">
+                          <div className="flex items-center justify-center gap-2 mb-1">
+                            <span className="text-2xl font-black">{decisionReport?.success_probability?.percentage ?? '?'}%</span>
+                          </div>
+                          <div className="w-full h-2 bg-[#E5E3DC] rounded-full overflow-hidden mb-1">
+                            <div className="h-full bg-[#0A0A0A] rounded-full transition-all duration-500" style={{ width: `${decisionReport?.success_probability?.percentage || 0}%` }} />
+                          </div>
+                          <p className="text-[9px] font-black uppercase tracking-widest text-[#6A6A6A]">Success Probability</p>
+                        </div>
+                        <div className={`border-2 p-4 text-center ${decisionReport?.recommendation?.decision === 'Go' ? 'border-green-500 bg-green-50' : decisionReport?.recommendation?.decision === 'Pivot' ? 'border-yellow-500 bg-yellow-50' : 'border-red-500 bg-red-50'}`}>
+                          <div className="flex items-center justify-center gap-2 mb-1">
+                            {decisionReport?.recommendation?.decision === 'Go' ? <ThumbsUp className="h-5 w-5 text-green-600" /> : decisionReport?.recommendation?.decision === 'Pivot' ? <RotateCcw className="h-5 w-5 text-yellow-600" /> : <ThumbsDown className="h-5 w-5 text-red-600" />}
+                            <span className={`text-xs font-black uppercase tracking-widest ${decisionReport?.recommendation?.decision === 'Go' ? 'text-green-600' : decisionReport?.recommendation?.decision === 'Pivot' ? 'text-yellow-600' : 'text-red-600'}`}>{decisionReport?.recommendation?.decision}</span>
+                          </div>
+                          <p className="text-[9px] font-black uppercase tracking-widest text-[#6A6A6A]">Recommendation</p>
+                        </div>
+                      </div>
+
+                      <div className="border-2 border-[#0A0A0A] bg-white p-5">
+                        <p className="text-[9px] font-black uppercase tracking-widest text-[#6A6A6A] mb-2">Success Probability Reasoning</p>
+                        <p className="text-sm text-[#3A3A3A] leading-relaxed">{decisionReport?.success_probability?.reason}</p>
+                      </div>
+
+                      <div className="border-2 border-[#0A0A0A] bg-white p-5">
+                        <p className="text-[9px] font-black uppercase tracking-widest text-[#6A6A6A] mb-2">Recommendation Explanation</p>
+                        <p className="text-sm text-[#3A3A3A] leading-relaxed">{decisionReport?.recommendation?.explanation}</p>
+                      </div>
+
+                      <ListBlock title="Action Steps to Improve" items={decisionReport?.recommendation?.action_steps} />
+
+                      <div className="border-2 border-[#0A0A0A] bg-[#F5F3EE] p-5">
+                        <h4 className="text-xs font-black uppercase tracking-widest mb-4 flex items-center gap-2"><AlertTriangle className="h-4 w-4" /> Risk Analysis</h4>
+                        <div className="grid sm:grid-cols-2 gap-4">
+                          <ListBlock title="Key Business Risks" items={decisionReport?.risk_analysis?.key_business_risks} />
+                          <ListBlock title="Technical Risks" items={decisionReport?.risk_analysis?.technical_risks} />
+                          <ListBlock title="Market Risks" items={decisionReport?.risk_analysis?.market_risks} />
+                          <ListBlock title="Financial Risks" items={decisionReport?.risk_analysis?.financial_risks} />
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>

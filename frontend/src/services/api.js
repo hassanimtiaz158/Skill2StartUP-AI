@@ -463,6 +463,46 @@ export async function deleteCustomerStrategy(strategyId) {
   }
 }
 
+export async function generateDecisionEngine(data) {
+  try {
+    assertApiConfigured();
+    const { data: result } = await api.post('/api/startups/decision-engine', data);
+    return result;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function saveDecisionReport(report, ideaContext = {}) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.post('/api/startups/decision-engine/save', { report, idea_context: ideaContext });
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function getSavedDecisionReports() {
+  try {
+    assertApiConfigured();
+    const { data } = await api.get('/api/startups/decision-engine/saved');
+    return data.reports || [];
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function deleteDecisionReport(reportId) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.delete(`/api/startups/decision-engine/${reportId}`);
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
 export async function trackEvent(event, properties = {}) {
   try {
     assertApiConfigured();

@@ -1,7 +1,6 @@
 import asyncio
 import json
 import random
-import re
 import secrets
 
 from app.config import AI_PROVIDER
@@ -25,6 +24,7 @@ from app.prompts.prompts import (
     COMPARISON_PROMPT,
     EMAIL_REPORT_PROMPT,
     FIRST_100_CUSTOMERS_PROMPT,
+    DECISION_ENGINE_PROMPT,
 )
 
 
@@ -342,4 +342,19 @@ async def generate_first_100_customers(data: dict) -> dict:
             for c in data["competitors"]
         )
     prompt = FIRST_100_CUSTOMERS_PROMPT.format(**data)
+    return await _generate(prompt)
+
+
+async def generate_decision_engine(data: dict) -> dict:
+    for key in ("target_users", "mvp_features"):
+        if isinstance(data.get(key), list):
+            data[key] = ", ".join(data[key])
+    if isinstance(data.get("competitors"), list):
+        data["competitors"] = ", ".join(
+            c.get("name", str(c)) if isinstance(c, dict) else str(c)
+            for c in data["competitors"]
+        )
+    if isinstance(data.get("risks"), list):
+        data["risks"] = ", ".join(data["risks"])
+    prompt = DECISION_ENGINE_PROMPT.format(**data)
     return await _generate(prompt)

@@ -2,7 +2,7 @@ import logging
 import secrets
 from datetime import datetime
 from bson import ObjectId, errors as bson_errors
-from app.database import founder_profiles, startup_plans, saved_analyses, customer_strategies, db
+from app.database import founder_profiles, startup_plans, saved_analyses, customer_strategies, decision_reports
 
 logger = logging.getLogger(__name__)
 
@@ -174,6 +174,36 @@ def get_customer_strategies(user_id: str | None = None) -> list:
     query = {"user_id": user_id} if user_id else {}
     docs = list(customer_strategies.find(query).sort("created_at", -1))
     return [serialize_doc(d) for d in docs]
+
+
+def save_decision_report(report: dict, idea_context: dict, user_id: str | None = None) -> str:
+    doc = {
+        "report": report,
+        "idea_context": idea_context,
+        "user_id": user_id,
+        "created_at": datetime.utcnow(),
+    }
+    result = decision_reports.insert_one(doc)
+    return str(result.inserted_id)
+
+
+def get_decision_reports(user_id: str | None = None) -> list:
+    query = {"user_id": user_id} if user_id else {}
+    docs = list(decision_reports.find(query).sort("created_at", -1))
+    return [serialize_doc(d) for d in docs]
+
+
+def delete_decision_report(report_id: str, user_id: str | None = None) -> bool:
+    try:
+        obj_id = ObjectId(report_id)
+    except (bson_errors.InvalidId, TypeError):
+        logger.warning("Invalid report_id format: %s", report_id)
+        return False
+    query = {"_id": obj_id}
+    if user_id:
+        query["user_id"] = user_id
+    result = decision_reports.delete_one(query)
+    return result.deleted_count > 0
 
 
 def delete_customer_strategy(strategy_id: str, user_id: str | None = None) -> bool:
