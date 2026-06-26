@@ -503,6 +503,46 @@ export async function deleteDecisionReport(reportId) {
   }
 }
 
+export async function generateBusinessPlan(data) {
+  try {
+    assertApiConfigured();
+    const { data: result } = await api.post('/api/startups/business-plan', data);
+    return result;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function saveBusinessPlan(plan, ideaContext = {}) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.post('/api/startups/business-plan/save', { plan, idea_context: ideaContext });
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function getSavedBusinessPlans() {
+  try {
+    assertApiConfigured();
+    const { data } = await api.get('/api/startups/business-plan/saved');
+    return data.plans || [];
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function deleteBusinessPlan(planId) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.delete(`/api/startups/business-plan/${planId}`);
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
 export async function trackEvent(event, properties = {}) {
   try {
     assertApiConfigured();

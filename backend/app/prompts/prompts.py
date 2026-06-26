@@ -681,3 +681,75 @@ Return a JSON object with this exact structure:
 }}
 
 Return ONLY the JSON object. No other text."""
+
+
+BUSINESS_PLANNING_PROMPT = """You are a business strategist and financial analyst. Based on the startup idea details below, generate a complete business plan with four reports: Business Model Canvas, Lean Canvas, Revenue Forecast (1-3 Years), and Pricing Strategy. Every item must be specific to this startup — no generic placeholders.
+
+STARTUP DETAILS:
+- Name: {startup_name}
+- Pitch: {pitch}
+- Problem: {problem}
+- Solution: {solution}
+- Target Users: {target_users}
+- Industry: {industry}
+- MVP Features: {mvp_features}
+- Competitors: {competitors}
+- Market Demand Score (0-10): {market_demand}
+- Uniqueness Score (0-10): {uniqueness}
+- Feasibility Score (0-10): {feasibility}
+- Revenue Potential Score (0-10): {revenue_potential}
+- Key Risks: {risks}
+- Monetization Model: {monetization_model}
+- Revenue Model Type: {revenue_model_type}
+
+Return a JSON object with this exact structure:
+{{
+    "business_model_canvas": {{
+        "customer_segments": ["specific segment 1", "segment 2", "segment 3"],
+        "value_proposition": "Clear value proposition tailored to this startup (1-2 sentences)",
+        "channels": ["channel 1", "channel 2", "channel 3"],
+        "customer_relationships": "How the startup builds relationships with customers (1-2 sentences)",
+        "revenue_streams": ["revenue stream 1", "stream 2", "stream 3"],
+        "key_resources": ["resource 1", "resource 2", "resource 3", "resource 4"],
+        "key_activities": ["activity 1", "activity 2", "activity 3"],
+        "key_partners": ["partner 1", "partner 2", "partner 3"],
+        "cost_structure": ["cost 1", "cost 2", "cost 3", "cost 4"]
+    }},
+    "lean_canvas": {{
+        "problem": ["top problem 1", "problem 2", "problem 3"],
+        "customer_segments": ["early adopter 1", "early adopter 2", "early adopter 3"],
+        "unique_value_proposition": "Single clear message that makes this startup different (1 sentence)",
+        "solution": ["solution component 1", "component 2", "component 3"],
+        "channels": ["channel 1", "channel 2", "channel 3"],
+        "revenue_streams": ["stream 1", "stream 2"],
+        "cost_structure": ["cost 1", "cost 2", "cost 3"],
+        "key_metrics": ["metric 1", "metric 2", "metric 3", "metric 4", "metric 5"],
+        "unfair_advantage": "Something hard to copy about this startup (1 sentence)"
+    }},
+    "revenue_forecast": {{
+        "year_1": {{"total_revenue": 0, "monthly_revenue": [0,0,0,0,0,0,0,0,0,0,0,0], "estimated_customers": 0, "avg_revenue_per_customer": 0, "growth_rate": "e.g. 15% monthly"}},
+        "year_2": {{"total_revenue": 0, "monthly_revenue": [0,0,0,0,0,0,0,0,0,0,0,0], "estimated_customers": 0, "avg_revenue_per_customer": 0, "growth_rate": "e.g. 10% monthly"}},
+        "year_3": {{"total_revenue": 0, "monthly_revenue": [0,0,0,0,0,0,0,0,0,0,0,0], "estimated_customers": 0, "avg_revenue_per_customer": 0, "growth_rate": "e.g. 8% monthly"}},
+        "best_case": {{"year_1_revenue": 0, "year_2_revenue": 0, "year_3_revenue": 0, "assumptions": "Key assumption driving best case (1 sentence)"}},
+        "expected_case": {{"year_1_revenue": 0, "year_2_revenue": 0, "year_3_revenue": 0, "assumptions": "Key assumption driving expected case (1 sentence)"}},
+        "worst_case": {{"year_1_revenue": 0, "year_2_revenue": 0, "year_3_revenue": 0, "assumptions": "Key assumption driving worst case (1 sentence)"}},
+        "growth_assumptions": ["assumption 1", "assumption 2", "assumption 3"]
+    }},
+    "pricing_strategy": {{
+        "recommended_model": "Subscription / One-time / Freemium / Commission / Usage-based / Marketplace",
+        "tiers": [
+            {{"name": "Free / Basic", "price": 0, "features": ["feature 1", "feature 2"], "target_customers": "who this tier is for"}},
+            {{"name": "Pro / Premium", "price": 29, "features": ["feature 1", "feature 2", "feature 3"], "target_customers": "who this tier is for"}},
+            {{"name": "Enterprise / Growth", "price": 99, "features": ["feature 1", "feature 2", "feature 3", "feature 4"], "target_customers": "who this tier is for"}}
+        ],
+        "competitor_pricing": [
+            {{"competitor_name": "Competitor X", "model": "Subscription", "price_range": "$29-$99/mo"}},
+            {{"competitor_name": "Competitor Y", "model": "Freemium", "price_range": "$0-$50/mo"}}
+        ],
+        "justification": "Why this pricing model fits this specific startup (2-3 sentences)",
+        "monetization_recommendations": ["recommendation 1", "recommendation 2", "recommendation 3"]
+    }}
+}}
+
+Scoring: All revenue numbers should be realistic for a startup in this industry and stage. Base pricing on competitor benchmarks and the startup's target customer willingness to pay.
+Return ONLY the JSON object. No other text."""

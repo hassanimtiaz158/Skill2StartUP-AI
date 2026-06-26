@@ -28,6 +28,8 @@ from app.models.schemas import (
     First100CustomersResponse,
     DecisionEngineRequest,
     DecisionEngineResponse,
+    BusinessPlanningRequest,
+    BusinessPlanningResponse,
     ProgressSaveRequest,
     AnalyticsEvent,
     AnalyticsResponse,
@@ -48,10 +50,11 @@ from app.services.ai_service import (
     generate_email_report,
     generate_first_100_customers,
     generate_decision_engine,
+    generate_business_plan,
 )
 from app.services.ai_errors import AIServiceError, AIRateLimitError
 from app.services.auth_service import get_user_by_token
-from app.services.database_service import save_shared_analysis, get_shared_analysis, save_build_progress, get_build_progress, track_event, get_analytics_summary, save_idea_analysis, get_saved_idea_analyses, delete_saved_idea_analysis, save_customer_strategy, get_customer_strategies, delete_customer_strategy, save_decision_report, get_decision_reports, delete_decision_report
+from app.services.database_service import save_shared_analysis, get_shared_analysis, save_build_progress, get_build_progress, track_event, get_analytics_summary, save_idea_analysis, get_saved_idea_analyses, delete_saved_idea_analysis, save_customer_strategy, get_customer_strategies, delete_customer_strategy, save_decision_report, get_decision_reports, delete_decision_report, save_business_plan, get_business_plans, delete_business_plan
 from app.services.email_service import send_email
 
 logger = logging.getLogger(__name__)
@@ -338,6 +341,32 @@ async def generate_decision_engine_report(request: DecisionEngineRequest):
         raise HTTPException(status_code=502, detail="AI returned an invalid response format.")
 
 
+@router.post("/api/startups/business-plan", response_model=BusinessPlanningResponse)
+async def generate_business_plan_report(request: BusinessPlanningRequest):
+    try:
+        track_event("business_plan", {"idea_preview": request.startup_name[:50] if request.startup_name else request.pitch[:50]})
+        result = await generate_business_plan(request.model_dump())
+    except AIRateLimitError:
+        raise HTTPException(status_code=429, detail="AI service rate limited. Please try again in a moment.")
+    except AIServiceError as e:
+        raise HTTPException(status_code=502, detail=f"AI service error: {str(e)}")
+    except Exception as e:
+        logger.error("Business plan generation failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to generate business plan. Please try again.")
+
+    required = ("business_model_canvas", "lean_canvas", "revenue_forecast", "pricing_strategy")
+    missing = [f for f in required if f not in result]
+    if missing:
+        logger.error("Business plan missing fields: %s", missing)
+        raise HTTPException(status_code=502, detail="AI returned an incomplete business plan. Please try again.")
+
+    try:
+        return BusinessPlanningResponse(**result)
+    except Exception as e:
+        logger.error("Business plan response validation failed: %s", e)
+        raise HTTPException(status_code=502, detail="AI returned an invalid response format.")
+
+
 @router.post("/api/startups/analyze-idea/share", response_model=ShareLinkResponse)
 async def share_idea_analysis(request: ShareLinkRequest):
     try:
@@ -595,6 +624,47 @@ async def remove_decision_report(report_id: str, user_id: str = Depends(_require
     except Exception as e:
         logger.error("Delete decision report failed: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to delete report.")
+
+
+@router.post("/api/startups/business-plan/save")
+async def save_business_plan_endpoint(body: dict, user_id: str = Depends(_require_user_id)):
+    try:
+        track_event("save_business_plan", {"user_id": user_id})
+        plan = body.get("plan", {})
+        idea_context = body.get("idea_context", {})
+        if not plan:
+            raise HTTPException(status_code=400, detail="Plan data is required.")
+        plan_id = save_business_plan(plan, idea_context, user_id=user_id)
+        return {"plan_id": plan_id, "message": "Business plan saved successfully."}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Save business plan failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to save business plan.")
+
+
+@router.get("/api/startups/business-plan/saved")
+async def list_saved_business_plans(user_id: str = Depends(_require_user_id)):
+    try:
+        plans = get_business_plans(user_id=user_id)
+        return {"plans": plans}
+    except Exception as e:
+        logger.error("List business plans failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to fetch saved plans.")
+
+
+@router.delete("/api/startups/business-plan/{plan_id}")
+async def remove_business_plan(plan_id: str, user_id: str = Depends(_require_user_id)):
+    try:
+        deleted = delete_business_plan(plan_id, user_id=user_id)
+        if not deleted:
+            raise HTTPException(status_code=404, detail="Plan not found")
+        return {"message": "Plan deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Delete business plan failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to delete plan.")
 
 
 @router.post("/api/startups/analyze-idea/save")

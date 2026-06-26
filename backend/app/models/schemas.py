@@ -408,3 +408,98 @@ class IdeaAnalysisResponse(BaseModel):
     seven_day_build_plan: list[BuildPlanDay]
     founder_readiness_check: str
     pitch_summary: str
+
+
+class BusinessModelCanvas(BaseModel):
+    customer_segments: list[str]
+    value_proposition: str
+    channels: list[str]
+    customer_relationships: str
+    revenue_streams: list[str]
+    key_resources: list[str]
+    key_activities: list[str]
+    key_partners: list[str]
+    cost_structure: list[str]
+
+
+class LeanCanvas(BaseModel):
+    problem: list[str]
+    customer_segments: list[str]
+    unique_value_proposition: str
+    solution: list[str]
+    channels: list[str]
+    revenue_streams: list[str]
+    cost_structure: list[str]
+    key_metrics: list[str]
+    unfair_advantage: str
+
+
+class YearForecast(BaseModel):
+    total_revenue: float = 0
+    monthly_revenue: list[float] = []
+    estimated_customers: int = 0
+    avg_revenue_per_customer: float = 0
+    growth_rate: str = ""
+
+
+class ScenarioForecast(BaseModel):
+    year_1_revenue: float = 0
+    year_2_revenue: float = 0
+    year_3_revenue: float = 0
+    assumptions: str = ""
+
+
+class RevenueForecast(BaseModel):
+    year_1: YearForecast
+    year_2: YearForecast
+    year_3: YearForecast
+    best_case: ScenarioForecast
+    expected_case: ScenarioForecast
+    worst_case: ScenarioForecast
+    growth_assumptions: list[str]
+
+
+class PricingTier(BaseModel):
+    name: str
+    price: float = 0
+    features: list[str]
+    target_customers: str = ""
+
+
+class CompetitorPricing(BaseModel):
+    competitor_name: str
+    model: str
+    price_range: str = ""
+
+
+class PricingStrategy(BaseModel):
+    recommended_model: str
+    tiers: list[PricingTier]
+    competitor_pricing: list[CompetitorPricing]
+    justification: str
+    monetization_recommendations: list[str]
+
+
+class BusinessPlanningRequest(BaseModel):
+    startup_name: str = ""
+    pitch: str = ""
+    problem: str = ""
+    solution: str = ""
+    target_users: list[str] = []
+    industry: str = ""
+    mvp_features: list[str] = []
+    competitors: list = []
+    market_demand: float = 0
+    uniqueness: float = 0
+    feasibility: float = 0
+    revenue_potential: float = 0
+    risks: list[str] = []
+    monetization_model: str = ""
+    revenue_model_type: str = ""
+
+
+class BusinessPlanningResponse(BaseModel):
+    business_model_canvas: BusinessModelCanvas
+    lean_canvas: LeanCanvas
+    revenue_forecast: RevenueForecast
+    pricing_strategy: PricingStrategy
