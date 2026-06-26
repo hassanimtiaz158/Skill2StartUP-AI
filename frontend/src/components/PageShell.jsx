@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Rocket } from 'lucide-react';
+import { Play, Rocket } from 'lucide-react';
+import DemoVideoModal from './DemoVideoModal.jsx';
 import { logoutAccount } from '../services/api.js';
 import { clearSession, getSession } from '../services/storage.js';
 
@@ -19,6 +21,7 @@ export function BrandLink({ inverted = false }) {
 export function AppNav() {
   const navigate = useNavigate();
   const session = getSession();
+  const [showDemo, setShowDemo] = useState(false);
 
   async function handleLogout() {
     try {
@@ -37,6 +40,9 @@ export function AppNav() {
         <div className="hidden md:flex items-center gap-8">
           <Link to="/#features" className="text-xs font-bold uppercase tracking-widest text-[#0A0A0A] hover:underline">Features</Link>
           <Link to="/#how-it-works" className="text-xs font-bold uppercase tracking-widest text-[#0A0A0A] hover:underline">How It Works</Link>
+          <button onClick={() => setShowDemo(true)} className="text-xs font-bold uppercase tracking-widest text-[#0A0A0A] hover:underline inline-flex items-center gap-1.5">
+            <Play className="h-3 w-3" /> Demo
+          </button>
           <Link to="/dashboard" className="text-xs font-bold uppercase tracking-widest text-[#0A0A0A] hover:underline">Dashboard</Link>
           {session?.user ? (
             <>
@@ -51,6 +57,7 @@ export function AppNav() {
           Get Started
         </Link>
       </div>
+      <DemoVideoModal open={showDemo} onClose={() => setShowDemo(false)} />
     </nav>
   );
 }

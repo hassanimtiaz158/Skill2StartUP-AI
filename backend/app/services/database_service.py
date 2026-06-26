@@ -1,7 +1,8 @@
 import logging
+import secrets
 from datetime import datetime
 from bson import ObjectId, errors as bson_errors
-from app.database import founder_profiles, startup_plans
+from app.database import founder_profiles, startup_plans, saved_analyses, db
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +33,117 @@ def get_saved_plans(user_id: str | None = None) -> list:
     query = {"user_id": user_id} if user_id else {}
     plans = list(startup_plans.find(query).sort("created_at", -1))
     return [serialize_doc(p) for p in plans]
+
+
+def save_idea_analysis(analysis: dict, idea_form: dict, user_id: str | None = None) -> str:
+    doc = {
+        "analysis": analysis,
+        "idea_form": idea_form,
+        "user_id": user_id,
+        "created_at": datetime.utcnow(),
+    }
+    result = saved_analyses.insert_one(doc)
+    return str(result.inserted_id)
+
+
+def get_saved_idea_analyses(user_id: str | None = None) -> list:
+    query = {"user_id": user_id} if user_id else {}
+    docs = list(saved_analyses.find(query).sort("created_at", -1))
+    return [serialize_doc(d) for d in docs]
+
+
+def delete_saved_idea_analysis(analysis_id: str, user_id: str | None = None) -> bool:
+    try:
+        obj_id = ObjectId(analysis_id)
+    except (bson_errors.InvalidId, TypeError):
+        logger.warning("Invalid analysis_id format: %s", analysis_id)
+        return False
+    query = {"_id": obj_id}
+    if user_id:
+        query["user_id"] = user_id
+    result = saved_analyses.delete_one(query)
+    return result.deleted_count > 0
+
+
+def save_shared_analysis(analysis: dict, idea_form: dict) -> str:
+    token = secrets.token_urlsafe(16)
+    doc = {
+        "token": token,
+        "analysis": analysis,
+        "idea_form": idea_form,
+        "created_at": datetime.utcnow(),
+    }
+    from app.database import shared_analyses
+    shared_analyses.insert_one(doc)
+    return token
+
+
+def get_shared_analysis(token: str) -> dict | None:
+    from app.database import shared_analyses
+    doc = shared_analyses.find_one({"token": token})
+    if doc:
+        doc["_id"] = str(doc["_id"])
+        doc["created_at"] = doc["created_at"].isoformat()
+        return doc
+    return None
+
+
+def save_build_progress(token: str, day: int, completed_tasks: list[str], notes: str = "") -> dict:
+    from app.database import build_progress
+    doc = build_progress.find_one({"token": token})
+    if not doc:
+        doc = {"token": token, "days": {}, "created_at": datetime.utcnow()}
+    if "days" not in doc:
+        doc["days"] = {}
+    doc["days"][str(day)] = {"completed_tasks": completed_tasks, "notes": notes, "updated_at": datetime.utcnow().isoformat()}
+    build_progress.replace_one({"token": token}, doc, upsert=True)
+    return {"days": doc["days"]}
+
+
+def get_build_progress(token: str) -> dict | None:
+    from app.database import build_progress
+    doc = build_progress.find_one({"token": token})
+    if doc:
+        return {"days": doc.get("days", {})}
+    return {"days": {}}
+
+
+def track_event(event: str, properties: dict | None = None) -> None:
+    from app.database import analytics_events
+    analytics_events.insert_one({
+        "event": event,
+        "properties": properties or {},
+        "created_at": datetime.utcnow(),
+    })
+
+
+def get_analytics_summary() -> dict:
+    from app.database import analytics_events, shared_analyses
+    total_analyses = analytics_events.count_documents({"event": "idea_analysis"})
+    total_shares = shared_analyses.count_documents({})
+    total_chats = analytics_events.count_documents({"event": "idea_chat"})
+    pipeline = [
+        {"$match": {"event": "idea_analysis"}},
+        {"$group": {"_id": "$properties.industry", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}},
+        {"$limit": 10},
+    ]
+    top_industries = [{"industry": r["_id"] or "unknown", "count": r["count"]} for r in analytics_events.aggregate(pipeline)]
+    recent = list(analytics_events.find().sort("created_at", -1).limit(20))
+    recent_events = []
+    for r in recent:
+        recent_events.append({
+            "event": r["event"],
+            "properties": r.get("properties", {}),
+            "created_at": r["created_at"].isoformat() if hasattr(r["created_at"], "isoformat") else str(r["created_at"]),
+        })
+    return {
+        "total_analyses": total_analyses,
+        "total_shares": total_shares,
+        "total_chats": total_chats,
+        "top_industries": top_industries,
+        "recent_events": recent_events,
+    }
 
 
 def delete_startup_plan(plan_id: str, user_id: str | None = None) -> bool:

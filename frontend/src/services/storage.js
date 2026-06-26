@@ -5,6 +5,10 @@ const KEYS = {
   ideas: 'skill2startup.ideas',
   selectedIdea: 'skill2startup.selectedIdea',
   plan: 'skill2startup.plan',
+  ideaAnalysis: 'skill2startup.ideaAnalysis',
+  ideaForm: 'skill2startup.ideaForm',
+  buildProgress: 'skill2startup.buildProgress',
+  progressToken: 'skill2startup.progressToken',
 };
 
 export function saveValue(key, value) {
@@ -22,7 +26,7 @@ export function readValue(key, fallback = null) {
 }
 
 export function clearGeneratedState() {
-  ['profile', 'analysis', 'ideas', 'selectedIdea', 'plan'].forEach((key) => {
+  ['profile', 'analysis', 'ideas', 'selectedIdea', 'plan', 'ideaAnalysis', 'ideaForm', 'buildProgress', 'progressToken'].forEach((key) => {
     sessionStorage.removeItem(KEYS[key]);
   });
 }

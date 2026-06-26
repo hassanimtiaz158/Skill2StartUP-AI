@@ -1,15 +1,65 @@
+import asyncio
+import json
 import random
+import re
 import secrets
 
 from app.config import AI_PROVIDER
 from app.services.ai_errors import AIServiceError, AIRateLimitError
-from app.services.gemini_service import GeminiAPIError, GeminiRateLimitError, generate_with_gemini
-from app.services.groq_service import generate_with_groq
+from app.services.gemini_service import GeminiAPIError, GeminiRateLimitError, generate_with_gemini, generate_with_gemini_stream
+from app.services.groq_service import generate_with_groq, generate_with_groq_stream
 from app.prompts.prompts import (
     SKILL_ANALYSIS_PROMPT,
     STARTUP_GENERATION_PROMPT,
     FULL_PLAN_PROMPT,
+    AGENT_EVALUATION_PROMPT,
+    COFOUNDER_PROMPT,
+    TASK_ROADMAP_PROMPT,
+    README_GENERATOR_PROMPT,
+    IDEA_ANALYSIS_PROMPT,
+    IDEA_CHAT_PROMPT,
+    IDEA_CHAT_CONCISE_PROMPT,
+    IDEA_CHAT_FULL_PROMPT,
+    MARKET_SIZE_PROMPT,
+    DEBATE_ROOM_PROMPT,
+    COMPARISON_PROMPT,
+    EMAIL_REPORT_PROMPT,
 )
+
+
+_GREETING_WORDS = frozenset({"hi", "hello", "hey", "greetings", "howdy"})
+_CASUAL_EXACT = frozenset({
+    "how are you", "how's it going", "what's up", "thanks", "thank you",
+    "thankyou", "thx", "ty", "i'm good", "im good", "doing well",
+    "how are you doing", "how do you do",
+})
+_SUMMARY_MARKERS = [
+    "full summary", "complete analysis", "summarize everything",
+    "tell me everything", "full analysis", "whole analysis",
+    "give me the full picture", "complete overview",
+    "summarize the analysis", "overview of everything",
+]
+
+
+def _detect_chat_intent(question: str) -> str:
+    q = question.lower().strip().rstrip("?!., ")
+    words = q.split()
+    if not words:
+        return "greeting"
+
+    first = words[0].rstrip("?!,")
+
+    if first in _GREETING_WORDS and len(words) <= 4:
+        return "greeting"
+
+    if q in _CASUAL_EXACT:
+        return "casual"
+
+    for marker in _SUMMARY_MARKERS:
+        if marker in q:
+            return "full_summary"
+
+    return "idea_question"
 
 
 async def _generate(prompt: str) -> dict:
@@ -23,8 +73,22 @@ async def _generate(prompt: str) -> dict:
         raise AIServiceError(str(exc)) from exc
 
 
+async def _generate_stream(prompt: str):
+    """Async generator that yields tokens then the final parsed dict."""
+    if AI_PROVIDER == "groq":
+        async for item in generate_with_groq_stream(prompt):
+            yield item
+    else:
+        try:
+            async for item in generate_with_gemini_stream(prompt):
+                yield item
+        except GeminiRateLimitError as exc:
+            raise AIRateLimitError(str(exc)) from exc
+        except GeminiAPIError as exc:
+            raise AIServiceError(str(exc)) from exc
+
+
 def _stringify_profile(profile: dict) -> dict:
-    """Convert list fields to comma-separated strings for prompt formatting."""
     result = dict(profile)
     for key in ("skills", "interests"):
         if isinstance(result.get(key), list):
@@ -67,4 +131,201 @@ async def generate_full_plan(profile: dict, idea: dict) -> dict:
     if isinstance(data.get("target_users"), list):
         data["target_users"] = ", ".join(data["target_users"])
     prompt = FULL_PLAN_PROMPT.format(**data)
+    return await _generate(prompt)
+
+
+async def evaluate_startup(profile: dict, idea: dict, founder_analysis: dict) -> dict:
+    data = {**_stringify_profile(profile), **idea, **founder_analysis}
+    if isinstance(data.get("target_users"), list):
+        data["target_users"] = ", ".join(data["target_users"])
+    if isinstance(data.get("strengths"), list):
+        data["strengths"] = ", ".join(data["strengths"])
+    if isinstance(data.get("weaknesses"), list):
+        data["weaknesses"] = ", ".join(data["weaknesses"])
+
+    agents = [
+        {
+            "agent_role": "a Senior Technology Architect and Engineering Lead",
+            "agent_name": "Tech Expert",
+            "criteria": "- Technical feasibility & architecture soundness (30%)\n- MVP complexity and build timeline (25%)\n- Technology stack appropriateness (20%)\n- Scalability potential (15%)\n- Security & data considerations (10%)",
+        },
+        {
+            "agent_role": "a Venture Capital Analyst and Finance Strategist",
+            "agent_name": "Finance Expert",
+            "criteria": "- Revenue model viability & monetization potential (30%)\n- Market size & TAM/SAM/SOM (25%)\n- Cost structure & burn rate (20%)\n- Unit economics & margin potential (15%)\n- Funding readiness & ROI timeline (10%)",
+        },
+        {
+            "agent_role": "a Growth Marketing Director and Brand Strategist",
+            "agent_name": "Marketing Expert",
+            "criteria": "- Target audience clarity & fit (25%)\n- Market positioning & differentiation (25%)\n- Customer acquisition strategy (20%)\n- Growth potential & scalability of marketing (15%)\n- Brand identity & messaging strength (15%)",
+        },
+    ]
+
+    async def evaluate_agent(agent_info: dict) -> dict:
+        prompt = AGENT_EVALUATION_PROMPT.format(**data, **agent_info)
+        return await _generate(prompt)
+
+    results = await asyncio.gather(*[evaluate_agent(a) for a in agents])
+
+    scores = [r.get("score", 50) for r in results]
+    overall_score = round(sum(scores) / len(scores))
+
+    strengths = []
+    risks = []
+    improvements = []
+    for r in results:
+        strengths.extend(r.get("strengths", []))
+        risks.extend(r.get("risks", []))
+        improvements.extend(r.get("improvements", []))
+
+    avg_score = overall_score
+    if avg_score >= 70:
+        decision = "Fund"
+        summary = f"This startup scores {avg_score}/100 across all expert evaluations. Strong potential for investment with recommended improvements."
+    elif avg_score >= 45:
+        decision = "Revise"
+        summary = f"This startup scores {avg_score}/100 across all expert evaluations. Significant revisions needed before funding consideration."
+    else:
+        decision = "Reject"
+        summary = f"This startup scores {avg_score}/100 across all expert evaluations. Major concerns across multiple dimensions. Not recommended for funding at this stage."
+
+    return {
+        "decision": decision,
+        "overall_score": overall_score,
+        "evaluations": results,
+        "summary": summary,
+    }
+
+
+async def generate_cofounder(profile: dict, idea: dict, founder_analysis: dict) -> dict:
+    data = {**_stringify_profile(profile), **idea, **founder_analysis}
+    if isinstance(data.get("target_users"), list):
+        data["target_users"] = ", ".join(data["target_users"])
+    if isinstance(data.get("strengths"), list):
+        data["strengths"] = ", ".join(data["strengths"])
+    if isinstance(data.get("weaknesses"), list):
+        data["weaknesses"] = ", ".join(data["weaknesses"])
+
+    prompt = COFOUNDER_PROMPT.format(**data)
+    return await _generate(prompt)
+
+
+async def generate_task_roadmap(profile: dict, idea: dict, plan: dict) -> dict:
+    data = {**_stringify_profile(profile), **idea, **plan}
+    if isinstance(data.get("target_users"), list):
+        data["target_users"] = ", ".join(data["target_users"])
+    if isinstance(data.get("mvp_features"), list):
+        data["mvp_features"] = ", ".join(data["mvp_features"])
+    if isinstance(data.get("competitors"), list):
+        data["competitors"] = ", ".join(
+            c.get("name", str(c)) if isinstance(c, dict) else str(c)
+            for c in data["competitors"]
+        )
+    if isinstance(data.get("revenue_model"), dict):
+        data["revenue_model"] = data["revenue_model"].get("pricing_model", str(data["revenue_model"]))
+
+    prompt = TASK_ROADMAP_PROMPT.format(**data)
+    result = await _generate(prompt)
+    return result
+
+
+async def analyze_idea(data: dict) -> dict:
+    prompt = IDEA_ANALYSIS_PROMPT.format(**data)
+    return await _generate(prompt)
+
+
+async def chat_about_idea(analysis: dict, question: str) -> dict:
+    intent = _detect_chat_intent(question)
+
+    if intent == "greeting":
+        return {"answer": "Hello! How can I help you with your startup idea?"}
+    if intent == "casual":
+        return {"answer": "I'm great, thanks! Ready to dive into your startup idea whenever you are."}
+
+    data = {"analysis": json.dumps(analysis, indent=2), "question": question}
+    if intent == "full_summary":
+        prompt = IDEA_CHAT_FULL_PROMPT.format(**data)
+    else:
+        prompt = IDEA_CHAT_CONCISE_PROMPT.format(**data)
+    return await _generate(prompt)
+
+
+async def _yield_hardcoded_stream(answer: str):
+    words = answer.split(" ")
+    for i, word in enumerate(words):
+        yield word + (" " if i < len(words) - 1 else "")
+    yield {"answer": answer}
+
+
+async def chat_about_idea_stream(analysis: dict, question: str):
+    intent = _detect_chat_intent(question)
+
+    if intent == "greeting":
+        async for item in _yield_hardcoded_stream("Hello! How can I help you with your startup idea?"):
+            yield item
+        return
+
+    if intent == "casual":
+        async for item in _yield_hardcoded_stream("I'm great, thanks! Ready to dive into your startup idea whenever you are."):
+            yield item
+        return
+
+    data = {"analysis": json.dumps(analysis, indent=2), "question": question}
+    if intent == "full_summary":
+        prompt = IDEA_CHAT_FULL_PROMPT.format(**data)
+    else:
+        prompt = IDEA_CHAT_CONCISE_PROMPT.format(**data)
+    async for item in _generate_stream(prompt):
+        yield item
+
+
+async def analyze_idea_stream(data: dict):
+    """Stream tokens then yield final parsed result for idea analysis."""
+    prompt = IDEA_ANALYSIS_PROMPT.format(**data)
+    async for item in _generate_stream(prompt):
+        yield item
+
+
+async def estimate_market_size(data: dict) -> dict:
+    prompt = MARKET_SIZE_PROMPT.format(**data)
+    return await _generate(prompt)
+
+
+async def debate_idea(data: dict) -> dict:
+    prompt = DEBATE_ROOM_PROMPT.format(**data)
+    return await _generate(prompt)
+
+
+async def compare_ideas(data: dict) -> dict:
+    prompt = COMPARISON_PROMPT.format(**data)
+    return await _generate(prompt)
+
+
+async def generate_email_report(analysis: dict) -> str:
+    data = {"analysis": json.dumps(analysis, indent=2)}
+    prompt = EMAIL_REPORT_PROMPT.format(**data)
+    result = await _generate(prompt)
+    html = result.get("html", "")
+    if not html:
+        html = result.get("answer", "")
+    if not html:
+        html = json.dumps(result)
+    return html
+
+
+async def generate_readme(profile: dict, idea: dict, plan: dict) -> dict:
+    data = {**_stringify_profile(profile), **idea, **plan}
+    if isinstance(data.get("target_users"), list):
+        data["target_users"] = ", ".join(data["target_users"])
+    if isinstance(data.get("mvp_features"), list):
+        data["mvp_features"] = ", ".join(data["mvp_features"])
+    if isinstance(data.get("competitors"), list):
+        data["competitors"] = ", ".join(
+            c.get("name", str(c)) if isinstance(c, dict) else str(c)
+            for c in data["competitors"]
+        )
+    if isinstance(data.get("revenue_model"), dict):
+        data["revenue_model"] = data["revenue_model"].get("pricing_model", str(data["revenue_model"]))
+
+    prompt = README_GENERATOR_PROMPT.format(**data)
     return await _generate(prompt)

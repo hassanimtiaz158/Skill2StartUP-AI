@@ -1,15 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowRight, Brain, Code, Lightbulb, Play, Rocket, Search, Sparkles, Target, TrendingUp } from 'lucide-react';
+import { ArrowRight, Brain, Code, Lightbulb, Play, Rocket, Search, Sparkles, Target, TrendingUp, Zap, Wand2 } from 'lucide-react';
 import { AppNav, BrandLink } from '../components/PageShell.jsx';
-
-const steps = [
-  { title: 'Enter Your Skills', desc: 'List what you know, what you like, and how much time you can spend.' },
-  { title: 'AI Reads Fit', desc: 'Gemini analyzes founder fit, categories, constraints, and market angles.' },
-  { title: 'Review Ideas', desc: 'Compare startup opportunities with feasibility and demand scores.' },
-  { title: 'Launch Plan', desc: 'Generate an MVP scope, competitors, roadmap, revenue model, and pitches.' },
-];
+import DemoVideoModal from '../components/DemoVideoModal.jsx';
+import { analyzeProfile, generateIdeas } from '../services/api.js';
+import { clearGeneratedState, saveValue } from '../services/storage.js';
 
 const features = [
   { title: 'Founder Analysis', desc: 'Understand your strengths, gaps, and best startup categories.', icon: Brain },
@@ -20,179 +16,143 @@ const features = [
   { title: 'Pitch Content', desc: 'Create hackathon and thirty-second pitches for fast validation.', icon: Sparkles },
 ];
 
-const exampleProfiles = [
-  { skill: 'React + Design', interest: 'Creator Tools', idea: 'TemplateOps Studio' },
-  { skill: 'Python + Data', interest: 'Local Services', idea: 'ReviewPulse AI' },
-  { skill: 'Marketing + Sales', interest: 'Fitness', idea: 'CoachLead Engine' },
-  { skill: 'No-Code + Research', interest: 'Education', idea: 'MicroCourse Scout' },
-];
-
-const metrics = [
-  { value: '04', label: 'Ideas per run' },
-  { value: '10+', label: 'Scoring signals' },
-  { value: '01', label: 'MVP roadmap' },
-  { value: '02', label: 'Pitch formats' },
-];
-
-function Section({ id, className = '', children }) {
-  return (
-    <section id={id} className={`py-20 ${className}`}>
-      <div className="max-w-7xl mx-auto px-6">{children}</div>
-    </section>
-  );
-}
-
-function SectionHeading({ badge, title, description }) {
-  return (
-    <div className="text-center max-w-2xl mx-auto mb-12">
-      <span className="section-label mb-4">{badge}</span>
-      <h2 className="text-3xl md:text-5xl font-black uppercase tracking-[-0.02em] leading-none text-[#0A0A0A] mb-4">
-        {title}
-      </h2>
-      <p className="text-sm md:text-base text-[#6A6A6A] font-medium leading-relaxed">{description}</p>
-    </div>
-  );
-}
+const sampleSkills = 'Full-Stack Development, AI/ML, UI/UX Design, Cloud Computing';
 
 export default function LandingPage() {
   const navigate = useNavigate();
-  const [displayed, setDisplayed] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const preview = 'SKILLPATH AI';
+  const [skills, setSkills] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [judgeMode, setJudgeMode] = useState(false);
+  const [showDemo, setShowDemo] = useState(false);
 
-  useEffect(() => {
-    let i = 0;
-    const timer = setInterval(() => {
-      setDisplayed(preview.slice(0, i + 1));
-      i = i + 1;
-      if (i >= preview.length) clearInterval(timer);
-    }, 90);
-    return () => clearInterval(timer);
-  }, []);
+  async function handleGenerate(customProfile) {
+    if (loading) return;
+    setLoading(true);
+    setError('');
+    clearGeneratedState();
+    const profile = customProfile || (skills.trim() ? {
+      skills: skills.split(',').map((s) => s.trim()).filter(Boolean),
+      interests: skills.split(',').map((s) => s.trim()).filter(Boolean),
+      experience_level: 'Intermediate',
+      budget: '100',
+      time_per_week: '10',
+      preferred_industry: '',
+      goal: 'Hackathon MVP',
+    } : null);
+    if (!profile) { setError('Enter at least one skill.'); setLoading(false); return; }
+    try {
+      const [analysis, ideas] = await Promise.all([analyzeProfile(profile), generateIdeas(profile)]);
+      saveValue('profile', profile);
+      saveValue('analysis', analysis);
+      saveValue('ideas', ideas);
+      navigate('/results');
+    } catch (err) {
+      setError(err.message);
+      setLoading(false);
+    }
+  }
 
-  function handleGenerateClick() {
-    setIsLoading(true);
-    setTimeout(() => navigate('/input'), 250);
+  function handleJudgeQuickTest() {
+    setJudgeMode(true);
+    handleGenerate({
+      skills: ['Full-Stack Development', 'AI/ML', 'UI/UX Design', 'Cloud Computing', 'Product Management'],
+      interests: ['Education', 'SaaS', 'Productivity', 'AI Tools', 'EdTech'],
+      experience_level: 'Intermediate',
+      budget: '100',
+      time_per_week: '10',
+      preferred_industry: 'EdTech',
+      goal: 'Hackathon MVP',
+    });
   }
 
   return (
     <main className="min-h-screen bg-[#F5F3EE] text-[#0A0A0A]">
       <AppNav />
 
-      <section className="relative pt-36 pb-20 bg-[#F5F3EE] border-b-2 border-[#0A0A0A]">
-        <div
-          className="absolute inset-0 opacity-[0.04]"
-          style={{
-            backgroundImage: 'linear-gradient(#0A0A0A 1px, transparent 1px), linear-gradient(90deg, #0A0A0A 1px, transparent 1px)',
-            backgroundSize: '48px 48px',
-          }}
-        />
-        <div className="max-w-7xl mx-auto px-6 relative">
-          <div className="grid lg:grid-cols-12 gap-16 items-center">
-            <div className="lg:col-span-7">
-              <div className="inline-flex items-center gap-2 border-2 border-[#0A0A0A] px-3 py-1 mb-8 bg-white">
-                <div className="h-2 w-2 bg-[#0A0A0A]" />
-                <span className="text-[10px] font-black uppercase tracking-[0.15em] text-[#0A0A0A]">AI-Powered Startup Incubator</span>
-              </div>
-              <h1 className="text-5xl sm:text-6xl md:text-7xl font-black tracking-[-0.03em] leading-[0.95] mb-8 text-[#0A0A0A] uppercase">
-                Turn Your<br />
-                Skills Into<br />
-                <span className="relative inline-block">
-                  A Startup.
-                  <span className="absolute bottom-1 left-0 right-0 h-[5px] bg-[#0A0A0A]" />
-                </span>
-              </h1>
-              <p className="text-base text-[#3A3A3A] mb-10 max-w-md leading-relaxed font-medium border-l-4 border-[#0A0A0A] pl-4">
-                Describe your skills, interests, and goals. Our AI generates personalized startup ideas,
-                full MVP plans, competitor analysis, and pitch content in seconds.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <button
-                  onClick={handleGenerateClick}
-                  disabled={isLoading}
-                  className="h-14 px-10 bg-[#0A0A0A] text-[#F5F3EE] text-sm font-black uppercase tracking-widest border-2 border-[#0A0A0A] flex items-center justify-center gap-3 hover:bg-[#F5F3EE] hover:text-[#0A0A0A] transition-colors duration-150 disabled:opacity-50"
-                >
-                  {isLoading ? 'Generating...' : <>Generate My Startup <ArrowRight className="h-4 w-4" /></>}
+      <section className="pt-40 pb-24">
+        <div className="max-w-4xl mx-auto px-6 text-center">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+            <div className="section-label mb-6">AI-Powered Startup Incubator</div>
+
+            <h1 className="text-5xl sm:text-6xl md:text-7xl font-black tracking-[-0.03em] leading-[0.95] mb-6">
+              Turn Your Skills<br />Into A Startup
+            </h1>
+            <p className="text-base md:text-lg font-medium text-[#3A3A3A] max-w-lg mx-auto mb-10 leading-relaxed">
+              Enter your skills. Our AI generates personalized startup ideas, full MVP plans, competitor analysis, and pitch content in seconds.
+            </p>
+
+            <div className="max-w-2xl mx-auto mb-4">
+              <div className="flex items-center gap-3 border-2 border-[#0A0A0A] bg-white p-2 pl-6 focus-within:bg-[#FAFAF8] transition-colors">
+                <Code className="h-5 w-5 text-[#C0BDB6] shrink-0" />
+                <input
+                  value={skills}
+                  onChange={(e) => setSkills(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleGenerate()}
+                  placeholder="Enter your skills: e.g. Full-Stack Dev, AI/ML, Design, Marketing..."
+                  className="flex-1 bg-transparent text-sm md:text-base font-medium text-[#0A0A0A] placeholder:text-[#C0BDB6] focus:outline-none py-3"
+                />
+                <button onClick={() => handleGenerate()} disabled={loading}
+                  className={`h-11 px-6 border-2 border-[#0A0A0A] text-xs font-black uppercase tracking-widest flex items-center gap-2 transition-colors shrink-0 ${loading ? 'bg-[#C0BDB6] text-[#3A3A3A]' : 'bg-[#0A0A0A] text-[#F5F3EE] hover:bg-white hover:text-[#0A0A0A]'}`}>
+                  {loading ? (
+                    <div className="flex items-center gap-2"><div className="h-3 w-3 border-2 border-[#F5F3EE]/40 border-t-[#F5F3EE] animate-spin" /> Generating</div>
+                  ) : (
+                    <><Zap className="h-4 w-4" /> Generate</>
+                  )}
                 </button>
-                <a href="#how-it-works" className="h-14 px-10 bg-transparent text-[#0A0A0A] text-sm font-black uppercase tracking-widest border-2 border-[#0A0A0A] flex items-center justify-center gap-3 hover:bg-[#0A0A0A] hover:text-[#F5F3EE] transition-colors duration-150">
-                  <Play className="h-4 w-4" /> See How It Works
-                </a>
-              </div>
-              <div className="mt-10 flex items-center gap-6">
-                <div className="flex -space-x-px">
-                  {['SC', 'MJ', 'PP', 'AK'].map((initials) => (
-                    <div key={initials} className="h-9 w-9 border-2 border-[#0A0A0A] bg-white flex items-center justify-center">
-                      <span className="text-[9px] font-black text-[#0A0A0A]">{initials}</span>
-                    </div>
-                  ))}
-                </div>
-                <div>
-                  <p className="text-sm font-black text-[#0A0A0A]">4.9 / 5</p>
-                  <p className="text-xs text-[#6A6A6A] font-medium">from 2,000+ builders</p>
-                </div>
-              </div>
-              <div className="mt-10 grid grid-cols-2 sm:grid-cols-4 border-2 border-[#0A0A0A] bg-white max-w-2xl">
-                {metrics.map((item, index) => (
-                  <div key={item.label} className={`p-4 ${index > 0 ? 'border-l-2 border-[#0A0A0A]' : ''}`}>
-                    <p className="text-2xl font-black leading-none">{item.value}</p>
-                    <p className="text-[9px] font-black uppercase tracking-widest text-[#6A6A6A] mt-2">{item.label}</p>
-                  </div>
-                ))}
               </div>
             </div>
-            <div className="hidden lg:block lg:col-span-5">
-              <motion.div
-                className="border-2 border-[#0A0A0A] bg-white p-6"
-                initial={{ y: 12, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ duration: 0.35 }}
-              >
-                <div className="border-b-2 border-[#0A0A0A] pb-4 mb-5 flex items-center justify-between">
-                  <div>
-                    <p className="text-[9px] font-black uppercase tracking-[0.15em] text-[#6A6A6A]">AI Output Preview</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <div className="h-2 w-2 bg-[#0A0A0A]" />
-                      <span className="text-xs font-bold text-[#0A0A0A]">Generating</span>
-                    </div>
-                  </div>
-                  <div className="bg-[#0A0A0A] px-2 py-1">
-                    <span className="text-xs font-black text-[#F5F3EE]">8.7 / 10</span>
-                  </div>
-                </div>
-                <p className="text-lg font-black text-[#0A0A0A] mb-1 uppercase tracking-tight">
-                  {displayed}<span>_</span>
-                </p>
-                <p className="text-xs text-[#6A6A6A] leading-relaxed mb-4 border-l-2 border-[#0A0A0A] pl-3">
-                  An AI mentor that turns student skills into personalized career and startup roadmaps.
-                </p>
-                <div className="h-2 w-full bg-[#F5F3EE] border border-[#0A0A0A] overflow-hidden mb-4">
-                  <motion.div className="h-full bg-[#0A0A0A]" initial={{ width: 0 }} animate={{ width: '87%' }} transition={{ delay: 0.8, duration: 1.2, ease: 'easeOut' }} />
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  {['MVP Plan', 'Competitors', 'Roadmap'].map((tag) => (
-                    <div key={tag} className="border-2 border-[#0A0A0A] bg-[#F5F3EE] p-2 text-center hover:bg-[#0A0A0A] hover:text-[#F5F3EE] transition-colors cursor-default">
-                      <span className="text-[10px] font-black uppercase tracking-wide">{tag}</span>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-5 border-2 border-[#0A0A0A]">
-                  {exampleProfiles.map((item, index) => (
-                    <div key={item.idea} className={`grid grid-cols-12 gap-2 p-3 text-[10px] font-black uppercase tracking-wide ${index > 0 ? 'border-t-2 border-[#0A0A0A]' : ''}`}>
-                      <span className="col-span-4 text-[#6A6A6A]">{item.skill}</span>
-                      <span className="col-span-4">{item.interest}</span>
-                      <span className="col-span-4 text-right">{item.idea}</span>
-                    </div>
-                  ))}
-                </div>
-              </motion.div>
+
+            <div className="flex items-center justify-center gap-4">
+              <button onClick={handleJudgeQuickTest} disabled={loading}
+                className="inline-flex items-center gap-2 border-2 border-[#0A0A0A] px-5 py-2.5 text-xs font-black uppercase tracking-widest hover:bg-[#0A0A0A] hover:text-[#F5F3EE] transition-colors">
+                <Wand2 className="h-3.5 w-3.5" /> Judge Quick Test
+              </button>
+              <button onClick={() => handleGenerate({
+                skills: sampleSkills.split(', '),
+                interests: sampleSkills.split(', '),
+                experience_level: 'Intermediate',
+                budget: '100',
+                time_per_week: '10',
+                preferred_industry: '',
+                goal: 'Hackathon MVP',
+              })} disabled={loading}
+                className="inline-flex items-center gap-2 border-2 border-[#0A0A0A] bg-[#0A0A0A] text-[#F5F3EE] px-5 py-2.5 text-xs font-black uppercase tracking-widest hover:bg-white hover:text-[#0A0A0A] transition-colors">
+                Surprise Me
+              </button>
+              <button onClick={() => setShowDemo(true)}
+                className="inline-flex items-center gap-2 border-2 border-[#0A0A0A] px-5 py-2.5 text-xs font-black uppercase tracking-widest hover:bg-[#0A0A0A] hover:text-[#F5F3EE] transition-colors">
+                <Play className="h-3.5 w-3.5" /> Watch Demo
+              </button>
             </div>
-          </div>
+
+            {error && (
+              <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-4 text-xs font-black uppercase tracking-wide border-l-2 border-[#0A0A0A] pl-2 inline-block">
+                {error}
+              </motion.p>
+            )}
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.5 }}
+            className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto">
+            {[
+              { value: '04', label: 'Ideas per run' },
+              { value: '10+', label: 'Scoring signals' },
+              { value: '01', label: 'MVP roadmap' },
+              { value: '02', label: 'Pitch formats' },
+            ].map((item) => (
+              <div key={item.label} className="border-2 border-[#0A0A0A] bg-white p-4">
+                <p className="text-2xl font-black text-[#0A0A0A]">{item.value}</p>
+                <p className="text-[9px] font-black uppercase tracking-widest text-[#6A6A6A] mt-1">{item.label}</p>
+              </div>
+            ))}
+          </motion.div>
         </div>
       </section>
 
-      <section className="bg-[#0A0A0A] py-10 border-b-2 border-[#0A0A0A]">
+      <section className="border-y-2 border-[#0A0A0A] py-14">
         <div className="max-w-7xl mx-auto px-6">
-          <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/40 text-center mb-6">How It Works</p>
+          <p className="text-[9px] font-black uppercase tracking-[0.2em] text-[#6A6A6A] text-center mb-8">How It Works</p>
           <div className="flex items-center justify-center gap-0 flex-wrap">
             {[
               { label: 'Your Skills', icon: Code },
@@ -201,110 +161,93 @@ export default function LandingPage() {
               { label: 'Launch Plan', icon: Rocket },
             ].map((step, i) => (
               <div key={step.label} className="flex items-center">
-                <div className="flex items-center gap-3 px-6 py-4 border-r border-white/10">
-                  <step.icon className="h-4 w-4 text-white" />
-                  <span className="text-xs font-black uppercase tracking-widest text-white">{step.label}</span>
+                <div className="flex items-center gap-3 px-6 py-4 border-2 border-[#0A0A0A] bg-white">
+                  <step.icon className="h-4 w-4 text-[#0A0A0A]" />
+                  <span className="text-xs font-black uppercase tracking-widest text-[#0A0A0A]">{step.label}</span>
                 </div>
-                {i < 3 && <ArrowRight className="h-4 w-4 text-white/30 mx-2" />}
+                {i < 3 && <ArrowRight className="h-4 w-4 text-[#6A6A6A] mx-2" />}
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      <Section className="bg-[#F5F3EE]">
-        <SectionHeading badge="The Problem" title="Talented people, no clear path" description="Skilled builders with no startup idea. Too many options, no way to validate. Even with an idea, no roadmap to go from concept to MVP." />
-        <div className="max-w-2xl mx-auto">
-          {[
-            { marker: '01', title: 'No clear direction', desc: 'Skills exist but no startup idea to apply them to.' },
-            { marker: '02', title: 'Analysis paralysis', desc: 'Too many options, no way to validate which is the best one.' },
-            { marker: '03', title: 'Execution gap', desc: 'Even with an idea, no roadmap to go from concept to MVP.' },
-          ].map((item) => (
-            <div key={item.marker} className="group border-2 border-[#0A0A0A] p-6 mb-[-2px] hover:bg-[#0A0A0A] hover:text-[#F5F3EE] transition-colors duration-150 cursor-default">
-              <div className="flex items-start gap-6">
-                <span className="text-4xl font-black text-[#0A0A0A] group-hover:text-[#F5F3EE] leading-none">{item.marker}</span>
-                <div>
-                  <h3 className="text-lg font-black text-[#0A0A0A] group-hover:text-[#F5F3EE] uppercase tracking-tight mb-1">{item.title}</h3>
-                  <p className="text-sm text-[#3A3A3A] group-hover:text-[#F5F3EE]/70 leading-relaxed">{item.desc}</p>
-                </div>
+      <section className="py-20">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center max-w-2xl mx-auto mb-12">
+            <span className="section-label mb-4">Why This Matters</span>
+            <h2 className="text-3xl md:text-5xl font-black tracking-[-0.02em] leading-none mb-4">Built for students, by builders</h2>
+            <p className="text-sm font-medium text-[#3A3A3A] leading-relaxed">Skill2Startup bridges the gap between having skills and knowing what to build.</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-16">
+            {[
+              { title: 'For Students', desc: 'Turns academic skills into actionable startup concepts. No business experience needed.' },
+              { title: 'Hackathon Ready', desc: 'Generate a full pitch, MVP scope, and execution plan in under 60 seconds.' },
+              { title: 'No-Code Setup', desc: 'Works directly from your browser. No installations, no config, no cost.' },
+              { title: 'AI Powered', desc: 'Multi-agent evaluation simulates real investor feedback on your idea.' },
+            ].map((item) => (
+              <div key={item.title} className="border-2 border-[#0A0A0A] bg-white p-6 card-hover">
+                <h3 className="text-sm font-black uppercase tracking-tight mb-2">{item.title}</h3>
+                <p className="text-xs font-medium text-[#3A3A3A] leading-relaxed">{item.desc}</p>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </Section>
+      </section>
 
-      <Section id="how-it-works" className="bg-white border-y-2 border-[#0A0A0A]">
-        <SectionHeading badge="How It Works" title="Four steps to your startup" description="From input to full execution plan in under a minute." />
-        <div className="grid grid-cols-2 md:grid-cols-4">
-          {steps.map((step, i) => (
-            <div key={step.title} className={`p-6 border-2 border-[#0A0A0A] ${i > 0 ? 'md:border-l-0' : ''} ${i > 1 ? 'border-t-0 md:border-t-2' : ''}`}>
-              <div className="text-5xl font-black text-[#E8E6E0] mb-4 leading-none">{String(i + 1).padStart(2, '0')}</div>
-              <h3 className="text-sm font-black uppercase tracking-tight text-[#0A0A0A] mb-2">{step.title}</h3>
-              <p className="text-xs text-[#6A6A6A] leading-relaxed">{step.desc}</p>
-            </div>
-          ))}
+      <section className="border-t-2 border-[#0A0A0A] py-20">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center max-w-2xl mx-auto mb-12">
+            <span className="section-label mb-4">Features</span>
+            <h2 className="text-3xl md:text-5xl font-black tracking-[-0.02em] leading-none mb-4">Everything you need to launch</h2>
+            <p className="text-sm font-medium text-[#3A3A3A] leading-relaxed">AI-powered tools that cover the entire startup journey.</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {features.map((f, i) => (
+              <motion.div key={f.title} initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08, duration: 0.3 }}
+                className="border-2 border-[#0A0A0A] bg-white p-6 card-hover">
+                <div className="w-10 h-10 border-2 border-[#0A0A0A] flex items-center justify-center mb-4">
+                  <f.icon className="h-5 w-5 text-[#0A0A0A]" />
+                </div>
+                <h3 className="text-sm font-bold uppercase tracking-tight text-[#0A0A0A] mb-2">{f.title}</h3>
+                <p className="text-xs font-medium text-[#3A3A3A] leading-relaxed">{f.desc}</p>
+              </motion.div>
+            ))}
+          </div>
         </div>
-      </Section>
+      </section>
 
-      <Section id="features" className="bg-[#F5F3EE]">
-        <SectionHeading badge="Features" title="Everything you need to launch" description="AI-powered tools that cover the entire startup journey." />
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-          {features.map((f, i) => (
-            <div key={f.title} className={`group p-6 border-2 border-[#0A0A0A] hover:bg-[#0A0A0A] transition-colors duration-150 ${i % 3 !== 0 ? 'lg:border-l-0' : ''} ${i % 2 !== 0 ? 'sm:border-l-0 lg:border-l-2' : ''} ${i >= 2 ? 'sm:border-t-0 lg:border-t-2' : ''} ${i >= 3 ? 'lg:border-t-0' : ''}`}>
-              <f.icon className="h-5 w-5 text-[#0A0A0A] group-hover:text-[#F5F3EE] mb-4" />
-              <h3 className="text-sm font-black uppercase tracking-tight text-[#0A0A0A] group-hover:text-[#F5F3EE] mb-2">{f.title}</h3>
-              <p className="text-xs text-[#6A6A6A] group-hover:text-[#F5F3EE]/60 leading-relaxed">{f.desc}</p>
-            </div>
-          ))}
-        </div>
-      </Section>
-
-      <Section className="bg-white border-y-2 border-[#0A0A0A]">
-        <SectionHeading badge="What You Get" title="From raw skill to launch packet" description="The output is not a generic paragraph. It is a structured founder-ready workspace." />
-        <div className="grid md:grid-cols-3">
-          {[
-            { title: 'Decision', body: 'Compare ideas by opportunity, feasibility, demand, monetization, competition gap, and founder fit.' },
-            { title: 'Execution', body: 'Convert the selected idea into MVP scope, launch plan, week-by-week roadmap, and risks.' },
-            { title: 'Presentation', body: 'Export pitch-ready copy, hackathon narrative, elevator pitch, and a saved dashboard plan.' },
-          ].map((item, index) => (
-            <div key={item.title} className={`border-2 border-[#0A0A0A] bg-[#F5F3EE] p-6 ${index > 0 ? 'md:border-l-0' : ''}`}>
-              <p className="text-5xl font-black text-[#E8E6E0] leading-none mb-5">{String(index + 1).padStart(2, '0')}</p>
-              <h3 className="text-lg font-black uppercase mb-3">{item.title}</h3>
-              <p className="text-sm text-[#3A3A3A] leading-relaxed">{item.body}</p>
-            </div>
-          ))}
-        </div>
-      </Section>
-
-      <section className="bg-[#0A0A0A] py-20 border-y-2 border-[#0A0A0A]">
+      <section className="border-t-2 border-[#0A0A0A] py-20">
         <div className="max-w-7xl mx-auto px-6 text-center">
-          <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/40 mb-4">Get Started</p>
-          <h2 className="text-4xl md:text-6xl font-black uppercase text-white mb-4 tracking-tight leading-none">Ready to find<br />your startup?</h2>
-          <p className="text-sm text-white/50 max-w-md mx-auto mb-10 leading-relaxed">Enter your skills and let AI generate personalized startup opportunities with full execution plans.</p>
+          <h2 className="text-3xl md:text-5xl font-black tracking-tight leading-none mb-4">Ready to find your startup?</h2>
+          <p className="text-sm font-medium text-[#3A3A3A] max-w-md mx-auto mb-8 leading-relaxed">Enter your skills and let AI generate personalized startup opportunities with full execution plans.</p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link to="/input" className="h-14 px-12 bg-white text-[#0A0A0A] text-sm font-black uppercase tracking-widest border-2 border-white flex items-center gap-3 hover:bg-transparent hover:text-white transition-colors duration-150">
-              Start Free <ArrowRight className="h-4 w-4" />
-            </Link>
-            <Link to="/signin" className="h-14 px-12 text-white text-sm font-black uppercase tracking-widest border-2 border-white/30 flex items-center gap-3 hover:border-white transition-colors duration-150">
+            <button onClick={handleJudgeQuickTest}
+              className="h-12 px-8 border-2 border-[#0A0A0A] bg-[#0A0A0A] text-[#F5F3EE] text-xs font-black uppercase tracking-widest flex items-center gap-2 hover:bg-white hover:text-[#0A0A0A] transition-colors">
+              Judge Quick Test <ArrowRight className="h-4 w-4" />
+            </button>
+            <Link to="/signin" className="h-12 px-8 border-2 border-[#0A0A0A] text-xs font-black uppercase tracking-widest flex items-center gap-2 hover:bg-[#0A0A0A] hover:text-[#F5F3EE] transition-colors">
               Sign In
             </Link>
           </div>
         </div>
       </section>
 
-      <footer className="bg-[#F5F3EE] border-t-2 border-[#0A0A0A] py-8">
+      <footer className="border-t-2 border-[#0A0A0A] py-8">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
           <BrandLink />
           <nav className="flex items-center gap-8">
-            {['Features', 'How It Works', 'Dashboard', 'Sign In'].map((label) => (
-              <Link key={label} to={label === 'Dashboard' ? '/dashboard' : label === 'Sign In' ? '/signin' : `/#${label.toLowerCase().replaceAll(' ', '-')}`} className="text-[10px] font-black uppercase tracking-widest text-[#6A6A6A] hover:text-[#0A0A0A] transition-colors">
+            {['Features', 'Dashboard', 'Sign In'].map((label) => (
+              <Link key={label} to={label === 'Dashboard' ? '/dashboard' : label === 'Sign In' ? '/signin' : '/#' + label.toLowerCase()}
+                className="text-[10px] font-black uppercase tracking-widest text-[#6A6A6A] hover:text-[#0A0A0A] transition-colors">
                 {label}
               </Link>
             ))}
           </nav>
-          <p className="text-[10px] font-bold uppercase tracking-widest text-[#6A6A6A]">(c) 2026 Skill2Startup</p>
+          <p className="text-[10px] font-black uppercase tracking-widest text-[#6A6A6A]">&copy; 2026 Skill2Startup</p>
         </div>
       </footer>
+      <DemoVideoModal open={showDemo} onClose={() => setShowDemo(false)} />
     </main>
   );
 }

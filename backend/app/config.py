@@ -13,6 +13,17 @@ GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
 GROQ_BASE_URL = os.getenv("GROQ_BASE_URL", "https://api.groq.com/openai/v1")
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://127.0.0.1:5173")
 
+SMTP_HOST = os.getenv("SMTP_HOST", "")
+SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
+SMTP_USER = os.getenv("SMTP_USER", "")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
+SMTP_FROM = os.getenv("SMTP_FROM", "noreply@skill2startup.ai")
+
+MAILJET_API_KEY = os.getenv("MAILJET_API_KEY", "")
+MAILJET_SECRET_KEY = os.getenv("MAILJET_SECRET_KEY", "")
+MAILJET_FROM = os.getenv("MAILJET_FROM", SMTP_FROM)
+MAILJET_FROM_NAME = os.getenv("MAILJET_FROM_NAME", "Skill2Startup AI")
+
 if AI_PROVIDER not in {"gemini", "groq"}:
     raise EnvironmentError("AI_PROVIDER must be either 'gemini' or 'groq'.")
 

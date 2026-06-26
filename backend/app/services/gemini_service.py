@@ -61,6 +61,22 @@ def _generate_sync(prompt: str) -> dict:
         raise GeminiAPIError(f"Failed to parse Gemini response as JSON: {exc}") from exc
 
 
+async def generate_with_gemini_stream(prompt: str):
+    """Stream text tokens from Gemini API, yielding each token as it arrives."""
+    model = genai.GenerativeModel(GEMINI_MODEL)
+    response = model.generate_content(
+        prompt,
+        generation_config={"temperature": 0.85, "top_p": 0.9},
+        stream=True,
+    )
+    for chunk in response:
+        if hasattr(chunk, "text") and chunk.text:
+            yield chunk.text
+    # After streaming, re-generate non-streaming to get proper JSON for final result
+    final = _generate_sync(prompt)
+    yield final
+
+
 async def generate_with_gemini(prompt: str, max_retries: int = 2) -> dict:
     """Call Gemini API asynchronously with retry on rate-limit errors."""
     last_error = None

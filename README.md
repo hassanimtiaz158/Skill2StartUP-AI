@@ -81,6 +81,13 @@ pytest tests/ -v
 
 Tests mock MongoDB and AI calls; no real API keys are required when test env vars override provider settings.
 
+## 60-Second Demo
+
+1. Open the app at `http://127.0.0.1:5173`
+2. Click **Judge Quick Test** — it fills a sample student profile and runs the full AI pipeline
+3. Review the generated startup concept, founder profile, and MVP plan
+4. Sign up to save plans to your dashboard
+
 ## Deployment
 
 ### Backend on Render

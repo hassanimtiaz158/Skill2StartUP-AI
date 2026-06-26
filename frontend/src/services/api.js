@@ -63,6 +63,9 @@ function apiError(error) {
     return 'API URL is not configured. Set VITE_API_URL in Vercel to your Render backend URL, or open the site with ?apiUrl=https://your-render-backend.onrender.com.';
   }
   const detail = error.response?.data?.detail || error.response?.data?.message;
+  if (Array.isArray(detail)) {
+    return detail.map((d) => d.msg || d.message || JSON.stringify(d)).join('; ');
+  }
   return detail || error.message || 'Request failed. Please try again.';
 }
 
@@ -170,6 +173,300 @@ export async function deletePlan(planId) {
   try {
     assertApiConfigured();
     const { data } = await api.delete(`/api/startups/${planId}`);
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function analyzeIdea(payload) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.post('/api/startups/analyze-idea', payload);
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function analyzeIdeaStream(payload, onToken, onDone, onError) {
+  try {
+    assertApiConfigured();
+  } catch (error) {
+    onError(error.message);
+    return;
+  }
+  const url = API_BASE_URL ? `${API_BASE_URL}/api/startups/analyze-idea/stream` : '/api/startups/analyze-idea/stream';
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      onError(`Server error ${response.status}`);
+      return;
+    }
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (trimmed.startsWith('data: ')) {
+          try {
+            const parsed = JSON.parse(trimmed.slice(6));
+            if (parsed.token) {
+              onToken(parsed.token);
+            } else if (parsed.done) {
+              onDone(parsed.result);
+              return;
+            } else if (parsed.error) {
+              onError(parsed.error);
+              return;
+            }
+          } catch {
+            // skip malformed JSON
+          }
+        }
+      }
+    }
+  } catch (error) {
+    onError(error.message);
+  }
+}
+
+export async function chatAboutIdea(analysis, question) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.post('/api/startups/analyze-idea/chat', { analysis, question });
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function chatAboutIdeaStream(analysis, question, onToken, onDone, onError) {
+  try {
+    assertApiConfigured();
+  } catch (error) {
+    onError(error.message);
+    return;
+  }
+  const url = API_BASE_URL ? `${API_BASE_URL}/api/startups/analyze-idea/chat/stream` : '/api/startups/analyze-idea/chat/stream';
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ analysis, question }),
+    });
+    if (!response.ok) {
+      onError(`Server error ${response.status}`);
+      return;
+    }
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (trimmed.startsWith('data: ')) {
+          try {
+            const parsed = JSON.parse(trimmed.slice(6));
+            if (parsed.token) {
+              onToken(parsed.token);
+            } else if (parsed.done) {
+              onDone(parsed.answer);
+              return;
+            } else if (parsed.error) {
+              onError(parsed.error);
+              return;
+            }
+          } catch {
+            // skip malformed JSON
+          }
+        }
+      }
+    }
+  } catch (error) {
+    onError(error.message);
+  }
+}
+
+export async function shareAnalysis(analysis, ideaForm = {}) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.post('/api/startups/analyze-idea/share', { analysis, idea_form: ideaForm });
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function getSharedAnalysis(token) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.get(`/api/share/${token}`);
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function estimateMarketSize(payload) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.post('/api/startups/market-size', payload);
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function runDebate(payload) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.post('/api/startups/debate', payload);
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function compareIdeas(payload) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.post('/api/startups/compare', payload);
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function sendEmailReport(analysis, recipientEmail, ideaForm = {}) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.post('/api/startups/email-report', { analysis, recipient_email: recipientEmail, idea_form: ideaForm });
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function saveAnalysisProgress(analysis, ideaForm = {}) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.post('/api/startups/analyze-idea/save', { analysis, idea_form: ideaForm });
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function getSavedAnalyses() {
+  try {
+    assertApiConfigured();
+    const { data } = await api.get('/api/startups/analyze-idea/saved');
+    return data.analyses || [];
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function deleteSavedAnalysis(analysisId) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.delete(`/api/startups/analyze-idea/saved/${analysisId}`);
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function saveBuildProgress(token, day, completedTasks, notes = '') {
+  try {
+    assertApiConfigured();
+    const { data } = await api.post('/api/startups/progress/save', { token, day, completed_tasks: completedTasks, notes });
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function loadBuildProgress(token) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.get(`/api/startups/progress/${token}`);
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function getAnalytics() {
+  try {
+    assertApiConfigured();
+    const { data } = await api.get('/api/analytics');
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function trackEvent(event, properties = {}) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.post('/api/analytics/track', { event, properties });
+    return data;
+  } catch {
+    return { ok: false };
+  }
+}
+
+export async function evaluateStartup(profile, idea) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.post('/api/startups/evaluate', { profile, idea });
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function generateCofounder(profile, idea) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.post('/api/startups/cofounder', { profile, idea });
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function generateRoadmap(profile, idea, plan) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.post('/api/startups/roadmap', { profile, idea, plan });
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function generateReadme(profile, idea, plan) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.post('/api/startups/readme', { profile, idea, plan });
     return data;
   } catch (error) {
     throw new Error(apiError(error));

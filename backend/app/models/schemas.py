@@ -1,6 +1,50 @@
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, Literal
 from datetime import datetime
+
+
+class AgentEvaluation(BaseModel):
+    agent: str
+    score: int = Field(..., ge=0, le=100)
+    strengths: list[str]
+    risks: list[str]
+    improvements: list[str]
+
+
+class FundingDecision(BaseModel):
+    decision: Literal["Fund", "Revise", "Reject"]
+    overall_score: int = Field(..., ge=0, le=100)
+    evaluations: list[AgentEvaluation]
+    summary: str
+
+
+class CofounderPersona(BaseModel):
+    name: str
+    personality: str
+    strengths: list[str]
+    complement: str
+    advice: list[str] = Field(..., min_length=3, max_length=3)
+
+
+class RoadmapTask(BaseModel):
+    phase: str
+    task: str
+    priority: Literal["High", "Medium", "Low"]
+    estimated_time_hours: int
+    tools_needed: list[str]
+    status: Literal["Pending", "In Progress", "Done"] = "Pending"
+
+
+class ReadmeContent(BaseModel):
+    project_name: str
+    problem: str
+    solution: str
+    features: list[str]
+    tech_stack: list[str]
+    architecture: str
+    setup_steps: list[str]
+    future_improvements: list[str]
+    markdown: str
 
 
 class SignUpRequest(BaseModel):
@@ -117,3 +161,175 @@ class PlanRequest(BaseModel):
 class SavePlanRequest(BaseModel):
     plan: StartupPlan
     profile: UserProfile
+
+
+class EvaluationRequest(BaseModel):
+    profile: UserProfile
+    idea: StartupIdea
+
+
+class CofounderRequest(BaseModel):
+    profile: UserProfile
+    idea: StartupIdea
+
+
+class RoadmapRequest(BaseModel):
+    profile: UserProfile
+    idea: StartupIdea
+    plan: StartupPlan
+
+
+class ReadmeRequest(BaseModel):
+    profile: UserProfile
+    idea: StartupIdea
+    plan: StartupPlan
+
+
+class IdeaAnalysisRequest(BaseModel):
+    startup_idea: str = Field(..., min_length=10, max_length=2000)
+    target_audience: Optional[str] = ""
+    industry: Optional[str] = ""
+    skills: Optional[str] = ""
+    budget_time_limit: Optional[str] = ""
+
+
+class CompetitorAnalysis(BaseModel):
+    name: str
+    strengths: list[str]
+    weaknesses: list[str]
+    source: Literal["ai-estimated", "web"]
+
+
+class BuildPlanDay(BaseModel):
+    day: int
+    title: str
+    tasks: list[str]
+
+
+class IdeaChatRequest(BaseModel):
+    analysis: dict
+    question: str = Field(..., min_length=1, max_length=1000)
+
+
+class IdeaChatResponse(BaseModel):
+    answer: str
+
+
+class ShareLinkRequest(BaseModel):
+    analysis: dict
+    idea_form: dict = {}
+
+
+class ShareLinkResponse(BaseModel):
+    token: str
+    url: str
+
+
+class MarketSizeRequest(BaseModel):
+    startup_idea: str = Field(..., min_length=10, max_length=2000)
+    industry: Optional[str] = ""
+    target_audience: Optional[str] = ""
+
+
+class MarketSizeResponse(BaseModel):
+    tam: str
+    sam: str
+    som: str
+    growth_rate: str
+    key_trends: list[str]
+    revenue_projection: str
+    data_confidence: Literal["high", "medium", "low"]
+
+
+class DebateRequest(BaseModel):
+    startup_idea: str = Field(..., min_length=10, max_length=2000)
+    industry: Optional[str] = ""
+    target_audience: Optional[str] = ""
+
+
+class DebateAgentMessage(BaseModel):
+    agent_name: str
+    role: str
+    argument: str
+    emoji: str = ""
+
+
+class DebateResponse(BaseModel):
+    agents: list[DebateAgentMessage]
+    consensus: str
+    key_takeaways: list[str]
+
+
+class ComparisonRequest(BaseModel):
+    idea_a: str = Field(..., min_length=10, max_length=2000)
+    idea_b: str = Field(..., min_length=10, max_length=2000)
+    industry: Optional[str] = ""
+
+
+class ComparisonDimension(BaseModel):
+    dimension: str
+    idea_a_score: int = Field(..., ge=0, le=10)
+    idea_b_score: int = Field(..., ge=0, le=10)
+    idea_a_notes: str
+    idea_b_notes: str
+
+
+class ComparisonResponse(BaseModel):
+    dimensions: list[ComparisonDimension]
+    overall_winner: str
+    summary: str
+
+
+class EmailReportRequest(BaseModel):
+    analysis: dict
+    recipient_email: str = Field(..., min_length=3, max_length=254)
+    idea_form: dict = {}
+
+
+class EmailReportResponse(BaseModel):
+    sent: bool
+    message: str
+
+
+class ProgressSaveRequest(BaseModel):
+    token: str = Field(..., min_length=1)
+    day: int = Field(..., ge=1, le=7)
+    completed_tasks: list[str]
+    notes: str = ""
+
+
+class ProgressLoadResponse(BaseModel):
+    days: dict
+
+
+class AnalyticsEvent(BaseModel):
+    event: str = Field(..., min_length=1)
+    properties: dict = {}
+
+
+class AnalyticsResponse(BaseModel):
+    total_analyses: int
+    total_shares: int
+    total_chats: int
+    top_industries: list[dict]
+    recent_events: list[dict]
+
+class IdeaAnalysisResponse(BaseModel):
+    refined_idea: str
+    problem_statement: str
+    target_users: list[str]
+    market_demand_score: float
+    uniqueness_score: float
+    feasibility_score: float
+    revenue_potential_score: float
+    hackathon_winning_score: float
+    competitors: list[CompetitorAnalysis]
+    differentiation_strategy: str
+    mvp_features: list[str]
+    tech_stack_recommendation: list[str]
+    monetization_model: str
+    risks: list[str]
+    improvement_suggestions: list[str]
+    seven_day_build_plan: list[BuildPlanDay]
+    founder_readiness_check: str
+    pitch_summary: str
