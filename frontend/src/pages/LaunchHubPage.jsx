@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { AppNav } from '../components/PageShell.jsx';
 import { Sparkles, Save, Copy, CheckCheck, Rocket, Smartphone, FlaskConical, Users, CheckSquare, Square, Clock, Target } from 'lucide-react';

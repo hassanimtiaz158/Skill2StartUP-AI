@@ -23,24 +23,19 @@ const RESOURCES = [
 
 function DropdownMenu({ label, items, isOpen, onToggle, onClose }) {
   const ref = useRef(null);
-  const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
     function handleClickOutside(e) {
       if (ref.current && !ref.current.contains(e.target)) onClose();
     }
-    document.addEventListener('mousedown', handleClickOutside);
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [onClose]);
+  }, [isOpen, onClose]);
 
   const isActive = items.some(item => item.path && location.pathname.startsWith(item.path));
-
-  function handleClick(e, path) {
-    e.preventDefault();
-    onClose();
-    navigate(path);
-  }
 
   return (
     <div ref={ref} className="relative">
@@ -57,14 +52,15 @@ function DropdownMenu({ label, items, isOpen, onToggle, onClose }) {
             {items.map((item) => {
               const isItemActive = location.pathname === item.path;
               return (
-                <button
+                <a
                   key={item.path}
-                  onClick={(e) => handleClick(e, item.path)}
+                  href={item.path}
+                  onClick={() => onClose()}
                   className={`block w-full text-left px-4 py-3 transition-all duration-150 border-l-2 ${isItemActive ? 'border-l-[#0A0A0A] bg-[#F5F3EE]' : 'border-l-transparent hover:border-l-[#0A0A0A] hover:bg-[#F5F3EE]'}`}
                 >
                   <div className="text-[13px] font-semibold text-[#0A0A0A]">{item.label}</div>
                   <div className="text-[11px] text-[#8A8A8A] mt-0.5">{item.desc}</div>
-                </button>
+                </a>
               );
             })}
           </div>

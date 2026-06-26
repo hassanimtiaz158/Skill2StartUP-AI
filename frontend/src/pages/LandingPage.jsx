@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowRight, Brain, Code, Lightbulb, Play, Rocket, Search, Sparkles, Target, TrendingUp, Zap, Wand2 } from 'lucide-react';
 import { AppNav, BrandLink } from '../components/PageShell.jsx';
@@ -8,19 +8,27 @@ import { analyzeProfile, generateIdeas } from '../services/api.js';
 import { clearGeneratedState, saveValue } from '../services/storage.js';
 
 const features = [
-  { title: 'Founder Analysis', desc: 'Understand your strengths, gaps, and best startup categories.', icon: Brain },
-  { title: 'Startup Ideas', desc: 'Generate structured ideas scored against opportunity and founder fit.', icon: Lightbulb },
-  { title: 'Competitor Mapping', desc: 'See competitors, limitations, advantages, and market gaps.', icon: Search },
-  { title: 'MVP Scope', desc: 'Turn an idea into buildable v1 features and later v2 expansion.', icon: Target },
-  { title: 'Revenue Models', desc: 'Get pricing, monetization methods, and first-customer strategy.', icon: TrendingUp },
-  { title: 'Pitch Content', desc: 'Create hackathon and thirty-second pitches for fast validation.', icon: Sparkles },
+  { title: 'Founder Analysis', path: '/ai-cofounder', desc: 'Understand your strengths, gaps, and best startup categories.', icon: Brain },
+  { title: 'Startup Ideas', path: '/input', desc: 'Generate structured ideas scored against opportunity and founder fit.', icon: Lightbulb },
+  { title: 'Competitor Mapping', path: '/investor-tools', desc: 'See competitors, limitations, advantages, and market gaps.', icon: Search },
+  { title: 'MVP Scope', path: '/development-hub', desc: 'Turn an idea into buildable v1 features and later v2 expansion.', icon: Target },
+  { title: 'Revenue Models', path: '/financial-plan', desc: 'Get pricing, monetization methods, and first-customer strategy.', icon: TrendingUp },
+  { title: 'Pitch Content', path: '/marketing-hub', desc: 'Create hackathon and thirty-second pitches for fast validation.', icon: Sparkles },
 ];
 
 const sampleSkills = 'Full-Stack Development, AI/ML, UI/UX Design, Cloud Computing';
 
 export default function LandingPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [skills, setSkills] = useState('');
+
+  useEffect(() => {
+    if (location.hash) {
+      const el = document.querySelector(location.hash);
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [location]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [judgeMode, setJudgeMode] = useState(false);
@@ -150,7 +158,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="border-y-2 border-[#0A0A0A] py-14">
+      <section id="how-it-works" className="border-y-2 border-[#0A0A0A] py-14">
         <div className="max-w-7xl mx-auto px-6">
           <p className="text-[9px] font-black uppercase tracking-[0.2em] text-[#6A6A6A] text-center mb-8">How It Works</p>
           <div className="flex items-center justify-center gap-0 flex-wrap">
@@ -195,7 +203,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="border-t-2 border-[#0A0A0A] py-20">
+      <section id="features" className="border-t-2 border-[#0A0A0A] py-20">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center max-w-2xl mx-auto mb-12">
             <span className="section-label mb-4">Features</span>
@@ -203,15 +211,36 @@ export default function LandingPage() {
             <p className="text-sm font-medium text-[#3A3A3A] leading-relaxed">AI-powered tools that cover the entire startup journey.</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {features.map((f, i) => (
-              <motion.div key={f.title} initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08, duration: 0.3 }}
-                className="border-2 border-[#0A0A0A] bg-white p-6 card-hover">
+            {features.map((f) => (
+              <Link key={f.title} to={f.path}
+                className="block border-2 border-[#0A0A0A] bg-white p-6 card-hover cursor-pointer hover:bg-[#F0EEE9] transition-colors">
                 <div className="w-10 h-10 border-2 border-[#0A0A0A] flex items-center justify-center mb-4">
                   <f.icon className="h-5 w-5 text-[#0A0A0A]" />
                 </div>
                 <h3 className="text-sm font-bold uppercase tracking-tight text-[#0A0A0A] mb-2">{f.title}</h3>
                 <p className="text-xs font-medium text-[#3A3A3A] leading-relaxed">{f.desc}</p>
-              </motion.div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="faq" className="border-t-2 border-[#0A0A0A] py-20">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center max-w-2xl mx-auto mb-12">
+            <span className="section-label mb-4">FAQ</span>
+            <h2 className="text-3xl md:text-5xl font-black tracking-[-0.02em] leading-none mb-4">Common questions</h2>
+          </div>
+          <div className="max-w-3xl mx-auto space-y-4">
+            {[
+              { q: 'How does Skill2Startup work?', a: 'Enter your skills and our AI generates personalized startup ideas, competitor analysis, MVP scope, revenue models, and pitch content in seconds.' },
+              { q: 'Do I need a business background?', a: 'No. Skill2Startup is designed for students and builders with technical skills but no business experience.' },
+              { q: 'Is it free to use?', a: 'Yes. You can generate startup ideas and explore all features without any cost.' },
+            ].map((faq) => (
+              <div key={faq.q} className="border-2 border-[#0A0A0A] bg-white p-6">
+                <h3 className="text-sm font-bold uppercase tracking-tight mb-2">{faq.q}</h3>
+                <p className="text-xs font-medium text-[#3A3A3A] leading-relaxed">{faq.a}</p>
+              </div>
             ))}
           </div>
         </div>
