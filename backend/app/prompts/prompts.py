@@ -1110,3 +1110,150 @@ USER QUESTION: {question}
 Return a JSON object with this exact structure:
 {{"answer": "Your detailed answer here (2-4 paragraphs, specific to this startup)"}}
 Return ONLY the JSON object. No other text."""
+
+
+INVESTOR_TOOLS_PROMPT = """You are an investment banking analyst and startup fundraising expert. Based on the startup idea details below, generate a comprehensive investor tools package with five sections: Pitch Deck Slides, Elevator Pitch, Executive Summary, Investment Readiness Score, and Funding Recommendation. Every item must be specific to this startup — no generic placeholders.
+
+STARTUP DETAILS:
+- Name: {startup_name}
+- Pitch: {pitch}
+- Problem: {problem}
+- Solution: {solution}
+- Target Users: {target_users}
+- Industry: {industry}
+- Business Model: {business_model}
+- Location: {location}
+- MVP Features: {mvp_features}
+- Competitors: {competitors}
+- Market Demand Score (0-10): {market_demand}
+- Uniqueness Score (0-10): {uniqueness}
+- Feasibility Score (0-10): {feasibility}
+- Revenue Potential Score (0-10): {revenue_potential}
+- Key Risks: {risks}
+- Monetization Model: {monetization_model}
+
+Return a JSON object with this exact structure:
+{{
+    "pitch_deck": {{
+        "slides": [
+            {{
+                "slide_number": 1,
+                "title": "Problem",
+                "content": "Detailed slide content explaining the problem this startup solves (3-5 sentences, specific to this startup)",
+                "visual_suggestion": "What to show on this slide (e.g. chart, image, graph description)"
+            }},
+            {{
+                "slide_number": 2,
+                "title": "Solution",
+                "content": "Detailed slide content explaining the startup's solution (3-5 sentences)",
+                "visual_suggestion": "Visual suggestion"
+            }},
+            {{
+                "slide_number": 3,
+                "title": "Market Size",
+                "content": "TAM, SAM, SOM with specific numbers and sources (3-4 sentences)",
+                "visual_suggestion": "Visual suggestion"
+            }},
+            {{
+                "slide_number": 4,
+                "title": "Product",
+                "content": "Product description with MVP features and user experience (3-4 sentences)",
+                "visual_suggestion": "Visual suggestion"
+            }},
+            {{
+                "slide_number": 5,
+                "title": "Business Model",
+                "content": "Revenue streams, pricing, unit economics (3-4 sentences)",
+                "visual_suggestion": "Visual suggestion"
+            }},
+            {{
+                "slide_number": 6,
+                "title": "Competitors",
+                "content": "Competitive landscape and differentiation (3-4 sentences)",
+                "visual_suggestion": "Visual suggestion"
+            }},
+            {{
+                "slide_number": 7,
+                "title": "Go-To-Market",
+                "content": "GTM strategy targeting first customers (3-4 sentences)",
+                "visual_suggestion": "Visual suggestion"
+            }},
+            {{
+                "slide_number": 8,
+                "title": "Traction",
+                "content": "Current traction or expected milestones (3-4 sentences)",
+                "visual_suggestion": "Visual suggestion"
+            }},
+            {{
+                "slide_number": 9,
+                "title": "Financials",
+                "content": "Revenue projections, key metrics, and financial highlights (3-4 sentences)",
+                "visual_suggestion": "Visual suggestion"
+            }},
+            {{
+                "slide_number": 10,
+                "title": "Team",
+                "content": "Founder background and why this team can execute (3-4 sentences)",
+                "visual_suggestion": "Visual suggestion"
+            }},
+            {{
+                "slide_number": 11,
+                "title": "Funding Ask",
+                "content": "How much is being raised, use of funds breakdown, and terms (3-4 sentences)",
+                "visual_suggestion": "Visual suggestion"
+            }},
+            {{
+                "slide_number": 12,
+                "title": "Roadmap",
+                "content": "Key milestones for the next 12-18 months (3-4 sentences)",
+                "visual_suggestion": "Visual suggestion"
+            }}
+        ]
+    }},
+    "elevator_pitch": {{
+        "short_pitch": "A compelling 30-second pitch (2-3 sentences) that clearly states the problem, solution, and why now — specific to this startup",
+        "full_pitch": "A 60-second investor pitch (4-5 sentences) with more detail on market, traction, and ask",
+        "key_message": "The single most important message investors should remember"
+    }},
+    "executive_summary": {{
+        "problem": "Clear problem statement (2-3 sentences)",
+        "solution": "Clear solution description (2-3 sentences)",
+        "target_market": "Target market description with TAM (2-3 sentences)",
+        "business_model": "How the startup makes money (2-3 sentences)",
+        "competitive_advantage": "The startup's unfair advantage (2-3 sentences)",
+        "revenue_potential": "Revenue potential and projections (2-3 sentences)",
+        "risks": ["risk 1 specific to this startup", "risk 2", "risk 3"],
+        "next_steps": "What the founder needs to do next (2-3 sentences)"
+    }},
+    "readiness_score": {{
+        "overall_score": <0-100 integer>,
+        "market_demand_score": <0-100 integer>,
+        "uniqueness_score": <0-100 integer>,
+        "feasibility_score": <0-100 integer>,
+        "revenue_potential_score": <0-100 integer>,
+        "traction_score": <0-100 integer>,
+        "team_readiness_score": <0-100 integer>,
+        "financial_clarity_score": <0-100 integer>,
+        "risk_management_score": <0-100 integer>,
+        "strengths": ["strength 1", "strength 2", "strength 3"],
+        "weaknesses": ["weakness 1", "weakness 2", "weakness 3"],
+        "improvement_suggestions": ["suggestion 1", "suggestion 2", "suggestion 3", "suggestion 4"]
+    }},
+    "funding_recommendation": {{
+        "recommended_type": "Bootstrapping" or "Angel Investment" or "Venture Capital" or "Grants" or "Strategic Partnerships",
+        "explanation": "Why this funding type fits this specific startup (3-4 sentences)",
+        "amount_range": "e.g. $50K - $150K",
+        "equity_to_offer": "e.g. 5-10% or N/A for non-equity",
+        "preparation_steps": [
+            "Specific step 1 the founder should take before fundraising",
+            "Specific step 2",
+            "Specific step 3",
+            "Specific step 4"
+        ],
+        "ideal_investor_types": ["angel investor focused on this industry", "specific VC type", "grant program name"],
+        "milestones_to_reach_before_fundraising": ["milestone 1", "milestone 2", "milestone 3"]
+    }}
+}}
+
+Rules: All content must reference the startup's specific name, features, users, competitors, and metrics. No generic filler text. Pitch deck slides should be ready to copy into a presentation. The readiness score should honestly assess the startup based on the provided scores and risks.
+Return ONLY the JSON object. No other text."""

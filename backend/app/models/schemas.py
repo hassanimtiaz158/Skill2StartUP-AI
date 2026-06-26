@@ -655,3 +655,83 @@ class AICofounderChatRequest(BaseModel):
 
 class AICofounderChatResponse(BaseModel):
     answer: str
+
+
+class PitchDeckSlide(BaseModel):
+    slide_number: int
+    title: str
+    content: str = ""
+    visual_suggestion: str = ""
+
+
+class PitchDeck(BaseModel):
+    slides: list[PitchDeckSlide]
+
+
+class ElevatorPitch(BaseModel):
+    short_pitch: str = ""
+    full_pitch: str = ""
+    key_message: str = ""
+
+
+class ExecutiveSummary(BaseModel):
+    problem: str = ""
+    solution: str = ""
+    target_market: str = ""
+    business_model: str = ""
+    competitive_advantage: str = ""
+    revenue_potential: str = ""
+    risks: list[str] = []
+    next_steps: str = ""
+
+
+class ReadinessScore(BaseModel):
+    overall_score: int = 0
+    market_demand_score: int = 0
+    uniqueness_score: int = 0
+    feasibility_score: int = 0
+    revenue_potential_score: int = 0
+    traction_score: int = 0
+    team_readiness_score: int = 0
+    financial_clarity_score: int = 0
+    risk_management_score: int = 0
+    strengths: list[str] = []
+    weaknesses: list[str] = []
+    improvement_suggestions: list[str] = []
+
+
+class FundingRecommendation(BaseModel):
+    recommended_type: str = ""
+    explanation: str = ""
+    amount_range: str = ""
+    equity_to_offer: str = ""
+    preparation_steps: list[str] = []
+    ideal_investor_types: list[str] = []
+    milestones_to_reach_before_fundraising: list[str] = []
+
+
+class InvestorToolsRequest(BaseModel):
+    startup_name: str = ""
+    pitch: str = ""
+    problem: str = ""
+    solution: str = ""
+    target_users: list[str] = []
+    industry: str = ""
+    location: str = ""
+    business_model: str = ""
+    mvp_features: list[str] = []
+    competitors: list = []
+    market_demand: float = 0
+    uniqueness: float = 0
+    feasibility: float = 0
+    revenue_potential: float = 0
+    risks: list[str] = []
+    monetization_model: str = ""
+
+
+class InvestorToolsResponse(BaseModel):
+    pitch_deck: PitchDeck
+    elevator_pitch: ElevatorPitch
+    executive_summary: ExecutiveSummary
+    readiness_score: ReadinessScore
+    funding_recommendation: FundingRecommendation

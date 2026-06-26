@@ -33,6 +33,7 @@ from app.prompts.prompts import (
     AI_MARKETING_PROMPT,
     AI_TECH_PROMPT,
     AI_INVESTOR_PROMPT,
+    INVESTOR_TOOLS_PROMPT,
 )
 
 
@@ -437,4 +438,19 @@ async def generate_ai_cofounder_chat(advisor_type: str, question: str, startup_c
 
     context["question"] = question
     prompt = prompt_template.format(**context)
+    return await _generate(prompt)
+
+
+async def generate_investor_tools(data: dict) -> dict:
+    for key in ("target_users", "mvp_features"):
+        if isinstance(data.get(key), list):
+            data[key] = ", ".join(data[key])
+    if isinstance(data.get("competitors"), list):
+        data["competitors"] = ", ".join(
+            c.get("name", str(c)) if isinstance(c, dict) else str(c)
+            for c in data["competitors"]
+        )
+    if isinstance(data.get("risks"), list):
+        data["risks"] = ", ".join(data["risks"])
+    prompt = INVESTOR_TOOLS_PROMPT.format(**data)
     return await _generate(prompt)

@@ -36,6 +36,8 @@ from app.models.schemas import (
     MarketIntelligenceResponse,
     AICofounderChatRequest,
     AICofounderChatResponse,
+    InvestorToolsRequest,
+    InvestorToolsResponse,
     ProgressSaveRequest,
     AnalyticsEvent,
     AnalyticsResponse,
@@ -60,10 +62,11 @@ from app.services.ai_service import (
     generate_customer_insights,
     generate_market_intelligence,
     generate_ai_cofounder_chat,
+    generate_investor_tools,
 )
 from app.services.ai_errors import AIServiceError, AIRateLimitError
 from app.services.auth_service import get_user_by_token
-from app.services.database_service import save_shared_analysis, get_shared_analysis, save_build_progress, get_build_progress, track_event, get_analytics_summary, save_idea_analysis, get_saved_idea_analyses, delete_saved_idea_analysis, save_customer_strategy, get_customer_strategies, delete_customer_strategy, save_decision_report, get_decision_reports, delete_decision_report, save_business_plan, get_business_plans, delete_business_plan, save_customer_insights, get_customer_insights_list, delete_customer_insights, save_market_intelligence, get_market_intelligence_list, delete_market_intelligence, save_ai_cofounder_chat, get_ai_cofounder_chats, delete_ai_cofounder_chat
+from app.services.database_service import save_shared_analysis, get_shared_analysis, save_build_progress, get_build_progress, track_event, get_analytics_summary, save_idea_analysis, get_saved_idea_analyses, delete_saved_idea_analysis, save_customer_strategy, get_customer_strategies, delete_customer_strategy, save_decision_report, get_decision_reports, delete_decision_report, save_business_plan, get_business_plans, delete_business_plan, save_customer_insights, get_customer_insights_list, delete_customer_insights, save_market_intelligence, get_market_intelligence_list, delete_market_intelligence, save_ai_cofounder_chat, get_ai_cofounder_chats, delete_ai_cofounder_chat, save_investor_tools, get_investor_tools_list, delete_investor_tools
 from app.services.email_service import send_email
 
 logger = logging.getLogger(__name__)
@@ -869,6 +872,73 @@ async def delete_ai_cofounder_chat_endpoint(chat_id: str, user_id: str = Depends
     except Exception as e:
         logger.error("Delete AI cofounder chat failed: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to delete chat.")
+
+
+@router.post("/api/investor-tools/generate", response_model=InvestorToolsResponse)
+async def generate_investor_tools_report(request: InvestorToolsRequest):
+    try:
+        track_event("investor_tools", {"idea_preview": request.startup_name[:50] if request.startup_name else request.pitch[:50]})
+        result = await generate_investor_tools(request.model_dump())
+    except AIRateLimitError:
+        raise HTTPException(status_code=429, detail="AI service rate limited. Please try again in a moment.")
+    except AIServiceError as e:
+        raise HTTPException(status_code=502, detail=f"AI service error: {str(e)}")
+    except Exception as e:
+        logger.error("Investor tools generation failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to generate investor tools. Please try again.")
+
+    required = ("pitch_deck", "elevator_pitch", "executive_summary", "readiness_score", "funding_recommendation")
+    missing = [f for f in required if f not in result]
+    if missing:
+        logger.error("Investor tools missing fields: %s", missing)
+        raise HTTPException(status_code=502, detail="AI returned an incomplete report. Please try again.")
+
+    try:
+        return InvestorToolsResponse(**result)
+    except Exception as e:
+        logger.error("Investor tools response validation failed: %s", e)
+        raise HTTPException(status_code=502, detail="AI returned an invalid response format.")
+
+
+@router.post("/api/investor-tools/save")
+async def save_investor_tools_endpoint(body: dict, user_id: str = Depends(_require_user_id)):
+    try:
+        track_event("save_investor_tools", {"user_id": user_id})
+        report = body.get("report", {})
+        idea_context = body.get("idea_context", {})
+        if not report:
+            raise HTTPException(status_code=400, detail="Report data is required.")
+        report_id = save_investor_tools(report, idea_context, user_id=user_id)
+        return {"report_id": report_id, "message": "Investor tools saved successfully."}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Save investor tools failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to save report.")
+
+
+@router.get("/api/investor-tools/saved")
+async def list_saved_investor_tools(user_id: str = Depends(_require_user_id)):
+    try:
+        reports = get_investor_tools_list(user_id=user_id)
+        return {"reports": reports}
+    except Exception as e:
+        logger.error("List investor tools failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to fetch saved reports.")
+
+
+@router.delete("/api/investor-tools/{report_id}")
+async def remove_investor_tools(report_id: str, user_id: str = Depends(_require_user_id)):
+    try:
+        deleted = delete_investor_tools(report_id, user_id=user_id)
+        if not deleted:
+            raise HTTPException(status_code=404, detail="Report not found")
+        return {"message": "Report deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Delete investor tools failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to delete report.")
 
 
 @router.post("/api/startups/analyze-idea/save")

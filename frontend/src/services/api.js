@@ -663,6 +663,46 @@ export async function deleteAICofounderChat(chatId) {
   }
 }
 
+export async function generateInvestorTools(data) {
+  try {
+    assertApiConfigured();
+    const { data: result } = await api.post('/api/investor-tools/generate', data);
+    return result;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function saveInvestorTools(report, ideaContext = {}) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.post('/api/investor-tools/save', { report, idea_context: ideaContext });
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function getSavedInvestorTools() {
+  try {
+    assertApiConfigured();
+    const { data } = await api.get('/api/investor-tools/saved');
+    return data.reports || [];
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function deleteInvestorTools(reportId) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.delete(`/api/investor-tools/${reportId}`);
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
 export async function trackEvent(event, properties = {}) {
   try {
     assertApiConfigured();

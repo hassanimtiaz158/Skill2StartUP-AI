@@ -23,6 +23,7 @@ business_plans = db["business_plans"]
 customer_insights = db["customer_insights"]
 market_intelligence = db["market_intelligence"]
 ai_cofounder_chats = db["ai_cofounder_chats"]
+investor_tools = db["investor_tools"]
 users = db["users"]
 
 
@@ -40,6 +41,7 @@ def ensure_indexes():
         market_intelligence.create_index([("user_id", ASCENDING), ("created_at", DESCENDING)])
         ai_cofounder_chats.create_index([("user_id", ASCENDING), ("created_at", DESCENDING)])
         ai_cofounder_chats.create_index([("advisor_type", ASCENDING), ("user_id", ASCENDING)])
+        investor_tools.create_index([("user_id", ASCENDING), ("created_at", DESCENDING)])
         founder_profiles.create_index([("created_at", DESCENDING)])
         users.create_index([("email", ASCENDING)], unique=True)
         users.create_index([("created_at", DESCENDING)])

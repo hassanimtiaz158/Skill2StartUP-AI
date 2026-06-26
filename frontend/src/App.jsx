@@ -12,6 +12,7 @@ import StartupDetailPage from './pages/StartupDetailPage.jsx';
 import ComparisonPage from './pages/ComparisonPage.jsx';
 import AnalyticsPage from './pages/AnalyticsPage.jsx';
 import AICofounderPage from './pages/AICofounderPage.jsx';
+import InvestorToolsPage from './pages/InvestorToolsPage.jsx';
 
 export default function App() {
   return (
@@ -26,6 +27,7 @@ export default function App() {
       <Route path="/compare" element={<ComparisonPage />} />
       <Route path="/analytics" element={<AnalyticsPage />} />
       <Route path="/ai-cofounder" element={<AICofounderPage />} />
+      <Route path="/investor-tools" element={<InvestorToolsPage />} />
       <Route path="/dashboard" element={<DashboardPage />} />
       <Route path="/startups/:planId" element={<StartupDetailPage />} />
       <Route path="*" element={<NotFoundPage />} />

@@ -45,6 +45,7 @@ export function AppNav() {
           </button>
           <Link to="/dashboard" className="text-xs font-bold uppercase tracking-widest text-[#0A0A0A] hover:underline">Dashboard</Link>
           <Link to="/ai-cofounder" className="text-xs font-bold uppercase tracking-widest text-[#0A0A0A] hover:underline">AI Co-Founder</Link>
+          <Link to="/investor-tools" className="text-xs font-bold uppercase tracking-widest text-[#0A0A0A] hover:underline">Investor Tools</Link>
           {session?.user ? (
             <>
               <span className="text-xs font-bold uppercase tracking-widest text-[#6A6A6A]">{session.user.name}</span>

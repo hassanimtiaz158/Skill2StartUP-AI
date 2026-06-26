@@ -2,7 +2,7 @@ import logging
 import secrets
 from datetime import datetime
 from bson import ObjectId, errors as bson_errors
-from app.database import founder_profiles, startup_plans, saved_analyses, customer_strategies, decision_reports, business_plans, customer_insights, market_intelligence, ai_cofounder_chats
+from app.database import founder_profiles, startup_plans, saved_analyses, customer_strategies, decision_reports, business_plans, customer_insights, market_intelligence, ai_cofounder_chats, investor_tools
 
 logger = logging.getLogger(__name__)
 
@@ -338,4 +338,34 @@ def delete_ai_cofounder_chat(chat_id: str, user_id: str | None = None) -> bool:
     if user_id:
         query["user_id"] = user_id
     result = ai_cofounder_chats.delete_one(query)
+    return result.deleted_count > 0
+
+
+def save_investor_tools(report: dict, idea_context: dict, user_id: str | None = None) -> str:
+    doc = {
+        "report": report,
+        "idea_context": idea_context,
+        "user_id": user_id,
+        "created_at": datetime.utcnow(),
+    }
+    result = investor_tools.insert_one(doc)
+    return str(result.inserted_id)
+
+
+def get_investor_tools_list(user_id: str | None = None) -> list:
+    query = {"user_id": user_id} if user_id else {}
+    docs = list(investor_tools.find(query).sort("created_at", -1))
+    return [serialize_doc(d) for d in docs]
+
+
+def delete_investor_tools(report_id: str, user_id: str | None = None) -> bool:
+    try:
+        obj_id = ObjectId(report_id)
+    except (bson_errors.InvalidId, TypeError):
+        logger.warning("Invalid report_id format: %s", report_id)
+        return False
+    query = {"_id": obj_id}
+    if user_id:
+        query["user_id"] = user_id
+    result = investor_tools.delete_one(query)
     return result.deleted_count > 0
