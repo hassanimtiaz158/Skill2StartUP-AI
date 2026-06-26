@@ -575,3 +575,83 @@ class CustomerInsightsResponse(BaseModel):
     ideal_customer_profile: IdealCustomerProfile
     pain_point_analysis: list[PainPoint]
     customer_journey: CustomerJourney
+
+
+class MarketSizeDetail(BaseModel):
+    value: str = ""
+    description: str = ""
+    assumptions: list[str] = []
+
+
+class MarketSize(BaseModel):
+    tam: MarketSizeDetail
+    sam: MarketSizeDetail
+    som: MarketSizeDetail
+    confidence_level: str = "Medium"
+
+
+class MarketTrend(BaseModel):
+    trend: str
+    description: str = ""
+    impact_on_startup: str = ""
+    priority: str = "Medium"
+
+
+class IndustryGrowth(BaseModel):
+    annual_growth_rate: str = ""
+    growth_drivers: list[str] = []
+    market_limitations: list[str] = []
+    five_year_outlook: str = ""
+
+
+class EmergingOpportunity(BaseModel):
+    opportunity: str
+    description: str = ""
+    how_to_capitalize: str = ""
+    impact: str = "Medium"
+    feasibility: str = "Medium"
+
+
+class CompetitorFeatureRow(BaseModel):
+    competitor_name: str
+    features: list[str] = []
+    pricing_model: str = ""
+    target_users: str = ""
+    strengths: list[str] = []
+    weaknesses: list[str] = []
+    differentiation_opportunity: str = ""
+
+
+class MarketIntelligenceRequest(BaseModel):
+    startup_name: str = ""
+    pitch: str = ""
+    problem: str = ""
+    solution: str = ""
+    target_users: list[str] = []
+    industry: str = ""
+    location: str = ""
+    business_model: str = ""
+    mvp_features: list[str] = []
+    competitors: list = []
+    market_demand: float = 0
+    uniqueness: float = 0
+    risks: list[str] = []
+    monetization_model: str = ""
+
+
+class MarketIntelligenceResponse(BaseModel):
+    market_size: MarketSize
+    market_trends: list[MarketTrend]
+    industry_growth: IndustryGrowth
+    emerging_opportunities: list[EmergingOpportunity]
+    competitor_comparison: list[CompetitorFeatureRow]
+
+
+class AICofounderChatRequest(BaseModel):
+    advisor_type: Literal["mentor", "product_manager", "marketing", "technical", "investor"]
+    question: str = Field(..., min_length=1, max_length=2000)
+    startup_context: dict = {}
+
+
+class AICofounderChatResponse(BaseModel):
+    answer: str

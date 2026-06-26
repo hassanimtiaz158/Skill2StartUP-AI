@@ -583,6 +583,86 @@ export async function deleteCustomerInsights(insightsId) {
   }
 }
 
+export async function generateMarketIntelligence(data) {
+  try {
+    assertApiConfigured();
+    const { data: result } = await api.post('/api/startups/market-intelligence', data);
+    return result;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function saveMarketIntelligence(report, ideaContext = {}) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.post('/api/startups/market-intelligence/save', { report, idea_context: ideaContext });
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function getSavedMarketIntelligence() {
+  try {
+    assertApiConfigured();
+    const { data } = await api.get('/api/startups/market-intelligence/saved');
+    return data.reports || [];
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function deleteMarketIntelligence(reportId) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.delete(`/api/startups/market-intelligence/${reportId}`);
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function generateAICofounderChat(advisorType, question, startupContext = {}) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.post('/api/ai-cofounder/chat', { advisor_type: advisorType, question, startup_context: startupContext });
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function saveAICofounderChat(advisorType, messages) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.post('/api/ai-cofounder/chat/save', { advisor_type: advisorType, messages });
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function getAICofounderChatHistory(advisorType) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.get(`/api/ai-cofounder/chat/${advisorType}`);
+    return data.chats || [];
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function deleteAICofounderChat(chatId) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.delete(`/api/ai-cofounder/chat/${chatId}`);
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
 export async function trackEvent(event, properties = {}) {
   try {
     assertApiConfigured();

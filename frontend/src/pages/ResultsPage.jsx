@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, Brain, Check, Download, Rocket, Save, Sparkles, Users, AlertTriangle, BarChart3, ThumbsUp, ThumbsDown, RotateCcw, DollarSign, Target, PieChart, TrendingUp, BookOpen, User, Heart, ShoppingCart, Smile } from 'lucide-react';
+import { ArrowRight, Brain, Check, Download, Rocket, Save, Sparkles, Users, AlertTriangle, BarChart3, ThumbsUp, ThumbsDown, RotateCcw, DollarSign, Target, PieChart, TrendingUp, BookOpen, User, Heart, ShoppingCart, Smile, Globe, Search, Layers } from 'lucide-react';
 import { AppNav } from '../components/PageShell.jsx';
-import { generateIdeas, generatePlan, savePlan, generateFirst100Customers, saveCustomerStrategy, generateDecisionEngine, saveDecisionReport, generateBusinessPlan, saveBusinessPlan, generateCustomerInsights, saveCustomerInsights } from '../services/api.js';
+import { generateIdeas, generatePlan, savePlan, generateFirst100Customers, saveCustomerStrategy, generateDecisionEngine, saveDecisionReport, generateBusinessPlan, saveBusinessPlan, generateCustomerInsights, saveCustomerInsights, generateMarketIntelligence, saveMarketIntelligence } from '../services/api.js';
 import { getSession, readValue, saveValue } from '../services/storage.js';
 
 function Score({ label, value }) {
@@ -79,6 +79,10 @@ export default function ResultsPage() {
   const [loadingCustomerInsights, setLoadingCustomerInsights] = useState(false);
   const [savingCustomerInsights, setSavingCustomerInsights] = useState(false);
   const [customerInsightsTab, setCustomerInsightsTab] = useState('personas');
+  const [marketIntelligence, setMarketIntelligence] = useState(readValue('marketIntelligence'));
+  const [loadingMarketIntel, setLoadingMarketIntel] = useState(false);
+  const [savingMarketIntel, setSavingMarketIntel] = useState(false);
+  const [marketIntelTab, setMarketIntelTab] = useState('size');
   const topIdea = useMemo(() => {
     return [...ideas].sort((a, b) => Number(b.opportunity_score || 0) - Number(a.opportunity_score || 0))[0];
   }, [ideas]);
@@ -413,6 +417,65 @@ export default function ResultsPage() {
     }
   }
 
+  async function handleMarketIntelligence() {
+    if (!selectedIdea) return;
+    setError('');
+    setNotice('');
+    setLoadingMarketIntel(true);
+    try {
+      const planData = plan || {};
+      const data = {
+        startup_name: selectedIdea.startup_name,
+        pitch: selectedIdea.pitch,
+        problem: selectedIdea.problem,
+        solution: selectedIdea.solution,
+        target_users: selectedIdea.target_users,
+        industry: profile?.preferred_industry || '',
+        location: '',
+        business_model: planData.revenue_model?.pricing_model || analysis?.monetization_model || '',
+        mvp_features: planData.mvp_features || selectedIdea.mvp_features || [],
+        competitors: planData.competitors || selectedIdea.competitors || [],
+        market_demand: Number(analysis?.market_demand_score || 0),
+        uniqueness: Number(analysis?.uniqueness_score || 0),
+        risks: planData.risks || analysis?.risks || [],
+        monetization_model: analysis?.monetization_model || '',
+      };
+      const result = await generateMarketIntelligence(data);
+      setMarketIntelligence(result);
+      saveValue('marketIntelligence', result);
+      setMarketIntelTab('size');
+      setNotice('Market intelligence report generated.');
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setLoadingMarketIntel(false);
+    }
+  }
+
+  async function handleSaveMarketIntelligence() {
+    if (!marketIntelligence || !selectedIdea) return;
+    setError('');
+    setNotice('');
+    if (!getSession()?.token) {
+      setError('Sign in to save this report to your dashboard.');
+      return;
+    }
+    setSavingMarketIntel(true);
+    try {
+      const ideaContext = {
+        startup_name: selectedIdea.startup_name,
+        pitch: selectedIdea.pitch,
+        industry: profile?.preferred_industry || '',
+      };
+      const result = await saveMarketIntelligence(marketIntelligence, ideaContext);
+      setNotice(result.message || 'Report saved.');
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setSavingMarketIntel(false);
+    }
+  }
+
   function handleDownload(format = 'json') {
     const content = format === 'md' ? markdownText : planText;
     if (!content) return;
@@ -486,11 +549,13 @@ export default function ResultsPage() {
                       setDecisionReport(null);
                       setBusinessPlan(null);
                       setCustomerInsights(null);
+                      setMarketIntelligence(null);
                       saveValue('selectedIdea', idea);
                       saveValue('customerPlan', null);
                       saveValue('decisionReport', null);
                       saveValue('businessPlan', null);
                       saveValue('customerInsights', null);
+                      saveValue('marketIntelligence', null);
                     }}
                     className={`w-full text-left border-2 border-[#0A0A0A] p-5 transition-colors ${selectedIdea?.startup_name === idea.startup_name ? 'bg-[#0A0A0A] text-[#F5F3EE]' : 'bg-white hover:bg-[#F5F3EE]'}`}
                   >
@@ -1143,6 +1208,188 @@ export default function ResultsPage() {
                               </div>
                             );
                           })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div className="border-t-2 border-[#0A0A0A] pt-6 mt-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
+                    <h3 className="text-xl font-black uppercase leading-none flex items-center gap-3"><Globe className="h-6 w-6" /> Market Intelligence</h3>
+                    <div className="flex gap-3">
+                      {marketIntelligence && (
+                        <button onClick={handleSaveMarketIntelligence} disabled={savingMarketIntel} className="h-10 px-4 border-2 border-[#0A0A0A] bg-[#0A0A0A] text-[#F5F3EE] text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-white hover:text-[#0A0A0A] transition-colors disabled:opacity-50">
+                          <Save className="h-4 w-4" /> {savingMarketIntel ? 'Saving' : 'Save'}
+                        </button>
+                      )}
+                      <button onClick={handleMarketIntelligence} disabled={loadingMarketIntel} className="h-10 px-4 border-2 border-[#0A0A0A] bg-white text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-[#0A0A0A] hover:text-[#F5F3EE] transition-colors disabled:opacity-50">
+                        {loadingMarketIntel ? 'Generating...' : <><Sparkles className="h-4 w-4" /> Generate Report</>}
+                      </button>
+                    </div>
+                  </div>
+
+                  {loadingMarketIntel && <LoadingSkeleton title="Analyzing Your Market" items={["Market Size", "Trends", "Growth Rate", "Opportunities", "Competitors"]} />}
+
+                  {marketIntelligence && (
+                    <div className="space-y-4">
+                      <div className="flex flex-wrap gap-1 border-2 border-[#0A0A0A] bg-white p-1">
+                        {[
+                          { key: 'size', label: 'Market Size', icon: BarChart3 },
+                          { key: 'trends', label: 'Market Trends', icon: TrendingUp },
+                          { key: 'growth', label: 'Industry Growth', icon: TrendingUp },
+                          { key: 'opportunities', label: 'Opportunities', icon: Search },
+                          { key: 'competitors', label: 'Competitor Comparison', icon: Layers },
+                        ].map((tab) => {
+                          const Icon = tab.icon;
+                          return (
+                            <button key={tab.key} onClick={() => setMarketIntelTab(tab.key)} className={`flex items-center gap-2 px-3 py-2 text-[9px] font-black uppercase tracking-widest transition-colors ${marketIntelTab === tab.key ? 'bg-[#0A0A0A] text-[#F5F3EE]' : 'bg-white text-[#0A0A0A] hover:bg-[#F5F3EE]'}`}>
+                              <Icon className="h-3 w-3" /> {tab.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {marketIntelTab === 'size' && (
+                        <div>
+                          <h4 className="text-xs font-black uppercase tracking-widest mb-4">Market Size Estimation</h4>
+                          <div className="grid sm:grid-cols-3 gap-3 mb-4">
+                            {[
+                              { key: 'tam', label: 'TAM', desc: 'Total Addressable Market' },
+                              { key: 'sam', label: 'SAM', desc: 'Serviceable Addressable Market' },
+                              { key: 'som', label: 'SOM', desc: 'Serviceable Obtainable Market' },
+                            ].map((m) => {
+                              const d = marketIntelligence?.market_size?.[m.key] || {};
+                              return (
+                                <div key={m.key} className="border-2 border-[#0A0A0A] bg-white p-5">
+                                  <p className="text-[9px] font-black uppercase tracking-widest text-[#6A6A6A] mb-1">{m.desc}</p>
+                                  <p className="text-2xl font-black mb-2">{d.value || 'N/A'}</p>
+                                  <p className="text-xs text-[#3A3A3A] mb-3 leading-relaxed">{d.description}</p>
+                                  {(d.assumptions || []).length > 0 && (
+                                    <div>
+                                      <p className="text-[9px] font-black uppercase tracking-widest text-[#6A6A6A] mb-1">Assumptions</p>
+                                      <ul className="text-xs text-[#3A3A3A] space-y-0.5">
+                                        {d.assumptions.map((a, ai) => <li key={ai}>&bull; {a}</li>)}
+                                      </ul>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                          <div className="border-2 border-[#0A0A0A] bg-white p-5">
+                            <div className="flex items-center gap-2">
+                              <p className="text-[9px] font-black uppercase tracking-widest text-[#6A6A6A]">Confidence Level:</p>
+                              <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-1 border ${marketIntelligence?.market_size?.confidence_level === 'High' ? 'border-green-500 bg-green-50 text-green-600' : marketIntelligence?.market_size?.confidence_level === 'Low' ? 'border-red-500 bg-red-50 text-red-600' : 'border-yellow-500 bg-yellow-50 text-yellow-600'}`}>{marketIntelligence?.market_size?.confidence_level || 'Medium'}</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {marketIntelTab === 'trends' && (
+                        <div>
+                          <h4 className="text-xs font-black uppercase tracking-widest mb-4">Market Trends</h4>
+                          <div className="space-y-3">
+                            {(marketIntelligence?.market_trends || []).map((t, i) => (
+                              <div key={i} className="border-2 border-[#0A0A0A] bg-white p-5">
+                                <div className="flex items-start justify-between gap-4 mb-3">
+                                  <h5 className="text-sm font-black uppercase">{t.trend}</h5>
+                                  <span className={`shrink-0 text-[9px] font-black uppercase tracking-widest px-2 py-1 border ${t.priority === 'High' ? 'border-green-500 bg-green-50 text-green-600' : t.priority === 'Low' ? 'border-red-500 bg-red-50 text-red-600' : 'border-yellow-500 bg-yellow-50 text-yellow-600'}`}>{t.priority}</span>
+                                </div>
+                                <p className="text-sm text-[#3A3A3A] mb-3 leading-relaxed">{t.description}</p>
+                                <div className="border-t border-[#0A0A0A]/10 pt-3">
+                                  <p className="text-[9px] font-black uppercase tracking-widest text-[#6A6A6A] mb-1">Impact on Startup</p>
+                                  <p className="text-sm text-[#3A3A3A] leading-relaxed">{t.impact_on_startup}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {marketIntelTab === 'growth' && (
+                        <div>
+                          <h4 className="text-xs font-black uppercase tracking-widest mb-4">Industry Growth</h4>
+                          <div className="border-2 border-[#0A0A0A] bg-[#F5F3EE] p-5 mb-4">
+                            <p className="text-[9px] font-black uppercase tracking-widest text-[#6A6A6A] mb-1">Annual Growth Rate</p>
+                            <p className="text-2xl font-black">{marketIntelligence?.industry_growth?.annual_growth_rate || 'N/A'}</p>
+                          </div>
+                          <div className="grid sm:grid-cols-2 gap-3 mb-4">
+                            <div className="border-2 border-[#0A0A0A] bg-white p-5">
+                              <p className="text-[9px] font-black uppercase tracking-widest text-[#6A6A6A] mb-2">Growth Drivers</p>
+                              <ul className="text-sm text-[#3A3A3A] space-y-1">
+                                {(marketIntelligence?.industry_growth?.growth_drivers || []).map((d, i) => <li key={i}>&bull; {d}</li>)}
+                              </ul>
+                            </div>
+                            <div className="border-2 border-[#0A0A0A] bg-white p-5">
+                              <p className="text-[9px] font-black uppercase tracking-widest text-[#6A6A6A] mb-2">Market Limitations</p>
+                              <ul className="text-sm text-[#3A3A3A] space-y-1">
+                                {(marketIntelligence?.industry_growth?.market_limitations || []).map((l, i) => <li key={i}>&bull; {l}</li>)}
+                              </ul>
+                            </div>
+                          </div>
+                          <div className="border-2 border-[#0A0A0A] bg-white p-5">
+                            <p className="text-[9px] font-black uppercase tracking-widest text-[#6A6A6A] mb-2">5-Year Outlook</p>
+                            <p className="text-sm text-[#3A3A3A] leading-relaxed">{marketIntelligence?.industry_growth?.five_year_outlook}</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {marketIntelTab === 'opportunities' && (
+                        <div>
+                          <h4 className="text-xs font-black uppercase tracking-widest mb-4">Emerging Opportunities</h4>
+                          <div className="space-y-3">
+                            {(marketIntelligence?.emerging_opportunities || []).map((o, i) => (
+                              <div key={i} className="border-2 border-[#0A0A0A] bg-white p-5">
+                                <div className="flex items-start justify-between gap-4 mb-3">
+                                  <h5 className="text-sm font-black uppercase">{o.opportunity}</h5>
+                                  <div className="flex gap-1 shrink-0">
+                                    <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-1 border ${o.impact === 'High' ? 'border-green-500 bg-green-50 text-green-600' : o.impact === 'Low' ? 'border-red-500 bg-red-50 text-red-600' : 'border-yellow-500 bg-yellow-50 text-yellow-600'}`}>Impact: {o.impact}</span>
+                                    <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-1 border ${o.feasibility === 'High' ? 'border-green-500 bg-green-50 text-green-600' : o.feasibility === 'Low' ? 'border-red-500 bg-red-50 text-red-600' : 'border-yellow-500 bg-yellow-50 text-yellow-600'}`}>Feasibility: {o.feasibility}</span>
+                                  </div>
+                                </div>
+                                <p className="text-sm text-[#3A3A3A] mb-3 leading-relaxed">{o.description}</p>
+                                <div className="border-t border-[#0A0A0A]/10 pt-3">
+                                  <p className="text-[9px] font-black uppercase tracking-widest text-[#6A6A6A] mb-1">How to Capitalize</p>
+                                  <p className="text-sm text-[#3A3A3A] leading-relaxed">{o.how_to_capitalize}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {marketIntelTab === 'competitors' && (
+                        <div>
+                          <h4 className="text-xs font-black uppercase tracking-widest mb-4">Competitor Feature Comparison</h4>
+                          <div className="overflow-x-auto border-2 border-[#0A0A0A] bg-white">
+                            <table className="w-full text-xs">
+                              <thead>
+                                <tr className="border-b-2 border-[#0A0A0A] bg-[#F5F3EE]">
+                                  <th className="text-left py-3 px-4 font-black uppercase tracking-widest">Competitor</th>
+                                  <th className="text-left py-3 px-4 font-black uppercase tracking-widest">Features</th>
+                                  <th className="text-left py-3 px-4 font-black uppercase tracking-widest">Pricing</th>
+                                  <th className="text-left py-3 px-4 font-black uppercase tracking-widest">Target Users</th>
+                                  <th className="text-left py-3 px-4 font-black uppercase tracking-widest">Strengths</th>
+                                  <th className="text-left py-3 px-4 font-black uppercase tracking-widest">Weaknesses</th>
+                                  <th className="text-left py-3 px-4 font-black uppercase tracking-widest">Differentiation</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {(marketIntelligence?.competitor_comparison || []).map((c, i) => (
+                                  <tr key={i} className="border-t border-[#0A0A0A]/10">
+                                    <td className="py-3 px-4 font-bold whitespace-nowrap">{c.competitor_name}</td>
+                                    <td className="py-3 px-4"><ul className="space-y-0.5">{(c.features || []).map((f, fi) => <li key={fi}>&bull; {f}</li>)}</ul></td>
+                                    <td className="py-3 px-4">{c.pricing_model}</td>
+                                    <td className="py-3 px-4">{c.target_users}</td>
+                                    <td className="py-3 px-4"><ul className="space-y-0.5 text-green-600">{(c.strengths || []).map((s, si) => <li key={si}>&bull; {s}</li>)}</ul></td>
+                                    <td className="py-3 px-4"><ul className="space-y-0.5 text-red-600">{(c.weaknesses || []).map((w, wi) => <li key={wi}>&bull; {w}</li>)}</ul></td>
+                                    <td className="py-3 px-4 text-[#3A3A3A]">{c.differentiation_opportunity}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
                         </div>
                       )}
                     </div>

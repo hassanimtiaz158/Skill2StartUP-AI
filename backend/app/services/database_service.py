@@ -2,7 +2,7 @@ import logging
 import secrets
 from datetime import datetime
 from bson import ObjectId, errors as bson_errors
-from app.database import founder_profiles, startup_plans, saved_analyses, customer_strategies, decision_reports, business_plans, customer_insights
+from app.database import founder_profiles, startup_plans, saved_analyses, customer_strategies, decision_reports, business_plans, customer_insights, market_intelligence, ai_cofounder_chats
 
 logger = logging.getLogger(__name__)
 
@@ -276,4 +276,66 @@ def delete_customer_strategy(strategy_id: str, user_id: str | None = None) -> bo
     if user_id:
         query["user_id"] = user_id
     result = customer_strategies.delete_one(query)
+    return result.deleted_count > 0
+
+
+def save_market_intelligence(report: dict, idea_context: dict, user_id: str | None = None) -> str:
+    doc = {
+        "report": report,
+        "idea_context": idea_context,
+        "user_id": user_id,
+        "created_at": datetime.utcnow(),
+    }
+    result = market_intelligence.insert_one(doc)
+    return str(result.inserted_id)
+
+
+def get_market_intelligence_list(user_id: str | None = None) -> list:
+    query = {"user_id": user_id} if user_id else {}
+    docs = list(market_intelligence.find(query).sort("created_at", -1))
+    return [serialize_doc(d) for d in docs]
+
+
+def delete_market_intelligence(report_id: str, user_id: str | None = None) -> bool:
+    try:
+        obj_id = ObjectId(report_id)
+    except (bson_errors.InvalidId, TypeError):
+        logger.warning("Invalid report_id format: %s", report_id)
+        return False
+    query = {"_id": obj_id}
+    if user_id:
+        query["user_id"] = user_id
+    result = market_intelligence.delete_one(query)
+    return result.deleted_count > 0
+
+
+def save_ai_cofounder_chat(advisor_type: str, messages: list, user_id: str | None = None) -> str:
+    doc = {
+        "advisor_type": advisor_type,
+        "messages": messages,
+        "user_id": user_id,
+        "created_at": datetime.utcnow(),
+    }
+    result = ai_cofounder_chats.insert_one(doc)
+    return str(result.inserted_id)
+
+
+def get_ai_cofounder_chats(advisor_type: str, user_id: str | None = None, limit: int = 50) -> list:
+    query = {"advisor_type": advisor_type}
+    if user_id:
+        query["user_id"] = user_id
+    docs = list(ai_cofounder_chats.find(query).sort("created_at", -1).limit(limit))
+    return [serialize_doc(d) for d in docs]
+
+
+def delete_ai_cofounder_chat(chat_id: str, user_id: str | None = None) -> bool:
+    try:
+        obj_id = ObjectId(chat_id)
+    except (bson_errors.InvalidId, TypeError):
+        logger.warning("Invalid chat_id format: %s", chat_id)
+        return False
+    query = {"_id": obj_id}
+    if user_id:
+        query["user_id"] = user_id
+    result = ai_cofounder_chats.delete_one(query)
     return result.deleted_count > 0

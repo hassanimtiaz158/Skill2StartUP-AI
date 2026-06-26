@@ -13,6 +13,7 @@ const KEYS = {
   decisionReport: 'skill2startup.decisionReport',
   businessPlan: 'skill2startup.businessPlan',
   customerInsights: 'skill2startup.customerInsights',
+  marketIntelligence: 'skill2startup.marketIntelligence',
 };
 
 export function saveValue(key, value) {
@@ -30,7 +31,7 @@ export function readValue(key, fallback = null) {
 }
 
 export function clearGeneratedState() {
-  ['profile', 'analysis', 'ideas', 'selectedIdea', 'plan', 'ideaAnalysis', 'ideaForm', 'buildProgress', 'progressToken', 'customerPlan', 'decisionReport', 'businessPlan', 'customerInsights'].forEach((key) => {
+  ['profile', 'analysis', 'ideas', 'selectedIdea', 'plan', 'ideaAnalysis', 'ideaForm', 'buildProgress', 'progressToken', 'customerPlan', 'decisionReport', 'businessPlan', 'customerInsights', 'marketIntelligence'].forEach((key) => {
     sessionStorage.removeItem(KEYS[key]);
   });
 }

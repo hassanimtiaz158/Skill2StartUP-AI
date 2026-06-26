@@ -32,6 +32,10 @@ from app.models.schemas import (
     BusinessPlanningResponse,
     CustomerInsightsRequest,
     CustomerInsightsResponse,
+    MarketIntelligenceRequest,
+    MarketIntelligenceResponse,
+    AICofounderChatRequest,
+    AICofounderChatResponse,
     ProgressSaveRequest,
     AnalyticsEvent,
     AnalyticsResponse,
@@ -54,10 +58,12 @@ from app.services.ai_service import (
     generate_decision_engine,
     generate_business_plan,
     generate_customer_insights,
+    generate_market_intelligence,
+    generate_ai_cofounder_chat,
 )
 from app.services.ai_errors import AIServiceError, AIRateLimitError
 from app.services.auth_service import get_user_by_token
-from app.services.database_service import save_shared_analysis, get_shared_analysis, save_build_progress, get_build_progress, track_event, get_analytics_summary, save_idea_analysis, get_saved_idea_analyses, delete_saved_idea_analysis, save_customer_strategy, get_customer_strategies, delete_customer_strategy, save_decision_report, get_decision_reports, delete_decision_report, save_business_plan, get_business_plans, delete_business_plan, save_customer_insights, get_customer_insights_list, delete_customer_insights
+from app.services.database_service import save_shared_analysis, get_shared_analysis, save_build_progress, get_build_progress, track_event, get_analytics_summary, save_idea_analysis, get_saved_idea_analyses, delete_saved_idea_analysis, save_customer_strategy, get_customer_strategies, delete_customer_strategy, save_decision_report, get_decision_reports, delete_decision_report, save_business_plan, get_business_plans, delete_business_plan, save_customer_insights, get_customer_insights_list, delete_customer_insights, save_market_intelligence, get_market_intelligence_list, delete_market_intelligence, save_ai_cofounder_chat, get_ai_cofounder_chats, delete_ai_cofounder_chat
 from app.services.email_service import send_email
 
 logger = logging.getLogger(__name__)
@@ -735,6 +741,134 @@ async def remove_customer_insights(insights_id: str, user_id: str = Depends(_req
     except Exception as e:
         logger.error("Delete customer insights failed: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to delete insights.")
+
+
+@router.post("/api/startups/market-intelligence", response_model=MarketIntelligenceResponse)
+async def generate_market_intelligence_report(request: MarketIntelligenceRequest):
+    try:
+        track_event("market_intelligence", {"idea_preview": request.startup_name[:50] if request.startup_name else request.pitch[:50]})
+        result = await generate_market_intelligence(request.model_dump())
+    except AIRateLimitError:
+        raise HTTPException(status_code=429, detail="AI service rate limited. Please try again in a moment.")
+    except AIServiceError as e:
+        raise HTTPException(status_code=502, detail=f"AI service error: {str(e)}")
+    except Exception as e:
+        logger.error("Market intelligence failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to generate market intelligence report. Please try again.")
+
+    required = ("market_size", "market_trends", "industry_growth", "emerging_opportunities", "competitor_comparison")
+    missing = [f for f in required if f not in result]
+    if missing:
+        logger.error("Market intelligence missing fields: %s", missing)
+        raise HTTPException(status_code=502, detail="AI returned an incomplete report. Please try again.")
+
+    try:
+        return MarketIntelligenceResponse(**result)
+    except Exception as e:
+        logger.error("Market intelligence response validation failed: %s", e)
+        raise HTTPException(status_code=502, detail="AI returned an invalid response format.")
+
+
+@router.post("/api/startups/market-intelligence/save")
+async def save_market_intelligence_endpoint(body: dict, user_id: str = Depends(_require_user_id)):
+    try:
+        track_event("save_market_intelligence", {"user_id": user_id})
+        report = body.get("report", {})
+        idea_context = body.get("idea_context", {})
+        if not report:
+            raise HTTPException(status_code=400, detail="Report data is required.")
+        report_id = save_market_intelligence(report, idea_context, user_id=user_id)
+        return {"report_id": report_id, "message": "Market intelligence report saved successfully."}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Save market intelligence failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to save report.")
+
+
+@router.get("/api/startups/market-intelligence/saved")
+async def list_saved_market_intelligence(user_id: str = Depends(_require_user_id)):
+    try:
+        reports = get_market_intelligence_list(user_id=user_id)
+        return {"reports": reports}
+    except Exception as e:
+        logger.error("List market intelligence failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to fetch saved reports.")
+
+
+@router.delete("/api/startups/market-intelligence/{report_id}")
+async def remove_market_intelligence(report_id: str, user_id: str = Depends(_require_user_id)):
+    try:
+        deleted = delete_market_intelligence(report_id, user_id=user_id)
+        if not deleted:
+            raise HTTPException(status_code=404, detail="Report not found")
+        return {"message": "Report deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Delete market intelligence failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to delete report.")
+
+
+@router.post("/api/ai-cofounder/chat", response_model=AICofounderChatResponse)
+async def ai_cofounder_chat_endpoint(request: AICofounderChatRequest):
+    try:
+        track_event("ai_cofounder_chat", {"advisor_type": request.advisor_type, "question_preview": request.question[:50]})
+        result = await generate_ai_cofounder_chat(request.advisor_type, request.question, request.startup_context)
+    except AIRateLimitError:
+        raise HTTPException(status_code=429, detail="AI service rate limited. Please try again in a moment.")
+    except AIServiceError as e:
+        raise HTTPException(status_code=502, detail=f"AI service error: {str(e)}")
+    except Exception as e:
+        logger.error("AI cofounder chat failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to get AI advisor response. Please try again.")
+
+    if "answer" not in result:
+        logger.error("AI cofounder response missing answer field")
+        raise HTTPException(status_code=502, detail="AI returned an incomplete response.")
+
+    return AICofounderChatResponse(**result)
+
+
+@router.post("/api/ai-cofounder/chat/save")
+async def save_ai_cofounder_chat_endpoint(body: dict, user_id: str = Depends(_require_user_id)):
+    try:
+        track_event("save_ai_cofounder_chat", {"user_id": user_id})
+        advisor_type = body.get("advisor_type", "")
+        messages = body.get("messages", [])
+        if not advisor_type or not messages:
+            raise HTTPException(status_code=400, detail="Advisor type and messages are required.")
+        chat_id = save_ai_cofounder_chat(advisor_type, messages, user_id=user_id)
+        return {"chat_id": chat_id, "message": "Chat saved successfully."}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Save AI cofounder chat failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to save chat.")
+
+
+@router.get("/api/ai-cofounder/chat/{advisor_type}")
+async def get_ai_cofounder_chat_history(advisor_type: str, user_id: str = Depends(_require_user_id)):
+    try:
+        chats = get_ai_cofounder_chats(advisor_type, user_id=user_id)
+        return {"chats": chats}
+    except Exception as e:
+        logger.error("Get AI cofounder chats failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to fetch chat history.")
+
+
+@router.delete("/api/ai-cofounder/chat/{chat_id}")
+async def delete_ai_cofounder_chat_endpoint(chat_id: str, user_id: str = Depends(_require_user_id)):
+    try:
+        deleted = delete_ai_cofounder_chat(chat_id, user_id=user_id)
+        if not deleted:
+            raise HTTPException(status_code=404, detail="Chat not found")
+        return {"message": "Chat deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Delete AI cofounder chat failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to delete chat.")
 
 
 @router.post("/api/startups/analyze-idea/save")
