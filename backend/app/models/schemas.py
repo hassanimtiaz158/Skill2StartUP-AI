@@ -503,3 +503,75 @@ class BusinessPlanningResponse(BaseModel):
     lean_canvas: LeanCanvas
     revenue_forecast: RevenueForecast
     pricing_strategy: PricingStrategy
+
+
+class Persona(BaseModel):
+    name: str
+    age: str = ""
+    occupation: str = ""
+    location: str = ""
+    goals: list[str] = []
+    challenges: list[str] = []
+    motivations: list[str] = []
+    buying_behavior: str = ""
+    preferred_channels: list[str] = []
+
+
+class IdealCustomerProfile(BaseModel):
+    target_audience: str = ""
+    industry: str = ""
+    company_size: str = ""
+    demographics: str = ""
+    interests: list[str] = []
+    budget: str = ""
+    buying_intent: str = ""
+    decision_makers: list[str] = []
+    primary_use_cases: list[str] = []
+
+
+class PainPoint(BaseModel):
+    pain_point: str
+    existing_solutions: str = ""
+    why_they_fail: str = ""
+    startup_solution: str = ""
+    priority: str = "Medium"
+
+
+class JourneyStage(BaseModel):
+    customer_goals: str = ""
+    actions: list[str] = []
+    pain_points: list[str] = []
+    emotions: list[str] = []
+    opportunities: list[str] = []
+
+
+class CustomerJourney(BaseModel):
+    awareness: JourneyStage
+    consideration: JourneyStage
+    decision: JourneyStage
+    purchase: JourneyStage
+    onboarding: JourneyStage
+    retention: JourneyStage
+    referral: JourneyStage
+
+
+class CustomerInsightsRequest(BaseModel):
+    startup_name: str = ""
+    pitch: str = ""
+    problem: str = ""
+    solution: str = ""
+    target_users: list[str] = []
+    industry: str = ""
+    mvp_features: list[str] = []
+    competitors: list = []
+    market_demand: float = 0
+    uniqueness: float = 0
+    risks: list[str] = []
+    monetization_model: str = ""
+
+
+class CustomerInsightsResponse(BaseModel):
+    personas: list[Persona]
+    ideal_customer_profile: IdealCustomerProfile
+    pain_point_analysis: list[PainPoint]
+    customer_journey: CustomerJourney

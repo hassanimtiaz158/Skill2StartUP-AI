@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, Brain, Check, Download, Rocket, Save, Sparkles, Users, AlertTriangle, BarChart3, ThumbsUp, ThumbsDown, RotateCcw, DollarSign, Target, PieChart, TrendingUp, BookOpen } from 'lucide-react';
+import { ArrowRight, Brain, Check, Download, Rocket, Save, Sparkles, Users, AlertTriangle, BarChart3, ThumbsUp, ThumbsDown, RotateCcw, DollarSign, Target, PieChart, TrendingUp, BookOpen, User, Heart, ShoppingCart, Smile } from 'lucide-react';
 import { AppNav } from '../components/PageShell.jsx';
-import { generateIdeas, generatePlan, savePlan, generateFirst100Customers, saveCustomerStrategy, generateDecisionEngine, saveDecisionReport, generateBusinessPlan, saveBusinessPlan } from '../services/api.js';
+import { generateIdeas, generatePlan, savePlan, generateFirst100Customers, saveCustomerStrategy, generateDecisionEngine, saveDecisionReport, generateBusinessPlan, saveBusinessPlan, generateCustomerInsights, saveCustomerInsights } from '../services/api.js';
 import { getSession, readValue, saveValue } from '../services/storage.js';
 
 function Score({ label, value }) {
@@ -75,6 +75,10 @@ export default function ResultsPage() {
   const [loadingBusinessPlan, setLoadingBusinessPlan] = useState(false);
   const [savingBusinessPlan, setSavingBusinessPlan] = useState(false);
   const [businessPlanTab, setBusinessPlanTab] = useState('bmc');
+  const [customerInsights, setCustomerInsights] = useState(readValue('customerInsights'));
+  const [loadingCustomerInsights, setLoadingCustomerInsights] = useState(false);
+  const [savingCustomerInsights, setSavingCustomerInsights] = useState(false);
+  const [customerInsightsTab, setCustomerInsightsTab] = useState('personas');
   const topIdea = useMemo(() => {
     return [...ideas].sort((a, b) => Number(b.opportunity_score || 0) - Number(a.opportunity_score || 0))[0];
   }, [ideas]);
@@ -352,6 +356,63 @@ export default function ResultsPage() {
     }
   }
 
+  async function handleCustomerInsights() {
+    if (!selectedIdea) return;
+    setError('');
+    setNotice('');
+    setLoadingCustomerInsights(true);
+    try {
+      const planData = plan || {};
+      const data = {
+        startup_name: selectedIdea.startup_name,
+        pitch: selectedIdea.pitch,
+        problem: selectedIdea.problem,
+        solution: selectedIdea.solution,
+        target_users: selectedIdea.target_users,
+        industry: profile?.preferred_industry || '',
+        mvp_features: planData.mvp_features || selectedIdea.mvp_features || [],
+        competitors: planData.competitors || selectedIdea.competitors || [],
+        market_demand: Number(analysis?.market_demand_score || 0),
+        uniqueness: Number(analysis?.uniqueness_score || 0),
+        risks: planData.risks || analysis?.risks || [],
+        monetization_model: analysis?.monetization_model || '',
+      };
+      const result = await generateCustomerInsights(data);
+      setCustomerInsights(result);
+      saveValue('customerInsights', result);
+      setCustomerInsightsTab('personas');
+      setNotice('Customer insights generated.');
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setLoadingCustomerInsights(false);
+    }
+  }
+
+  async function handleSaveCustomerInsights() {
+    if (!customerInsights || !selectedIdea) return;
+    setError('');
+    setNotice('');
+    if (!getSession()?.token) {
+      setError('Sign in to save this report to your dashboard.');
+      return;
+    }
+    setSavingCustomerInsights(true);
+    try {
+      const ideaContext = {
+        startup_name: selectedIdea.startup_name,
+        pitch: selectedIdea.pitch,
+        industry: profile?.preferred_industry || '',
+      };
+      const result = await saveCustomerInsights(customerInsights, ideaContext);
+      setNotice(result.message || 'Insights saved.');
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setSavingCustomerInsights(false);
+    }
+  }
+
   function handleDownload(format = 'json') {
     const content = format === 'md' ? markdownText : planText;
     if (!content) return;
@@ -424,10 +485,12 @@ export default function ResultsPage() {
                       setCustomerPlan(null);
                       setDecisionReport(null);
                       setBusinessPlan(null);
+                      setCustomerInsights(null);
                       saveValue('selectedIdea', idea);
                       saveValue('customerPlan', null);
                       saveValue('decisionReport', null);
                       saveValue('businessPlan', null);
+                      saveValue('customerInsights', null);
                     }}
                     className={`w-full text-left border-2 border-[#0A0A0A] p-5 transition-colors ${selectedIdea?.startup_name === idea.startup_name ? 'bg-[#0A0A0A] text-[#F5F3EE]' : 'bg-white hover:bg-[#F5F3EE]'}`}
                   >
@@ -864,6 +927,222 @@ export default function ResultsPage() {
                           </div>
 
                           <ListBlock title="Monetization Recommendations" items={businessPlan?.pricing_strategy?.monetization_recommendations} />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div className="border-t-2 border-[#0A0A0A] pt-6 mt-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
+                    <h3 className="text-xl font-black uppercase leading-none flex items-center gap-3"><User className="h-6 w-6" /> Customer Insights</h3>
+                    <div className="flex gap-3">
+                      {customerInsights && (
+                        <button onClick={handleSaveCustomerInsights} disabled={savingCustomerInsights} className="h-10 px-4 border-2 border-[#0A0A0A] bg-[#0A0A0A] text-[#F5F3EE] text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-white hover:text-[#0A0A0A] transition-colors disabled:opacity-50">
+                          <Save className="h-4 w-4" /> {savingCustomerInsights ? 'Saving' : 'Save'}
+                        </button>
+                      )}
+                      <button onClick={handleCustomerInsights} disabled={loadingCustomerInsights} className="h-10 px-4 border-2 border-[#0A0A0A] bg-white text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-[#0A0A0A] hover:text-[#F5F3EE] transition-colors disabled:opacity-50">
+                        {loadingCustomerInsights ? 'Generating...' : <><Sparkles className="h-4 w-4" /> Generate Insights</>}
+                      </button>
+                    </div>
+                  </div>
+
+                  {loadingCustomerInsights && <LoadingSkeleton title="Analyzing Your Customers" items={["Personas", "ICP", "Pain Points", "Journey Map"]} />}
+
+                  {customerInsights && (
+                    <div className="space-y-4">
+                      <div className="flex flex-wrap gap-1 border-2 border-[#0A0A0A] bg-white p-1">
+                        {[
+                          { key: 'personas', label: 'Personas', icon: User },
+                          { key: 'icp', label: 'Ideal Customer Profile', icon: Target },
+                          { key: 'painpoints', label: 'Pain Points', icon: AlertTriangle },
+                          { key: 'journey', label: 'Customer Journey', icon: ShoppingCart },
+                        ].map((tab) => {
+                          const Icon = tab.icon;
+                          return (
+                            <button key={tab.key} onClick={() => setCustomerInsightsTab(tab.key)} className={`flex items-center gap-2 px-3 py-2 text-[9px] font-black uppercase tracking-widest transition-colors ${customerInsightsTab === tab.key ? 'bg-[#0A0A0A] text-[#F5F3EE]' : 'bg-white text-[#0A0A0A] hover:bg-[#F5F3EE]'}`}>
+                              <Icon className="h-3 w-3" /> {tab.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {customerInsightsTab === 'personas' && (
+                        <div>
+                          <h4 className="text-xs font-black uppercase tracking-widest mb-4">Customer Personas</h4>
+                          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {(customerInsights?.personas || []).map((persona, i) => (
+                              <div key={i} className="border-2 border-[#0A0A0A] bg-white p-5">
+                                <div className="flex items-center gap-3 mb-3">
+                                  <div className="h-10 w-10 bg-[#0A0A0A] flex items-center justify-center">
+                                    <User className="h-5 w-5 text-[#F5F3EE]" />
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-black uppercase">{persona.name}</p>
+                                    <p className="text-[9px] text-[#6A6A6A] uppercase tracking-widest font-black">{persona.age} &middot; {persona.occupation}</p>
+                                  </div>
+                                </div>
+                                <p className="text-[9px] font-black uppercase tracking-widest text-[#6A6A6A] mb-1">{persona.location}</p>
+                                <div className="space-y-2 mt-3">
+                                  <div>
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-[#6A6A6A]">Goals</p>
+                                    <ul className="text-xs text-[#3A3A3A] space-y-0.5 mt-0.5">
+                                      {(persona.goals || []).map((g, gi) => <li key={gi}>&bull; {g}</li>)}
+                                    </ul>
+                                  </div>
+                                  <div>
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-[#6A6A6A]">Challenges</p>
+                                    <ul className="text-xs text-[#3A3A3A] space-y-0.5 mt-0.5">
+                                      {(persona.challenges || []).map((c, ci) => <li key={ci}>&bull; {c}</li>)}
+                                    </ul>
+                                  </div>
+                                  <div>
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-[#6A6A6A]">Motivations</p>
+                                    <ul className="text-xs text-[#3A3A3A] space-y-0.5 mt-0.5">
+                                      {(persona.motivations || []).map((m, mi) => <li key={mi}>&bull; {m}</li>)}
+                                    </ul>
+                                  </div>
+                                  <div>
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-[#6A6A6A]">Buying Behavior</p>
+                                    <p className="text-xs text-[#3A3A3A] mt-0.5">{persona.buying_behavior}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-[#6A6A6A]">Preferred Channels</p>
+                                    <div className="flex flex-wrap gap-1 mt-0.5">
+                                      {(persona.preferred_channels || []).map((ch, chi) => (
+                                        <span key={chi} className="text-[9px] font-black uppercase tracking-widest bg-[#F5F3EE] border border-[#0A0A0A] px-1.5 py-0.5">{ch}</span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {customerInsightsTab === 'icp' && (
+                        <div>
+                          <h4 className="text-xs font-black uppercase tracking-widest mb-4">Ideal Customer Profile</h4>
+                          <div className="grid sm:grid-cols-2 gap-3">
+                            <div className="sm:col-span-2 border-2 border-[#0A0A0A] bg-white p-5">
+                              <p className="text-[9px] font-black uppercase tracking-widest text-[#6A6A6A] mb-2">Target Audience</p>
+                              <p className="text-sm text-[#3A3A3A] leading-relaxed">{customerInsights?.ideal_customer_profile?.target_audience}</p>
+                            </div>
+                            <div className="border-2 border-[#0A0A0A] bg-white p-5">
+                              <p className="text-[9px] font-black uppercase tracking-widest text-[#6A6A6A] mb-2">Industry</p>
+                              <p className="text-sm font-bold">{customerInsights?.ideal_customer_profile?.industry}</p>
+                            </div>
+                            <div className="border-2 border-[#0A0A0A] bg-white p-5">
+                              <p className="text-[9px] font-black uppercase tracking-widest text-[#6A6A6A] mb-2">Company Size</p>
+                              <p className="text-sm font-bold">{customerInsights?.ideal_customer_profile?.company_size}</p>
+                            </div>
+                            <div className="border-2 border-[#0A0A0A] bg-white p-5">
+                              <p className="text-[9px] font-black uppercase tracking-widest text-[#6A6A6A] mb-2">Demographics</p>
+                              <p className="text-sm text-[#3A3A3A]">{customerInsights?.ideal_customer_profile?.demographics}</p>
+                            </div>
+                            <div className="border-2 border-[#0A0A0A] bg-white p-5">
+                              <p className="text-[9px] font-black uppercase tracking-widest text-[#6A6A6A] mb-2">Budget</p>
+                              <p className="text-sm font-bold">{customerInsights?.ideal_customer_profile?.budget}</p>
+                            </div>
+                            <div className="border-2 border-[#0A0A0A] bg-white p-5">
+                              <p className="text-[9px] font-black uppercase tracking-widest text-[#6A6A6A] mb-2">Buying Intent</p>
+                              <p className="text-sm">{customerInsights?.ideal_customer_profile?.buying_intent}</p>
+                            </div>
+                            <ListBlock title="Interests" items={customerInsights?.ideal_customer_profile?.interests} />
+                            <ListBlock title="Decision Makers" items={customerInsights?.ideal_customer_profile?.decision_makers} />
+                            <div className="sm:col-span-2">
+                              <ListBlock title="Primary Use Cases" items={customerInsights?.ideal_customer_profile?.primary_use_cases} />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {customerInsightsTab === 'painpoints' && (
+                        <div>
+                          <h4 className="text-xs font-black uppercase tracking-widest mb-4">User Pain Point Analysis</h4>
+                          <div className="space-y-3">
+                            {(customerInsights?.pain_point_analysis || []).map((pp, i) => (
+                              <div key={i} className="border-2 border-[#0A0A0A] bg-white p-5">
+                                <div className="flex items-start justify-between gap-4 mb-3">
+                                  <h5 className="text-sm font-black uppercase">{pp.pain_point}</h5>
+                                  <span className={`shrink-0 text-[9px] font-black uppercase tracking-widest px-2 py-1 border ${pp.priority === 'High' ? 'border-red-500 bg-red-50 text-red-600' : pp.priority === 'Medium' ? 'border-yellow-500 bg-yellow-50 text-yellow-600' : 'border-green-500 bg-green-50 text-green-600'}`}>{pp.priority}</span>
+                                </div>
+                                <div className="grid sm:grid-cols-3 gap-3">
+                                  <div>
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-[#6A6A6A] mb-1">Existing Solutions</p>
+                                    <p className="text-xs text-[#3A3A3A]">{pp.existing_solutions}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-[#6A6A6A] mb-1">Why They Fail</p>
+                                    <p className="text-xs text-[#3A3A3A]">{pp.why_they_fail}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-[#6A6A6A] mb-1">Startup Solution</p>
+                                    <p className="text-xs text-[#3A3A3A]">{pp.startup_solution}</p>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {customerInsightsTab === 'journey' && (
+                        <div>
+                          <h4 className="text-xs font-black uppercase tracking-widest mb-4">Customer Journey Map</h4>
+                          {[
+                            { key: 'awareness', label: 'Awareness', icon: Sparkles, color: 'bg-blue-50 border-blue-500' },
+                            { key: 'consideration', label: 'Consideration', icon: Brain, color: 'bg-purple-50 border-purple-500' },
+                            { key: 'decision', label: 'Decision', icon: BarChart3, color: 'bg-orange-50 border-orange-500' },
+                            { key: 'purchase', label: 'Purchase', icon: ShoppingCart, color: 'bg-green-50 border-green-500' },
+                            { key: 'onboarding', label: 'Onboarding', icon: Rocket, color: 'bg-cyan-50 border-cyan-500' },
+                            { key: 'retention', label: 'Retention', icon: Heart, color: 'bg-pink-50 border-pink-500' },
+                            { key: 'referral', label: 'Referral', icon: Users, color: 'bg-yellow-50 border-yellow-500' },
+                          ].map((stage) => {
+                            const s = customerInsights?.customer_journey?.[stage.key] || {};
+                            return (
+                              <div key={stage.key} className={`border-2 ${stage.color} p-5 mb-3`}>
+                                <div className="flex items-center gap-2 mb-3">
+                                  <stage.icon className="h-4 w-4" />
+                                  <p className="text-xs font-black uppercase tracking-widest">{stage.label}</p>
+                                </div>
+                                <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
+                                  <div>
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-[#6A6A6A] mb-1">Goals</p>
+                                    <p className="text-[#3A3A3A]">{s.customer_goals}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-[#6A6A6A] mb-1">Actions</p>
+                                    <ul className="text-[#3A3A3A] space-y-0.5">
+                                      {(s.actions || []).map((a, ai) => <li key={ai}>&bull; {a}</li>)}
+                                    </ul>
+                                  </div>
+                                  <div>
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-[#6A6A6A] mb-1">Pain Points</p>
+                                    <ul className="text-[#3A3A3A] space-y-0.5">
+                                      {(s.pain_points || []).map((p, pi) => <li key={pi} className="text-red-600">&bull; {p}</li>)}
+                                    </ul>
+                                  </div>
+                                  <div>
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-[#6A6A6A] mb-1">Emotions</p>
+                                    <div className="flex flex-wrap gap-1">
+                                      {(s.emotions || []).map((e, ei) => (
+                                        <span key={ei} className="text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 border border-[#0A0A0A]">{e}</span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-[#6A6A6A] mb-1">Opportunities</p>
+                                    <ul className="text-[#3A3A3A] space-y-0.5">
+                                      {(s.opportunities || []).map((o, oi) => <li key={oi} className="text-green-600">&bull; {o}</li>)}
+                                    </ul>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
                       )}
                     </div>

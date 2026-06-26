@@ -2,7 +2,7 @@ import logging
 import secrets
 from datetime import datetime
 from bson import ObjectId, errors as bson_errors
-from app.database import founder_profiles, startup_plans, saved_analyses, customer_strategies, decision_reports, business_plans
+from app.database import founder_profiles, startup_plans, saved_analyses, customer_strategies, decision_reports, business_plans, customer_insights
 
 logger = logging.getLogger(__name__)
 
@@ -233,6 +233,36 @@ def delete_business_plan(plan_id: str, user_id: str | None = None) -> bool:
     if user_id:
         query["user_id"] = user_id
     result = business_plans.delete_one(query)
+    return result.deleted_count > 0
+
+
+def save_customer_insights(insights: dict, idea_context: dict, user_id: str | None = None) -> str:
+    doc = {
+        "insights": insights,
+        "idea_context": idea_context,
+        "user_id": user_id,
+        "created_at": datetime.utcnow(),
+    }
+    result = customer_insights.insert_one(doc)
+    return str(result.inserted_id)
+
+
+def get_customer_insights_list(user_id: str | None = None) -> list:
+    query = {"user_id": user_id} if user_id else {}
+    docs = list(customer_insights.find(query).sort("created_at", -1))
+    return [serialize_doc(d) for d in docs]
+
+
+def delete_customer_insights(insights_id: str, user_id: str | None = None) -> bool:
+    try:
+        obj_id = ObjectId(insights_id)
+    except (bson_errors.InvalidId, TypeError):
+        logger.warning("Invalid insights_id format: %s", insights_id)
+        return False
+    query = {"_id": obj_id}
+    if user_id:
+        query["user_id"] = user_id
+    result = customer_insights.delete_one(query)
     return result.deleted_count > 0
 
 

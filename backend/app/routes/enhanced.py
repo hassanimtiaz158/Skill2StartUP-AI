@@ -30,6 +30,8 @@ from app.models.schemas import (
     DecisionEngineResponse,
     BusinessPlanningRequest,
     BusinessPlanningResponse,
+    CustomerInsightsRequest,
+    CustomerInsightsResponse,
     ProgressSaveRequest,
     AnalyticsEvent,
     AnalyticsResponse,
@@ -51,10 +53,11 @@ from app.services.ai_service import (
     generate_first_100_customers,
     generate_decision_engine,
     generate_business_plan,
+    generate_customer_insights,
 )
 from app.services.ai_errors import AIServiceError, AIRateLimitError
 from app.services.auth_service import get_user_by_token
-from app.services.database_service import save_shared_analysis, get_shared_analysis, save_build_progress, get_build_progress, track_event, get_analytics_summary, save_idea_analysis, get_saved_idea_analyses, delete_saved_idea_analysis, save_customer_strategy, get_customer_strategies, delete_customer_strategy, save_decision_report, get_decision_reports, delete_decision_report, save_business_plan, get_business_plans, delete_business_plan
+from app.services.database_service import save_shared_analysis, get_shared_analysis, save_build_progress, get_build_progress, track_event, get_analytics_summary, save_idea_analysis, get_saved_idea_analyses, delete_saved_idea_analysis, save_customer_strategy, get_customer_strategies, delete_customer_strategy, save_decision_report, get_decision_reports, delete_decision_report, save_business_plan, get_business_plans, delete_business_plan, save_customer_insights, get_customer_insights_list, delete_customer_insights
 from app.services.email_service import send_email
 
 logger = logging.getLogger(__name__)
@@ -367,6 +370,32 @@ async def generate_business_plan_report(request: BusinessPlanningRequest):
         raise HTTPException(status_code=502, detail="AI returned an invalid response format.")
 
 
+@router.post("/api/startups/customer-insights", response_model=CustomerInsightsResponse)
+async def generate_customer_insights_report(request: CustomerInsightsRequest):
+    try:
+        track_event("customer_insights", {"idea_preview": request.startup_name[:50] if request.startup_name else request.pitch[:50]})
+        result = await generate_customer_insights(request.model_dump())
+    except AIRateLimitError:
+        raise HTTPException(status_code=429, detail="AI service rate limited. Please try again in a moment.")
+    except AIServiceError as e:
+        raise HTTPException(status_code=502, detail=f"AI service error: {str(e)}")
+    except Exception as e:
+        logger.error("Customer insights failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to generate customer insights. Please try again.")
+
+    required = ("personas", "ideal_customer_profile", "pain_point_analysis", "customer_journey")
+    missing = [f for f in required if f not in result]
+    if missing:
+        logger.error("Customer insights missing fields: %s", missing)
+        raise HTTPException(status_code=502, detail="AI returned an incomplete report. Please try again.")
+
+    try:
+        return CustomerInsightsResponse(**result)
+    except Exception as e:
+        logger.error("Customer insights response validation failed: %s", e)
+        raise HTTPException(status_code=502, detail="AI returned an invalid response format.")
+
+
 @router.post("/api/startups/analyze-idea/share", response_model=ShareLinkResponse)
 async def share_idea_analysis(request: ShareLinkRequest):
     try:
@@ -665,6 +694,47 @@ async def remove_business_plan(plan_id: str, user_id: str = Depends(_require_use
     except Exception as e:
         logger.error("Delete business plan failed: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to delete plan.")
+
+
+@router.post("/api/startups/customer-insights/save")
+async def save_customer_insights_endpoint(body: dict, user_id: str = Depends(_require_user_id)):
+    try:
+        track_event("save_customer_insights", {"user_id": user_id})
+        insights = body.get("insights", {})
+        idea_context = body.get("idea_context", {})
+        if not insights:
+            raise HTTPException(status_code=400, detail="Insights data is required.")
+        insights_id = save_customer_insights(insights, idea_context, user_id=user_id)
+        return {"insights_id": insights_id, "message": "Customer insights saved successfully."}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Save customer insights failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to save insights.")
+
+
+@router.get("/api/startups/customer-insights/saved")
+async def list_saved_customer_insights(user_id: str = Depends(_require_user_id)):
+    try:
+        insights_list = get_customer_insights_list(user_id=user_id)
+        return {"insights": insights_list}
+    except Exception as e:
+        logger.error("List customer insights failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to fetch saved insights.")
+
+
+@router.delete("/api/startups/customer-insights/{insights_id}")
+async def remove_customer_insights(insights_id: str, user_id: str = Depends(_require_user_id)):
+    try:
+        deleted = delete_customer_insights(insights_id, user_id=user_id)
+        if not deleted:
+            raise HTTPException(status_code=404, detail="Insights not found")
+        return {"message": "Insights deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Delete customer insights failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to delete insights.")
 
 
 @router.post("/api/startups/analyze-idea/save")

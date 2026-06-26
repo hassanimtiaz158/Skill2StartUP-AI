@@ -753,3 +753,94 @@ Return a JSON object with this exact structure:
 
 Scoring: All revenue numbers should be realistic for a startup in this industry and stage. Base pricing on competitor benchmarks and the startup's target customer willingness to pay.
 Return ONLY the JSON object. No other text."""
+
+
+CUSTOMER_INSIGHTS_PROMPT = """You are a customer research analyst and UX strategist. Based on the startup idea details below, generate a comprehensive customer insights report with four sections: Customer Personas, Ideal Customer Profile, Pain Point Analysis, and Customer Journey Map. Every item must be specific to this startup — no generic placeholders.
+
+STARTUP DETAILS:
+- Name: {startup_name}
+- Pitch: {pitch}
+- Problem: {problem}
+- Solution: {solution}
+- Target Users: {target_users}
+- Industry: {industry}
+- MVP Features: {mvp_features}
+- Competitors: {competitors}
+- Market Demand Score (0-10): {market_demand}
+- Uniqueness Score (0-10): {uniqueness}
+- Key Risks: {risks}
+- Monetization Model: {monetization_model}
+
+Return a JSON object with this exact structure:
+{{
+    "personas": [
+        {{
+            "name": "Persona Name",
+            "age": "25-34",
+            "occupation": "Job title / role",
+            "location": "City or region",
+            "goals": ["goal 1", "goal 2", "goal 3"],
+            "challenges": ["challenge 1", "challenge 2"],
+            "motivations": ["motivation 1", "motivation 2"],
+            "buying_behavior": "How this persona makes purchasing decisions (1-2 sentences)",
+            "preferred_channels": ["channel 1", "channel 2", "channel 3"]
+        }},
+        {{
+            "name": "Persona Name 2",
+            "age": "35-44",
+            "occupation": "Job title / role",
+            "location": "City or region",
+            "goals": ["goal 1", "goal 2"],
+            "challenges": ["challenge 1", "challenge 2", "challenge 3"],
+            "motivations": ["motivation 1", "motivation 2", "motivation 3"],
+            "buying_behavior": "How this persona makes purchasing decisions (1-2 sentences)",
+            "preferred_channels": ["channel 1", "channel 2"]
+        }}
+    ],
+    "ideal_customer_profile": {{
+        "target_audience": "Clear description of the ideal target audience (2-3 sentences)",
+        "industry": "Primary industry or industries",
+        "company_size": "Company size if B2B, otherwise N/A",
+        "demographics": "Age range, income level, education, location (2-3 sentences)",
+        "interests": ["interest 1", "interest 2", "interest 3", "interest 4"],
+        "budget": "Typical budget range for this solution",
+        "buying_intent": "High / Medium / Low — with explanation (1 sentence)",
+        "decision_makers": ["decision-maker role 1", "role 2", "role 3"],
+        "primary_use_cases": ["use case 1", "use case 2", "use case 3", "use case 4"]
+    }},
+    "pain_point_analysis": [
+        {{
+            "pain_point": "Specific pain point description",
+            "existing_solutions": "What customers currently use to address this",
+            "why_they_fail": "Why existing solutions fall short (1-2 sentences)",
+            "startup_solution": "How this startup specifically solves this pain point (1-2 sentences)",
+            "priority": "High" or "Medium" or "Low"
+        }},
+        {{
+            "pain_point": "Pain point 2",
+            "existing_solutions": "Current solutions",
+            "why_they_fail": "Why they fall short",
+            "startup_solution": "How this startup solves it",
+            "priority": "High" or "Medium" or "Low"
+        }},
+        {{
+            "pain_point": "Pain point 3",
+            "existing_solutions": "Current solutions",
+            "why_they_fail": "Why they fall short",
+            "startup_solution": "How this startup solves it",
+            "priority": "High" or "Medium" or "Low"
+        }}
+    ],
+    "customer_journey": {{
+        "awareness": {{"customer_goals": "What the customer wants at this stage (1 sentence)", "actions": ["action 1", "action 2", "action 3"], "pain_points": ["pain point 1", "pain point 2"], "emotions": ["emotion 1", "emotion 2"], "opportunities": ["opportunity 1", "opportunity 2"]}},
+        "consideration": {{"customer_goals": "What the customer wants at this stage (1 sentence)", "actions": ["action 1", "action 2"], "pain_points": ["pain point 1", "pain point 2"], "emotions": ["emotion 1", "emotion 2"], "opportunities": ["opportunity 1", "opportunity 2"]}},
+        "decision": {{"customer_goals": "What the customer wants at this stage (1 sentence)", "actions": ["action 1", "action 2", "action 3"], "pain_points": ["pain point 1", "pain point 2", "pain point 3"], "emotions": ["emotion 1", "emotion 2", "emotion 3"], "opportunities": ["opportunity 1", "opportunity 2"]}},
+        "purchase": {{"customer_goals": "What the customer wants at this stage (1 sentence)", "actions": ["action 1", "action 2"], "pain_points": ["pain point 1"], "emotions": ["emotion 1", "emotion 2"], "opportunities": ["opportunity 1"]}},
+        "onboarding": {{"customer_goals": "What the customer wants at this stage (1 sentence)", "actions": ["action 1", "action 2", "action 3"], "pain_points": ["pain point 1", "pain point 2"], "emotions": ["emotion 1", "emotion 2"], "opportunities": ["opportunity 1", "opportunity 2"]}},
+        "retention": {{"customer_goals": "What the customer wants at this stage (1 sentence)", "actions": ["action 1", "action 2"], "pain_points": ["pain point 1", "pain point 2"], "emotions": ["emotion 1"], "opportunities": ["opportunity 1", "opportunity 2", "opportunity 3"]}},
+        "referral": {{"customer_goals": "What the customer wants at this stage (1 sentence)", "actions": ["action 1", "action 2"], "pain_points": ["pain point 1"], "emotions": ["emotion 1", "emotion 2"], "opportunities": ["opportunity 1", "opportunity 2"]}}
+    }}
+}}
+
+Rules: Personas must feel like real people with specific names, jobs, and locations relevant to this startup's industry. Pain points must be specific to the problem this startup solves — not generic frustrations. Journey stages should reflect realistic customer behavior for this type of product.
+Return ONLY the JSON object. No other text."""

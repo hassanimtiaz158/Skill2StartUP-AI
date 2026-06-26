@@ -543,6 +543,46 @@ export async function deleteBusinessPlan(planId) {
   }
 }
 
+export async function generateCustomerInsights(data) {
+  try {
+    assertApiConfigured();
+    const { data: result } = await api.post('/api/startups/customer-insights', data);
+    return result;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function saveCustomerInsights(insights, ideaContext = {}) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.post('/api/startups/customer-insights/save', { insights, idea_context: ideaContext });
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function getSavedCustomerInsights() {
+  try {
+    assertApiConfigured();
+    const { data } = await api.get('/api/startups/customer-insights/saved');
+    return data.insights || [];
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function deleteCustomerInsights(insightsId) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.delete(`/api/startups/customer-insights/${insightsId}`);
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
 export async function trackEvent(event, properties = {}) {
   try {
     assertApiConfigured();
