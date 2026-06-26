@@ -2,7 +2,21 @@ import { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 
-const DEMO_VIDEO_ID = import.meta.env.VITE_DEMO_VIDEO_ID || '';
+function getYouTubeId(input) {
+  if (!input) return '';
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/,
+    /^([a-zA-Z0-9_-]{11})$/,
+  ];
+  for (const pattern of patterns) {
+    const match = input.match(pattern);
+    if (match) return match[1];
+  }
+  return '';
+}
+
+const RAW_INPUT = import.meta.env.VITE_DEMO_VIDEO_ID || '';
+const DEMO_VIDEO_ID = getYouTubeId(RAW_INPUT);
 
 export default function DemoVideoModal({ open, onClose }) {
   const iframeRef = useRef(null);
