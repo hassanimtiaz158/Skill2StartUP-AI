@@ -13,6 +13,12 @@ import ComparisonPage from './pages/ComparisonPage.jsx';
 import AnalyticsPage from './pages/AnalyticsPage.jsx';
 import AICofounderPage from './pages/AICofounderPage.jsx';
 import InvestorToolsPage from './pages/InvestorToolsPage.jsx';
+import MarketingHubPage from './pages/MarketingHubPage.jsx';
+import DevelopmentHubPage from './pages/DevelopmentHubPage.jsx';
+import GrowthHubPage from './pages/GrowthHubPage.jsx';
+import FinancialPlanPage from './pages/FinancialPlanPage.jsx';
+import LaunchHubPage from './pages/LaunchHubPage.jsx';
+import CollaborationHubPage from './pages/CollaborationHubPage.jsx';
 
 export default function App() {
   return (
@@ -28,6 +34,12 @@ export default function App() {
       <Route path="/analytics" element={<AnalyticsPage />} />
       <Route path="/ai-cofounder" element={<AICofounderPage />} />
       <Route path="/investor-tools" element={<InvestorToolsPage />} />
+      <Route path="/marketing-hub" element={<MarketingHubPage />} />
+      <Route path="/development-hub" element={<DevelopmentHubPage />} />
+      <Route path="/growth-hub" element={<GrowthHubPage />} />
+      <Route path="/financial-plan" element={<FinancialPlanPage />} />
+      <Route path="/launch-hub" element={<LaunchHubPage />} />
+      <Route path="/collaboration" element={<CollaborationHubPage />} />
       <Route path="/dashboard" element={<DashboardPage />} />
       <Route path="/startups/:planId" element={<StartupDetailPage />} />
       <Route path="*" element={<NotFoundPage />} />

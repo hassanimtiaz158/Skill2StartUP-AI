@@ -703,6 +703,166 @@ export async function deleteInvestorTools(reportId) {
   }
 }
 
+export async function generateMarketingHub(data) {
+  try {
+    assertApiConfigured();
+    const { data: result } = await api.post('/api/marketing-hub/generate', data);
+    return result;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function saveMarketingHub(report, ideaContext = {}) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.post('/api/marketing-hub/save', { report, idea_context: ideaContext });
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function getSavedMarketingHub() {
+  try {
+    assertApiConfigured();
+    const { data } = await api.get('/api/marketing-hub/saved');
+    return data.reports || [];
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function deleteMarketingHub(reportId) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.delete(`/api/marketing-hub/${reportId}`);
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function generateDevelopmentHub(data) {
+  try {
+    assertApiConfigured();
+    const { data: result } = await api.post('/api/development-hub/generate', data);
+    return result;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function saveDevelopmentHub(report, ideaContext = {}) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.post('/api/development-hub/save', { report, idea_context: ideaContext });
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function getSavedDevelopmentHubs() {
+  try {
+    assertApiConfigured();
+    const { data } = await api.get('/api/development-hub/saved');
+    return data.reports || [];
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function deleteDevelopmentHub(reportId) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.delete(`/api/development-hub/${reportId}`);
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function generateGrowthHub(data) {
+  try {
+    assertApiConfigured();
+    const { data: result } = await api.post('/api/growth-hub/generate', data);
+    return result;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function saveGrowthHub(report, ideaContext = {}) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.post('/api/growth-hub/save', { report, idea_context: ideaContext });
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function getSavedGrowthHubs() {
+  try {
+    assertApiConfigured();
+    const { data } = await api.get('/api/growth-hub/saved');
+    return data.reports || [];
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function deleteGrowthHub(reportId) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.delete(`/api/growth-hub/${reportId}`);
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function generateFinancialPlan(data) {
+  try {
+    assertApiConfigured();
+    const { data: result } = await api.post('/api/financial-plan/generate', data);
+    return result;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function saveFinancialPlan(report, ideaContext = {}) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.post('/api/financial-plan/save', { report, idea_context: ideaContext });
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function getSavedFinancialPlans() {
+  try {
+    assertApiConfigured();
+    const { data } = await api.get('/api/financial-plan/saved');
+    return data.reports || [];
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function deleteFinancialPlan(reportId) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.delete(`/api/financial-plan/${reportId}`);
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
 export async function trackEvent(event, properties = {}) {
   try {
     assertApiConfigured();
@@ -747,6 +907,166 @@ export async function generateReadme(profile, idea, plan) {
   try {
     assertApiConfigured();
     const { data } = await api.post('/api/startups/readme', { profile, idea, plan });
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function generateLaunchHub(data) {
+  try {
+    assertApiConfigured();
+    const { data: result } = await api.post('/api/launch-hub/generate', data);
+    return result;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function saveLaunchHub(report, checkedItems = [], ideaContext = {}) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.post('/api/launch-hub/save', { report, checked_items: checkedItems, idea_context: ideaContext });
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function getSavedLaunchHubs() {
+  try {
+    assertApiConfigured();
+    const { data } = await api.get('/api/launch-hub/saved');
+    return data.reports || [];
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function updateLaunchHubChecks(reportId, checkedItems) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.patch(`/api/launch-hub/${reportId}/checks`, { checked_items: checkedItems });
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function deleteLaunchHub(reportId) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.delete(`/api/launch-hub/${reportId}`);
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function createTeam(name, description) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.post('/api/teams/create', { name, description });
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function getMyTeams() {
+  try {
+    assertApiConfigured();
+    const { data } = await api.get('/api/teams/my');
+    return data.teams || [];
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function getTeamByInviteCode(code) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.get(`/api/teams/join/${code}`);
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function joinTeam(inviteCode) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.post('/api/teams/join', { invite_code: inviteCode });
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function addTeamAnalysis(teamId, reportType, reportId, title) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.post('/api/teams/analysis', { team_id: teamId, report_type: reportType, report_id: reportId, title });
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function getTeamAnalyses(teamId) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.get(`/api/teams/${teamId}/analyses`);
+    return data.analyses || [];
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function createComment(targetType, targetId, section, text) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.post('/api/comments', { target_type: targetType, target_id: targetId, section, text });
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function getComments(targetType, targetId) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.get(`/api/comments/${targetType}/${targetId}`);
+    return data.comments || [];
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function deleteComment(commentId) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.delete(`/api/comments/${commentId}`);
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function exportAsPdf(reportType, reportData) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.post('/api/export/pdf', { report_type: reportType, report_data: reportData });
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function exportAsNotion(reportType, reportData) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.post('/api/export/notion', { report_type: reportType, report_data: reportData });
     return data;
   } catch (error) {
     throw new Error(apiError(error));

@@ -24,6 +24,15 @@ customer_insights = db["customer_insights"]
 market_intelligence = db["market_intelligence"]
 ai_cofounder_chats = db["ai_cofounder_chats"]
 investor_tools = db["investor_tools"]
+marketing_hub = db["marketing_hub"]
+development_hubs = db["development_hubs"]
+growth_hubs = db["growth_hubs"]
+financial_plans = db["financial_plans"]
+launch_hubs = db["launch_hubs"]
+teams = db["teams"]
+team_invites = db["team_invites"]
+team_analyses = db["team_analyses"]
+comments = db["comments"]
 users = db["users"]
 
 
@@ -42,6 +51,17 @@ def ensure_indexes():
         ai_cofounder_chats.create_index([("user_id", ASCENDING), ("created_at", DESCENDING)])
         ai_cofounder_chats.create_index([("advisor_type", ASCENDING), ("user_id", ASCENDING)])
         investor_tools.create_index([("user_id", ASCENDING), ("created_at", DESCENDING)])
+        marketing_hub.create_index([("user_id", ASCENDING), ("created_at", DESCENDING)])
+        development_hubs.create_index([("user_id", ASCENDING), ("created_at", DESCENDING)])
+        growth_hubs.create_index([("user_id", ASCENDING), ("created_at", DESCENDING)])
+        financial_plans.create_index([("user_id", ASCENDING), ("created_at", DESCENDING)])
+        launch_hubs.create_index([("user_id", ASCENDING), ("created_at", DESCENDING)])
+        teams.create_index([("owner_id", ASCENDING)])
+        teams.create_index([("invite_code", ASCENDING)], unique=True)
+        team_invites.create_index([("team_id", ASCENDING), ("email", ASCENDING)])
+        team_analyses.create_index([("team_id", ASCENDING)])
+        comments.create_index([("target_type", ASCENDING), ("target_id", ASCENDING)])
+        comments.create_index([("user_id", ASCENDING)])
         founder_profiles.create_index([("created_at", DESCENDING)])
         users.create_index([("email", ASCENDING)], unique=True)
         users.create_index([("created_at", DESCENDING)])

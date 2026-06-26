@@ -2,7 +2,7 @@ import logging
 import secrets
 from datetime import datetime
 from bson import ObjectId, errors as bson_errors
-from app.database import founder_profiles, startup_plans, saved_analyses, customer_strategies, decision_reports, business_plans, customer_insights, market_intelligence, ai_cofounder_chats, investor_tools
+from app.database import founder_profiles, startup_plans, saved_analyses, customer_strategies, decision_reports, business_plans, customer_insights, market_intelligence, ai_cofounder_chats, investor_tools, marketing_hub, development_hubs, growth_hubs, financial_plans, launch_hubs, teams, team_invites, team_analyses, comments
 
 logger = logging.getLogger(__name__)
 
@@ -368,4 +368,287 @@ def delete_investor_tools(report_id: str, user_id: str | None = None) -> bool:
     if user_id:
         query["user_id"] = user_id
     result = investor_tools.delete_one(query)
+    return result.deleted_count > 0
+
+
+def save_marketing_hub(report: dict, idea_context: dict, user_id: str | None = None) -> str:
+    doc = {
+        "report": report,
+        "idea_context": idea_context,
+        "user_id": user_id,
+        "created_at": datetime.utcnow(),
+    }
+    result = marketing_hub.insert_one(doc)
+    return str(result.inserted_id)
+
+
+def get_marketing_hub_list(user_id: str | None = None) -> list:
+    query = {"user_id": user_id} if user_id else {}
+    docs = list(marketing_hub.find(query).sort("created_at", -1))
+    return [serialize_doc(d) for d in docs]
+
+
+def delete_marketing_hub(report_id: str, user_id: str | None = None) -> bool:
+    try:
+        obj_id = ObjectId(report_id)
+    except (bson_errors.InvalidId, TypeError):
+        logger.warning("Invalid report_id format: %s", report_id)
+        return False
+    query = {"_id": obj_id}
+    if user_id:
+        query["user_id"] = user_id
+    result = marketing_hub.delete_one(query)
+    return result.deleted_count > 0
+
+
+# ─── Development Hub ──────────────────────────────────────────────────────────
+
+def save_development_hub(report: dict, idea_context: dict, user_id: str | None = None) -> str:
+    doc = {
+        "report": report,
+        "idea_context": idea_context,
+        "user_id": user_id,
+        "created_at": datetime.utcnow(),
+    }
+    result = development_hubs.insert_one(doc)
+    return str(result.inserted_id)
+
+
+def get_development_hub_list(user_id: str | None = None) -> list:
+    query = {"user_id": user_id} if user_id else {}
+    docs = list(development_hubs.find(query).sort("created_at", -1))
+    return [serialize_doc(d) for d in docs]
+
+
+def delete_development_hub(report_id: str, user_id: str | None = None) -> bool:
+    try:
+        obj_id = ObjectId(report_id)
+    except (bson_errors.InvalidId, TypeError):
+        return False
+    query = {"_id": obj_id}
+    if user_id:
+        query["user_id"] = user_id
+    result = development_hubs.delete_one(query)
+    return result.deleted_count > 0
+
+
+# ─── Growth Hub ───────────────────────────────────────────────────────────────
+
+def save_growth_hub(report: dict, idea_context: dict, user_id: str | None = None) -> str:
+    doc = {
+        "report": report,
+        "idea_context": idea_context,
+        "user_id": user_id,
+        "created_at": datetime.utcnow(),
+    }
+    result = growth_hubs.insert_one(doc)
+    return str(result.inserted_id)
+
+
+def get_growth_hub_list(user_id: str | None = None) -> list:
+    query = {"user_id": user_id} if user_id else {}
+    docs = list(growth_hubs.find(query).sort("created_at", -1))
+    return [serialize_doc(d) for d in docs]
+
+
+def delete_growth_hub(report_id: str, user_id: str | None = None) -> bool:
+    try:
+        obj_id = ObjectId(report_id)
+    except (bson_errors.InvalidId, TypeError):
+        return False
+    query = {"_id": obj_id}
+    if user_id:
+        query["user_id"] = user_id
+    result = growth_hubs.delete_one(query)
+    return result.deleted_count > 0
+
+
+# ─── Financial Planning Hub ───────────────────────────────────────────────────
+
+def save_financial_plan(report: dict, idea_context: dict, user_id: str | None = None) -> str:
+    doc = {
+        "report": report,
+        "idea_context": idea_context,
+        "user_id": user_id,
+        "created_at": datetime.utcnow(),
+    }
+    result = financial_plans.insert_one(doc)
+    return str(result.inserted_id)
+
+
+def get_financial_plan_list(user_id: str | None = None) -> list:
+    query = {"user_id": user_id} if user_id else {}
+    docs = list(financial_plans.find(query).sort("created_at", -1))
+    return [serialize_doc(d) for d in docs]
+
+
+def delete_financial_plan(report_id: str, user_id: str | None = None) -> bool:
+    try:
+        obj_id = ObjectId(report_id)
+    except (bson_errors.InvalidId, TypeError):
+        return False
+    query = {"_id": obj_id}
+    if user_id:
+        query["user_id"] = user_id
+    result = financial_plans.delete_one(query)
+    return result.deleted_count > 0
+
+
+# ─── Launch Hub ───────────────────────────────────────────────────────────────
+
+def save_launch_hub(report: dict, checked_items: list[str] | None = None, idea_context: dict | None = None, user_id: str | None = None) -> str:
+    doc = {
+        "report": report,
+        "checked_items": checked_items or [],
+        "idea_context": idea_context or {},
+        "user_id": user_id,
+        "created_at": datetime.utcnow(),
+    }
+    result = launch_hubs.insert_one(doc)
+    return str(result.inserted_id)
+
+
+def get_launch_hub_list(user_id: str | None = None) -> list:
+    query = {"user_id": user_id} if user_id else {}
+    docs = list(launch_hubs.find(query).sort("created_at", -1))
+    return [serialize_doc(d) for d in docs]
+
+
+def update_launch_hub_checks(report_id: str, checked_items: list[str], user_id: str | None = None) -> bool:
+    try:
+        obj_id = ObjectId(report_id)
+    except (bson_errors.InvalidId, TypeError):
+        return False
+    query = {"_id": obj_id}
+    if user_id:
+        query["user_id"] = user_id
+    result = launch_hubs.update_one(query, {"$set": {"checked_items": checked_items}})
+    return result.modified_count > 0
+
+
+def delete_launch_hub(report_id: str, user_id: str | None = None) -> bool:
+    try:
+        obj_id = ObjectId(report_id)
+    except (bson_errors.InvalidId, TypeError):
+        return False
+    query = {"_id": obj_id}
+    if user_id:
+        query["user_id"] = user_id
+    result = launch_hubs.delete_one(query)
+    return result.deleted_count > 0
+
+
+# ─── Teams ────────────────────────────────────────────────────────────────────
+
+def create_team(name: str, description: str, owner_id: str, owner_email: str, owner_name: str) -> dict:
+    invite_code = secrets.token_urlsafe(8)
+    doc = {
+        "name": name,
+        "description": description,
+        "owner_id": owner_id,
+        "invite_code": invite_code,
+        "members": [{"user_id": owner_id, "email": owner_email, "name": owner_name, "role": "owner", "joined_at": datetime.utcnow().isoformat()}],
+        "created_at": datetime.utcnow(),
+    }
+    result = teams.insert_one(doc)
+    doc["_id"] = str(result.inserted_id)
+    doc["id"] = str(result.inserted_id)
+    doc["created_at"] = doc["created_at"].isoformat()
+    return doc
+
+
+def get_user_teams(user_id: str) -> list:
+    docs = list(teams.find({"members.user_id": user_id}).sort("created_at", -1))
+    for d in docs:
+        d["_id"] = str(d["_id"])
+        d["id"] = str(d["_id"])
+        d["created_at"] = d.get("created_at", datetime.utcnow()).isoformat() if hasattr(d.get("created_at"), "isoformat") else str(d.get("created_at", ""))
+    return docs
+
+
+def get_team_by_invite_code(code: str) -> dict | None:
+    doc = teams.find_one({"invite_code": code})
+    if doc:
+        doc["_id"] = str(doc["_id"])
+        doc["id"] = str(doc["_id"])
+        doc["created_at"] = doc["created_at"].isoformat() if hasattr(doc["created_at"], "isoformat") else str(doc["created_at"])
+        return doc
+    return None
+
+
+def join_team(invite_code: str, user_id: str, email: str, name: str) -> dict | None:
+    team = teams.find_one({"invite_code": invite_code})
+    if not team:
+        return None
+    already_member = any(m.get("user_id") == user_id for m in team.get("members", []))
+    if already_member:
+        return {"_id": str(team["_id"]), "already_member": True}
+    new_member = {"user_id": user_id, "email": email, "name": name, "role": "viewer", "joined_at": datetime.utcnow().isoformat()}
+    teams.update_one({"_id": team["_id"]}, {"$push": {"members": new_member}})
+    team["members"].append(new_member)
+    team["_id"] = str(team["_id"])
+    team["id"] = str(team["_id"])
+    team["created_at"] = team["created_at"].isoformat() if hasattr(team["created_at"], "isoformat") else str(team["created_at"])
+    return team
+
+
+def add_team_analysis(team_id: str, report_type: str, report_id: str, title: str, added_by: str) -> str:
+    try:
+        obj_id = ObjectId(team_id)
+    except (bson_errors.InvalidId, TypeError):
+        return ""
+    doc = {
+        "team_id": team_id,
+        "report_type": report_type,
+        "report_id": report_id,
+        "title": title,
+        "added_by": added_by,
+        "created_at": datetime.utcnow(),
+    }
+    result = team_analyses.insert_one(doc)
+    return str(result.inserted_id)
+
+
+def get_team_analyses(team_id: str) -> list:
+    docs = list(team_analyses.find({"team_id": team_id}).sort("created_at", -1))
+    return [serialize_doc(d) for d in docs]
+
+
+# ─── Comments ─────────────────────────────────────────────────────────────────
+
+def create_comment(target_type: str, target_id: str, section: str, text: str, user_id: str, user_name: str) -> dict:
+    doc = {
+        "target_type": target_type,
+        "target_id": target_id,
+        "section": section,
+        "text": text,
+        "user_id": user_id,
+        "user_name": user_name,
+        "created_at": datetime.utcnow(),
+        "updated_at": datetime.utcnow(),
+    }
+    result = comments.insert_one(doc)
+    doc["_id"] = str(result.inserted_id)
+    doc["id"] = str(result.inserted_id)
+    doc["created_at"] = doc["created_at"].isoformat()
+    doc["updated_at"] = doc["updated_at"].isoformat()
+    return doc
+
+
+def get_comments(target_type: str, target_id: str) -> list:
+    docs = list(comments.find({"target_type": target_type, "target_id": target_id}).sort("created_at", 1))
+    for d in docs:
+        d["_id"] = str(d["_id"])
+        d["id"] = str(d["_id"])
+        d["created_at"] = d["created_at"].isoformat() if hasattr(d["created_at"], "isoformat") else str(d["created_at"])
+        d["updated_at"] = d["updated_at"].isoformat() if hasattr(d["updated_at"], "isoformat") else str(d["updated_at"])
+    return docs
+
+
+def delete_comment(comment_id: str, user_id: str) -> bool:
+    try:
+        obj_id = ObjectId(comment_id)
+    except (bson_errors.InvalidId, TypeError):
+        return False
+    result = comments.delete_one({"_id": obj_id, "user_id": user_id})
     return result.deleted_count > 0

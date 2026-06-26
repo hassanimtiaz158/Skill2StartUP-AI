@@ -735,3 +735,718 @@ class InvestorToolsResponse(BaseModel):
     executive_summary: ExecutiveSummary
     readiness_score: ReadinessScore
     funding_recommendation: FundingRecommendation
+
+
+class LandingPageFeature(BaseModel):
+    feature: str = ""
+    description: str = ""
+
+
+class SocialProof(BaseModel):
+    testimonial_placeholder: str = ""
+    stat_placeholder: str = ""
+    trust_badges: list[str] = []
+
+
+class FAQ(BaseModel):
+    question: str = ""
+    answer: str = ""
+
+
+class CTA(BaseModel):
+    primary_cta: str = ""
+    secondary_cta: str = ""
+    cta_description: str = ""
+
+
+class Footer(BaseModel):
+    tagline: str = ""
+    links: list[str] = []
+    copyright: str = ""
+
+
+class LandingPageCopy(BaseModel):
+    hero_headline: str = ""
+    subheadline: str = ""
+    value_proposition: str = ""
+    key_features: list[LandingPageFeature] = []
+    benefits: list[str] = []
+    social_proof: SocialProof
+    faqs: list[FAQ] = []
+    cta: CTA
+    footer: Footer
+
+
+class BrandName(BaseModel):
+    name: str
+    explanation: str = ""
+    style: str = ""
+    is_memorable: bool = True
+    is_scalable: bool = True
+
+
+class LogoIdea(BaseModel):
+    style: str = ""
+    colors: list[str] = []
+    typography: str = ""
+    icon_suggestion: str = ""
+    brand_personality: str = ""
+    ai_image_prompt: str = ""
+
+
+class TaglineCategory(BaseModel):
+    professional: list[str] = []
+    modern: list[str] = []
+    premium: list[str] = []
+    creative: list[str] = []
+    minimal: list[str] = []
+    startup_focused: list[str] = []
+
+
+class SocialPost(BaseModel):
+    day: int = 0
+    post_type: str = ""
+    content: str = ""
+    hashtags: list[str] = []
+
+
+class PlatformStrategy(BaseModel):
+    platform: str = ""
+    content_ideas: list[SocialPost] = []
+    posting_frequency: str = ""
+    engagement_strategy: str = ""
+
+
+class SocialMediaLaunch(BaseModel):
+    strategy_overview: str = ""
+    platforms: list[PlatformStrategy] = []
+    launch_day_checklist: list[str] = []
+
+
+class SEOKeyword(BaseModel):
+    keyword: str = ""
+    search_intent: str = ""
+    difficulty: str = ""
+    content_idea: str = ""
+
+
+class SEOKeywordSecondary(BaseModel):
+    keyword: str = ""
+    search_intent: str = ""
+    content_idea: str = ""
+
+
+class BlogTopic(BaseModel):
+    title: str = ""
+    target_keyword: str = ""
+    description: str = ""
+
+
+class SEOKeywords(BaseModel):
+    primary_keywords: list[SEOKeyword] = []
+    secondary_keywords: list[SEOKeywordSecondary] = []
+    long_tail_keywords: list[SEOKeywordSecondary] = []
+    blog_topics: list[BlogTopic] = []
+    seo_tips: list[str] = []
+
+
+class MarketingHubRequest(BaseModel):
+    startup_name: str = ""
+    pitch: str = ""
+    problem: str = ""
+    solution: str = ""
+    target_users: list[str] = []
+    industry: str = ""
+    location: str = ""
+    business_model: str = ""
+    mvp_features: list[str] = []
+    competitors: list = []
+    market_demand: float = 0
+    uniqueness: float = 0
+    feasibility: float = 0
+    risks: list[str] = []
+    monetization_model: str = ""
+
+
+class MarketingHubResponse(BaseModel):
+    landing_page_copy: LandingPageCopy
+    brand_names: list[BrandName]
+    logo_ideas: list[LogoIdea]
+    taglines: TaglineCategory
+    social_media_launch: SocialMediaLaunch
+    seo_keywords: SEOKeywords
+
+
+# ─── Development Hub ──────────────────────────────────────────────────────────
+
+class DevelopmentHubRequest(BaseModel):
+    startup_name: str = ""
+    pitch: str = ""
+    problem: str = ""
+    solution: str = ""
+    target_users: str = ""
+    industry: str = ""
+    location: str = ""
+    business_model: str = ""
+    mvp_features: str = ""
+    competitors: str = ""
+    tech_stack: str = ""
+    monetization_model: str = ""
+
+
+class DBAttribute(BaseModel):
+    name: str
+    type: str
+    constraints: str
+    description: str
+
+class DBEntity(BaseModel):
+    name: str
+    description: str
+    attributes: list[DBAttribute]
+    relationships: list[str]
+
+class DBIndex(BaseModel):
+    name: str
+    fields: list[str]
+    type: str
+    purpose: str
+
+class DatabaseSchema(BaseModel):
+    entities: list[DBEntity]
+    indexes: list[DBIndex]
+    er_diagram_summary: str
+    design_notes: list[str]
+
+class APIEndpoint(BaseModel):
+    method: str
+    path: str
+    auth_required: bool
+    description: str
+    request_body: str
+    response: str
+    status_codes: list[str]
+
+class APIEndpoints(BaseModel):
+    endpoints: list[APIEndpoint]
+    api_design_notes: list[str]
+
+class ProjectFolder(BaseModel):
+    path: str
+    purpose: str
+    children: list["ProjectFolder"] | None = None
+
+class KeyFile(BaseModel):
+    path: str
+    purpose: str
+
+class ProjectStructure(BaseModel):
+    root_folder: str
+    folders: list[ProjectFolder]
+    key_files: list[KeyFile]
+    architectural_notes: list[str]
+
+class GettingStarted(BaseModel):
+    prerequisites: list[str]
+    installation: list[str]
+    development: list[str]
+
+class ReadmeContent(BaseModel):
+    project_name: str
+    description: str
+    features: list[str]
+    tech_stack: list[str]
+    getting_started: GettingStarted
+    api_documentation: str
+    contributing: list[str]
+    license: str
+    readme_notes: list[str]
+
+class DeploymentEnvironment(BaseModel):
+    name: str
+    purpose: str
+    hosting: str
+    url: str
+
+class DockerInfo(BaseModel):
+    dockerfile: str
+    docker_compose: str
+
+class CICD(BaseModel):
+    provider: str
+    pipeline_steps: list[str]
+
+class HostingOption(BaseModel):
+    platform: str
+    frontend: bool
+    backend: bool
+    estimated_cost: str
+    notes: str
+
+class EnvVariable(BaseModel):
+    key: str
+    description: str
+    required: bool
+
+class DeploymentGuide(BaseModel):
+    environments: list[DeploymentEnvironment]
+    docker: DockerInfo
+    ci_cd: CICD
+    hosting_options: list[HostingOption]
+    environment_variables: list[EnvVariable]
+    deployment_steps: list[str]
+    post_deployment: list[str]
+    deployment_notes: list[str]
+
+class DevelopmentHubResponse(BaseModel):
+    database_schema: DatabaseSchema
+    api_endpoints: APIEndpoints
+    project_structure: ProjectStructure
+    readme: ReadmeContent
+    deployment_guide: DeploymentGuide
+
+
+# ─── Growth Hub ───────────────────────────────────────────────────────────────
+
+class GrowthHubRequest(BaseModel):
+    startup_name: str = ""
+    pitch: str = ""
+    problem: str = ""
+    solution: str = ""
+    target_users: str = ""
+    industry: str = ""
+    location: str = ""
+    business_model: str = ""
+    mvp_features: str = ""
+    competitors: str = ""
+    market_demand: float = 0
+    uniqueness: float = 0
+    feasibility: float = 0
+    risks: str = ""
+    monetization_model: str = ""
+
+
+class GrowthAction(BaseModel):
+    day: int
+    action: str
+    owner: str
+    metrics: str
+    priority: str
+
+class GrowthPhase(BaseModel):
+    title: str
+    focus: str
+    goals: list[str]
+    actions: list[GrowthAction]
+    success_criteria: list[str]
+
+class GrowthMilestone(BaseModel):
+    title: str
+    deadline: str
+    description: str
+    verification: str
+
+class GrowthPlan(BaseModel):
+    overview: str
+    phase_1_30_days: GrowthPhase
+    phase_2_60_days: GrowthPhase
+    phase_3_90_days: GrowthPhase
+    key_milestones: list[GrowthMilestone]
+
+class KPI(BaseModel):
+    name: str
+    category: str
+    current_estimate: str
+    day_30_target: str = Field("", alias="30_day_target")
+    day_60_target: str = Field("", alias="60_day_target")
+    day_90_target: str = Field("", alias="90_day_target")
+    measurement_frequency: str = ""
+    formula: str = ""
+    why_it_matters: str = ""
+
+class KPIDashboard(BaseModel):
+    overview: str
+    kpis: list[KPI]
+    leading_indicators: list[str]
+    lagging_indicators: list[str]
+    review_cadence: str
+
+class InputMetric(BaseModel):
+    name: str
+    lever: str
+    current_estimate: str
+
+class NorthStarMetric(BaseModel):
+    metric_name: str
+    definition: str
+    formula: str
+    why_this_metric: str
+    input_metrics: list[InputMetric]
+    target: str
+    alignment_questions: list[str]
+
+class AcquisitionChannel(BaseModel):
+    name: str
+    strategy: str
+    estimated_cac: str
+    estimated_ltv: str
+    timeline_to_roi: str
+    effort: str
+    impact: str
+    tactics: list[str]
+
+class BudgetSplit(BaseModel):
+    channel: str
+    percentage: int
+    rationale: str
+
+class UserAcquisition(BaseModel):
+    overview: str
+    channels: list[AcquisitionChannel]
+    recommended_budget_split: list[BudgetSplit]
+    viral_loop: str
+
+class GrowthHack(BaseModel):
+    title: str
+    description: str
+    implementation: str
+    expected_impact: str
+    time_to_implement: str
+    resources_needed: list[str]
+    success_metric: str
+
+class GrowthHubResponse(BaseModel):
+    growth_plan: GrowthPlan
+    kpi_dashboard: KPIDashboard
+    north_star_metric: NorthStarMetric
+    user_acquisition: UserAcquisition
+    growth_hacks: list[GrowthHack]
+
+
+# ─── Financial Planning Hub ───────────────────────────────────────────────────
+
+class FinancialPlanRequest(BaseModel):
+    startup_name: str = ""
+    pitch: str = ""
+    problem: str = ""
+    solution: str = ""
+    target_users: str = ""
+    industry: str = ""
+    location: str = ""
+    business_model: str = ""
+    mvp_features: str = ""
+    competitors: str = ""
+    monetization_model: str = ""
+
+
+class BudgetCategory(BaseModel):
+    name: str
+    amount: float
+    percentage: float
+    notes: str
+
+class MonthlyBudget(BaseModel):
+    total: float
+    categories: list[BudgetCategory]
+
+class BudgetPlanner(BaseModel):
+    overview: str
+    currency: str
+    monthly_budget: MonthlyBudget
+    annual_budget_total: float
+    budget_assumptions: list[str]
+    cost_optimization_tips: list[str]
+
+class BurnRateCategory(BaseModel):
+    category: str
+    monthly: float
+    annual: float
+    percentage: float
+
+class RunwayScenario(BaseModel):
+    scenario: str
+    runway_months: int
+    description: str
+
+class BurnRate(BaseModel):
+    monthly_burn_rate: float
+    annual_burn_rate: float
+    current_runway_months: int
+    total_funding_raised: float
+    burn_rate_by_category: list[BurnRateCategory]
+    runway_scenarios: list[RunwayScenario]
+    burn_rate_assumptions: list[str]
+    reduction_strategies: list[str]
+
+class BreakEvenPoint(BaseModel):
+    month: int
+    revenue: float
+    costs: float
+    cumulative_profit: float
+
+class SensitivityAnalysis(BaseModel):
+    variable: str
+    impact: str
+    recommendation: str
+
+class BreakEven(BaseModel):
+    fixed_costs_monthly: float
+    variable_costs_per_unit: float
+    average_revenue_per_unit: float
+    contribution_margin: float
+    break_even_units_monthly: float
+    break_even_revenue_monthly: float
+    break_even_months: int
+    months_to_break_even: int
+    break_even_chart: list[BreakEvenPoint]
+    assumptions: list[str]
+    sensitivity_analysis: list[SensitivityAnalysis]
+
+class MonthlyProjection(BaseModel):
+    month: int
+    users: int
+    revenue: float
+    growth_rate: str
+    notes: str
+
+class YearlySummary(BaseModel):
+    year: int
+    total_revenue: float
+    total_costs: float
+    net_profit: float
+    total_users: int
+
+class RevenueStream(BaseModel):
+    name: str
+    percentage: float
+    monthly_projection_year_1: float
+    monthly_projection_year_2: float
+
+class RiskMitigation(BaseModel):
+    risk: str
+    impact: str
+    mitigation: str
+
+class RevenueProjection(BaseModel):
+    overview: str
+    projection_type: str
+    currency: str
+    monthly_projections: list[MonthlyProjection]
+    yearly_summary: list[YearlySummary]
+    revenue_streams: list[RevenueStream]
+    assumptions: list[str]
+    risks_and_mitigations: list[RiskMitigation]
+
+class MonthlyProfit(BaseModel):
+    month: int
+    revenue: float
+    cogs: float
+    gross_profit: float
+    operating_expenses: float
+    net_profit: float
+    margin: str
+
+class KeyRatio(BaseModel):
+    name: str
+    value: str
+    industry_benchmark: str
+    status: str
+
+class ProfitEstimator(BaseModel):
+    overview: str
+    currency: str
+    monthly_estimates: list[MonthlyProfit]
+    key_ratios: list[KeyRatio]
+    profitability_timeline: str
+    optimization_levers: list[str]
+    assumptions: list[str]
+
+class FinancialPlanResponse(BaseModel):
+    budget_planner: BudgetPlanner
+    burn_rate: BurnRate
+    break_even: BreakEven
+    revenue_projection: RevenueProjection
+    profit_estimator: ProfitEstimator
+
+
+# ─── Launch Hub ───────────────────────────────────────────────────────────────
+
+class LaunchHubRequest(BaseModel):
+    startup_name: str = ""
+    pitch: str = ""
+    problem: str = ""
+    solution: str = ""
+    target_users: str = ""
+    industry: str = ""
+    location: str = ""
+    business_model: str = ""
+    mvp_features: str = ""
+    competitors: str = ""
+    monetization_model: str = ""
+    risks: str = ""
+
+
+class ChecklistItem(BaseModel):
+    id: str
+    text: str
+    category: str
+    priority: str
+    estimated_time: str
+    details: str
+
+
+class LaunchDayTimeline(BaseModel):
+    pass
+
+
+class ProductHuntChecklist(BaseModel):
+    overview: str
+    items: list[ChecklistItem]
+    total_items: int
+    launch_day_timeline: dict
+    tips: list[str]
+
+
+class AppStoreChecklist(BaseModel):
+    overview: str
+    platform: str
+    items: list[ChecklistItem]
+    total_items: int
+    review_time_estimate: str
+    aso_tips: list[str]
+    tips: list[str]
+
+
+class BetaAction(BaseModel):
+    day: int
+    action: str
+    owner: str
+    details: str
+
+
+class BetaPhase(BaseModel):
+    phase: str
+    duration: str
+    goals: list[str]
+    actions: list[BetaAction]
+
+
+class BetaLaunchPlan(BaseModel):
+    overview: str
+    phases: list[BetaPhase]
+    beta_tester_criteria: list[str]
+    feedback_collection: str
+    success_metrics: list[str]
+    tips: list[str]
+
+
+class CustomerChannel(BaseModel):
+    name: str
+    tactic: str
+    estimated_reach: str
+    estimated_conversions: str
+    cost: str
+    timeline: str
+
+
+class WeeklyTarget(BaseModel):
+    week: int
+    target: int
+    actions: list[str]
+    expected_source: str
+
+
+class CustomerMilestone(BaseModel):
+    customers: int
+    celebration: str
+    signal: str
+
+
+class First100Customers(BaseModel):
+    overview: str
+    target_segment: str
+    channels: list[CustomerChannel]
+    incentive_strategy: str
+    referral_program: str
+    weekly_targets: list[WeeklyTarget]
+    milestones: list[CustomerMilestone]
+    risks: list[str]
+    tips: list[str]
+
+
+class LaunchHubResponse(BaseModel):
+    product_hunt_checklist: ProductHuntChecklist
+    app_store_checklist: AppStoreChecklist
+    beta_launch_plan: BetaLaunchPlan
+    first_100_customers: First100Customers
+
+
+# ─── Collaboration Hub ────────────────────────────────────────────────────────
+
+class TeamCreateRequest(BaseModel):
+    name: str = ""
+    description: str = ""
+
+
+class TeamMember(BaseModel):
+    user_id: str = ""
+    email: str = ""
+    name: str = ""
+    role: str = "viewer"
+    joined_at: str = ""
+
+
+class TeamResponse(BaseModel):
+    id: str = ""
+    name: str = ""
+    description: str = ""
+    owner_id: str = ""
+    invite_code: str = ""
+    members: list[TeamMember] = []
+    created_at: str = ""
+
+
+class TeamInviteRequest(BaseModel):
+    team_id: str = ""
+    email: str = ""
+
+
+class TeamJoinRequest(BaseModel):
+    invite_code: str = ""
+
+
+class TeamAddAnalysisRequest(BaseModel):
+    team_id: str = ""
+    report_type: str = ""
+    report_id: str = ""
+    title: str = ""
+
+
+class CommentCreateRequest(BaseModel):
+    target_type: str = ""
+    target_id: str = ""
+    section: str = ""
+    text: str = ""
+
+
+class CommentResponse(BaseModel):
+    id: str = ""
+    target_type: str = ""
+    target_id: str = ""
+    section: str = ""
+    text: str = ""
+    user_id: str = ""
+    user_name: str = ""
+    created_at: str = ""
+    updated_at: str = ""
+
+
+class ExportRequest(BaseModel):
+    report_type: str = ""
+    report_data: dict = {}
+
+
+class ExportResponse(BaseModel):
+    content: str = ""
+    format: str = ""
+    filename: str = ""

@@ -34,6 +34,11 @@ from app.prompts.prompts import (
     AI_TECH_PROMPT,
     AI_INVESTOR_PROMPT,
     INVESTOR_TOOLS_PROMPT,
+    MARKETING_HUB_PROMPT,
+    DEVELOPMENT_HUB_PROMPT,
+    GROWTH_HUB_PROMPT,
+    FINANCIAL_PLANNING_PROMPT,
+    LAUNCH_HUB_PROMPT,
 )
 
 
@@ -453,4 +458,72 @@ async def generate_investor_tools(data: dict) -> dict:
     if isinstance(data.get("risks"), list):
         data["risks"] = ", ".join(data["risks"])
     prompt = INVESTOR_TOOLS_PROMPT.format(**data)
+    return await _generate(prompt)
+
+
+async def generate_marketing_hub(data: dict) -> dict:
+    for key in ("target_users", "mvp_features"):
+        if isinstance(data.get(key), list):
+            data[key] = ", ".join(data[key])
+    if isinstance(data.get("competitors"), list):
+        data["competitors"] = ", ".join(
+            c.get("name", str(c)) if isinstance(c, dict) else str(c)
+            for c in data["competitors"]
+        )
+    if isinstance(data.get("risks"), list):
+        data["risks"] = ", ".join(data["risks"])
+    prompt = MARKETING_HUB_PROMPT.format(**data)
+    return await _generate(prompt)
+
+
+async def generate_development_hub(data: dict) -> dict:
+    for key in ("target_users", "mvp_features"):
+        if isinstance(data.get(key), list):
+            data[key] = ", ".join(data[key])
+    if isinstance(data.get("competitors"), list):
+        data["competitors"] = ", ".join(
+            c.get("name", str(c)) if isinstance(c, dict) else str(c)
+            for c in data["competitors"]
+        )
+    data.setdefault("tech_stack", "")
+    prompt = DEVELOPMENT_HUB_PROMPT.format(**data)
+    return await _generate(prompt)
+
+
+async def generate_growth_hub(data: dict) -> dict:
+    for key in ("target_users", "mvp_features", "risks"):
+        if isinstance(data.get(key), list):
+            data[key] = ", ".join(data[key])
+    if isinstance(data.get("competitors"), list):
+        data["competitors"] = ", ".join(
+            c.get("name", str(c)) if isinstance(c, dict) else str(c)
+            for c in data["competitors"]
+        )
+    prompt = GROWTH_HUB_PROMPT.format(**data)
+    return await _generate(prompt)
+
+
+async def generate_financial_plan(data: dict) -> dict:
+    for key in ("target_users", "mvp_features"):
+        if isinstance(data.get(key), list):
+            data[key] = ", ".join(data[key])
+    if isinstance(data.get("competitors"), list):
+        data["competitors"] = ", ".join(
+            c.get("name", str(c)) if isinstance(c, dict) else str(c)
+            for c in data["competitors"]
+        )
+    prompt = FINANCIAL_PLANNING_PROMPT.format(**data)
+    return await _generate(prompt)
+
+
+async def generate_launch_hub(data: dict) -> dict:
+    for key in ("target_users", "mvp_features", "risks"):
+        if isinstance(data.get(key), list):
+            data[key] = ", ".join(data[key])
+    if isinstance(data.get("competitors"), list):
+        data["competitors"] = ", ".join(
+            c.get("name", str(c)) if isinstance(c, dict) else str(c)
+            for c in data["competitors"]
+        )
+    prompt = LAUNCH_HUB_PROMPT.format(**data)
     return await _generate(prompt)

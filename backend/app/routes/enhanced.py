@@ -38,6 +38,25 @@ from app.models.schemas import (
     AICofounderChatResponse,
     InvestorToolsRequest,
     InvestorToolsResponse,
+    MarketingHubRequest,
+    MarketingHubResponse,
+    DevelopmentHubRequest,
+    DevelopmentHubResponse,
+    GrowthHubRequest,
+    GrowthHubResponse,
+    FinancialPlanRequest,
+    FinancialPlanResponse,
+    LaunchHubRequest,
+    LaunchHubResponse,
+    TeamCreateRequest,
+    TeamResponse,
+    TeamInviteRequest,
+    TeamJoinRequest,
+    TeamAddAnalysisRequest,
+    CommentCreateRequest,
+    CommentResponse,
+    ExportRequest,
+    ExportResponse,
     ProgressSaveRequest,
     AnalyticsEvent,
     AnalyticsResponse,
@@ -63,10 +82,15 @@ from app.services.ai_service import (
     generate_market_intelligence,
     generate_ai_cofounder_chat,
     generate_investor_tools,
+    generate_marketing_hub,
+    generate_development_hub,
+    generate_growth_hub,
+    generate_financial_plan,
+    generate_launch_hub,
 )
 from app.services.ai_errors import AIServiceError, AIRateLimitError
 from app.services.auth_service import get_user_by_token
-from app.services.database_service import save_shared_analysis, get_shared_analysis, save_build_progress, get_build_progress, track_event, get_analytics_summary, save_idea_analysis, get_saved_idea_analyses, delete_saved_idea_analysis, save_customer_strategy, get_customer_strategies, delete_customer_strategy, save_decision_report, get_decision_reports, delete_decision_report, save_business_plan, get_business_plans, delete_business_plan, save_customer_insights, get_customer_insights_list, delete_customer_insights, save_market_intelligence, get_market_intelligence_list, delete_market_intelligence, save_ai_cofounder_chat, get_ai_cofounder_chats, delete_ai_cofounder_chat, save_investor_tools, get_investor_tools_list, delete_investor_tools
+from app.services.database_service import save_shared_analysis, get_shared_analysis, save_build_progress, get_build_progress, track_event, get_analytics_summary, save_idea_analysis, get_saved_idea_analyses, delete_saved_idea_analysis, save_customer_strategy, get_customer_strategies, delete_customer_strategy, save_decision_report, get_decision_reports, delete_decision_report, save_business_plan, get_business_plans, delete_business_plan, save_customer_insights, get_customer_insights_list, delete_customer_insights, save_market_intelligence, get_market_intelligence_list, delete_market_intelligence, save_ai_cofounder_chat, get_ai_cofounder_chats, delete_ai_cofounder_chat, save_investor_tools, get_investor_tools_list, delete_investor_tools, save_marketing_hub, get_marketing_hub_list, delete_marketing_hub, save_development_hub, get_development_hub_list, delete_development_hub, save_growth_hub, get_growth_hub_list, delete_growth_hub, save_financial_plan, get_financial_plan_list, delete_financial_plan, save_launch_hub, get_launch_hub_list, update_launch_hub_checks, delete_launch_hub, create_team, get_user_teams, get_team_by_invite_code, join_team, add_team_analysis, get_team_analyses, create_comment, get_comments, delete_comment
 from app.services.email_service import send_email
 
 logger = logging.getLogger(__name__)
@@ -941,6 +965,271 @@ async def remove_investor_tools(report_id: str, user_id: str = Depends(_require_
         raise HTTPException(status_code=500, detail="Failed to delete report.")
 
 
+@router.post("/api/marketing-hub/generate", response_model=MarketingHubResponse)
+async def generate_marketing_hub_report(request: MarketingHubRequest):
+    try:
+        track_event("marketing_hub", {"idea_preview": request.startup_name[:50] if request.startup_name else request.pitch[:50]})
+        result = await generate_marketing_hub(request.model_dump())
+    except AIRateLimitError:
+        raise HTTPException(status_code=429, detail="AI service rate limited. Please try again in a moment.")
+    except AIServiceError as e:
+        raise HTTPException(status_code=502, detail=f"AI service error: {str(e)}")
+    except Exception as e:
+        logger.error("Marketing hub generation failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to generate marketing assets. Please try again.")
+
+    required = ("landing_page_copy", "brand_names", "logo_ideas", "taglines", "social_media_launch", "seo_keywords")
+    missing = [f for f in required if f not in result]
+    if missing:
+        logger.error("Marketing hub missing fields: %s", missing)
+        raise HTTPException(status_code=502, detail="AI returned an incomplete report. Please try again.")
+
+    try:
+        return MarketingHubResponse(**result)
+    except Exception as e:
+        logger.error("Marketing hub response validation failed: %s", e)
+        raise HTTPException(status_code=502, detail="AI returned an invalid response format.")
+
+
+@router.post("/api/marketing-hub/save")
+async def save_marketing_hub_endpoint(body: dict, user_id: str = Depends(_require_user_id)):
+    try:
+        track_event("save_marketing_hub", {"user_id": user_id})
+        report = body.get("report", {})
+        idea_context = body.get("idea_context", {})
+        if not report:
+            raise HTTPException(status_code=400, detail="Report data is required.")
+        report_id = save_marketing_hub(report, idea_context, user_id=user_id)
+        return {"report_id": report_id, "message": "Marketing assets saved successfully."}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Save marketing hub failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to save report.")
+
+
+@router.get("/api/marketing-hub/saved")
+async def list_saved_marketing_hub(user_id: str = Depends(_require_user_id)):
+    try:
+        reports = get_marketing_hub_list(user_id=user_id)
+        return {"reports": reports}
+    except Exception as e:
+        logger.error("List marketing hub failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to fetch saved reports.")
+
+
+@router.delete("/api/marketing-hub/{report_id}")
+async def remove_marketing_hub(report_id: str, user_id: str = Depends(_require_user_id)):
+    try:
+        deleted = delete_marketing_hub(report_id, user_id=user_id)
+        if not deleted:
+            raise HTTPException(status_code=404, detail="Report not found")
+        return {"message": "Report deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Delete marketing hub failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to delete report.")
+
+
+# ─── Development Hub ──────────────────────────────────────────────────────────
+
+@router.post("/api/development-hub/generate")
+async def generate_development_hub_endpoint(
+    body: DevelopmentHubRequest,
+    user_id: str = Depends(_require_user_id),
+):
+    try:
+        track_event("generate_development_hub", {"user_id": user_id})
+        data = body.model_dump()
+        result = await generate_development_hub(data)
+        return result
+    except AIRateLimitError as e:
+        logger.warning("Rate limit on dev hub: %s", e)
+        raise HTTPException(status_code=429, detail=str(e))
+    except AIServiceError as e:
+        logger.error("AI error on dev hub: %s", e)
+        raise HTTPException(status_code=502, detail=str(e))
+    except Exception as e:
+        logger.error("Generate dev hub failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to generate development hub.")
+
+
+@router.post("/api/development-hub/save")
+async def save_development_hub_endpoint(
+    body: dict,
+    user_id: str = Depends(_require_user_id),
+):
+    try:
+        report = body.get("report", {})
+        idea_context = body.get("idea_context", {})
+        if not report:
+            raise HTTPException(status_code=400, detail="Report data is required.")
+        report_id = save_development_hub(report, idea_context, user_id=user_id)
+        return {"report_id": report_id, "message": "Development hub saved to dashboard."}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Save dev hub failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to save development hub.")
+
+
+@router.get("/api/development-hub/saved")
+async def list_development_hubs(user_id: str = Depends(_require_user_id)):
+    try:
+        reports = get_development_hub_list(user_id=user_id)
+        return {"reports": reports}
+    except Exception as e:
+        logger.error("List dev hubs failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to fetch saved development hubs.")
+
+
+@router.delete("/api/development-hub/{report_id}")
+async def remove_development_hub(report_id: str, user_id: str = Depends(_require_user_id)):
+    try:
+        deleted = delete_development_hub(report_id, user_id=user_id)
+        if not deleted:
+            raise HTTPException(status_code=404, detail="Development hub not found")
+        return {"message": "Development hub deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Delete dev hub failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to delete development hub.")
+
+
+# ─── Growth Hub ───────────────────────────────────────────────────────────────
+
+@router.post("/api/growth-hub/generate")
+async def generate_growth_hub_endpoint(
+    body: GrowthHubRequest,
+    user_id: str = Depends(_require_user_id),
+):
+    try:
+        track_event("generate_growth_hub", {"user_id": user_id})
+        data = body.model_dump()
+        result = await generate_growth_hub(data)
+        return result
+    except AIRateLimitError as e:
+        logger.warning("Rate limit on growth hub: %s", e)
+        raise HTTPException(status_code=429, detail=str(e))
+    except AIServiceError as e:
+        logger.error("AI error on growth hub: %s", e)
+        raise HTTPException(status_code=502, detail=str(e))
+    except Exception as e:
+        logger.error("Generate growth hub failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to generate growth hub.")
+
+
+@router.post("/api/growth-hub/save")
+async def save_growth_hub_endpoint(
+    body: dict,
+    user_id: str = Depends(_require_user_id),
+):
+    try:
+        report = body.get("report", {})
+        idea_context = body.get("idea_context", {})
+        if not report:
+            raise HTTPException(status_code=400, detail="Report data is required.")
+        report_id = save_growth_hub(report, idea_context, user_id=user_id)
+        return {"report_id": report_id, "message": "Growth hub saved to dashboard."}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Save growth hub failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to save growth hub.")
+
+
+@router.get("/api/growth-hub/saved")
+async def list_growth_hubs(user_id: str = Depends(_require_user_id)):
+    try:
+        reports = get_growth_hub_list(user_id=user_id)
+        return {"reports": reports}
+    except Exception as e:
+        logger.error("List growth hubs failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to fetch saved growth hubs.")
+
+
+@router.delete("/api/growth-hub/{report_id}")
+async def remove_growth_hub(report_id: str, user_id: str = Depends(_require_user_id)):
+    try:
+        deleted = delete_growth_hub(report_id, user_id=user_id)
+        if not deleted:
+            raise HTTPException(status_code=404, detail="Growth hub not found")
+        return {"message": "Growth hub deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Delete growth hub failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to delete growth hub.")
+
+
+# ─── Financial Planning Hub ───────────────────────────────────────────────────
+
+@router.post("/api/financial-plan/generate")
+async def generate_financial_plan_endpoint(
+    body: FinancialPlanRequest,
+    user_id: str = Depends(_require_user_id),
+):
+    try:
+        track_event("generate_financial_plan", {"user_id": user_id})
+        data = body.model_dump()
+        result = await generate_financial_plan(data)
+        return result
+    except AIRateLimitError as e:
+        logger.warning("Rate limit on financial plan: %s", e)
+        raise HTTPException(status_code=429, detail=str(e))
+    except AIServiceError as e:
+        logger.error("AI error on financial plan: %s", e)
+        raise HTTPException(status_code=502, detail=str(e))
+    except Exception as e:
+        logger.error("Generate financial plan failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to generate financial plan.")
+
+
+@router.post("/api/financial-plan/save")
+async def save_financial_plan_endpoint(
+    body: dict,
+    user_id: str = Depends(_require_user_id),
+):
+    try:
+        report = body.get("report", {})
+        idea_context = body.get("idea_context", {})
+        if not report:
+            raise HTTPException(status_code=400, detail="Report data is required.")
+        report_id = save_financial_plan(report, idea_context, user_id=user_id)
+        return {"report_id": report_id, "message": "Financial plan saved to dashboard."}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Save financial plan failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to save financial plan.")
+
+
+@router.get("/api/financial-plan/saved")
+async def list_financial_plans(user_id: str = Depends(_require_user_id)):
+    try:
+        reports = get_financial_plan_list(user_id=user_id)
+        return {"reports": reports}
+    except Exception as e:
+        logger.error("List financial plans failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to fetch saved financial plans.")
+
+
+@router.delete("/api/financial-plan/{report_id}")
+async def remove_financial_plan(report_id: str, user_id: str = Depends(_require_user_id)):
+    try:
+        deleted = delete_financial_plan(report_id, user_id=user_id)
+        if not deleted:
+            raise HTTPException(status_code=404, detail="Financial plan not found")
+        return {"message": "Financial plan deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Delete financial plan failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to delete financial plan.")
+
+
 @router.post("/api/startups/analyze-idea/save")
 async def save_idea_analysis_progress(
     body: dict,
@@ -1002,6 +1291,269 @@ async def load_build_progress_endpoint(token: str):
     except Exception as e:
         logger.error("Load progress failed: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to load progress.")
+
+
+# ─── Launch Hub ───────────────────────────────────────────────────────────────
+
+@router.post("/api/launch-hub/generate")
+async def generate_launch_hub_endpoint(
+    body: LaunchHubRequest,
+    user_id: str = Depends(_require_user_id),
+):
+    try:
+        track_event("generate_launch_hub", {"user_id": user_id})
+        data = body.model_dump()
+        result = await generate_launch_hub(data)
+        return result
+    except AIRateLimitError as e:
+        raise HTTPException(status_code=429, detail=str(e))
+    except AIServiceError as e:
+        raise HTTPException(status_code=502, detail=str(e))
+    except Exception as e:
+        logger.error("Generate launch hub failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to generate launch hub.")
+
+
+@router.post("/api/launch-hub/save")
+async def save_launch_hub_endpoint(body: dict, user_id: str = Depends(_require_user_id)):
+    try:
+        report = body.get("report", {})
+        checked_items = body.get("checked_items", [])
+        idea_context = body.get("idea_context", {})
+        if not report:
+            raise HTTPException(status_code=400, detail="Report data is required.")
+        report_id = save_launch_hub(report, checked_items, idea_context, user_id=user_id)
+        return {"report_id": report_id, "message": "Launch hub saved to dashboard."}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Save launch hub failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to save launch hub.")
+
+
+@router.get("/api/launch-hub/saved")
+async def list_launch_hubs(user_id: str = Depends(_require_user_id)):
+    try:
+        reports = get_launch_hub_list(user_id=user_id)
+        return {"reports": reports}
+    except Exception as e:
+        logger.error("List launch hubs failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to fetch saved launch hubs.")
+
+
+@router.patch("/api/launch-hub/{report_id}/checks")
+async def update_launch_hub_checks_endpoint(report_id: str, body: dict, user_id: str = Depends(_require_user_id)):
+    try:
+        checked_items = body.get("checked_items", [])
+        updated = update_launch_hub_checks(report_id, checked_items, user_id=user_id)
+        if not updated:
+            raise HTTPException(status_code=404, detail="Launch hub not found")
+        return {"message": "Checklist updated."}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Update launch hub checks failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to update checklist.")
+
+
+@router.delete("/api/launch-hub/{report_id}")
+async def remove_launch_hub(report_id: str, user_id: str = Depends(_require_user_id)):
+    try:
+        deleted = delete_launch_hub(report_id, user_id=user_id)
+        if not deleted:
+            raise HTTPException(status_code=404, detail="Launch hub not found")
+        return {"message": "Launch hub deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Delete launch hub failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to delete launch hub.")
+
+
+# ─── Collaboration Hub: Teams ─────────────────────────────────────────────────
+
+@router.post("/api/teams/create")
+async def create_team_endpoint(body: TeamCreateRequest, user_id: str = Depends(_require_user_id)):
+    try:
+        user = get_user_by_token(user_id)
+        email = user.get("email", "")
+        name = user.get("name", "")
+        team = create_team(body.name, body.description, user_id, email, name)
+        return team
+    except Exception as e:
+        logger.error("Create team failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to create team.")
+
+
+@router.get("/api/teams/my")
+async def list_user_teams(user_id: str = Depends(_require_user_id)):
+    try:
+        return {"teams": get_user_teams(user_id)}
+    except Exception as e:
+        logger.error("List teams failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to fetch teams.")
+
+
+@router.get("/api/teams/join/{invite_code}")
+async def get_team_by_code(invite_code: str):
+    try:
+        team = get_team_by_invite_code(invite_code)
+        if not team:
+            raise HTTPException(status_code=404, detail="Invalid invite code.")
+        return team
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Get team by code failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to fetch team.")
+
+
+@router.post("/api/teams/join")
+async def join_team_endpoint(body: TeamJoinRequest, user_id: str = Depends(_require_user_id)):
+    try:
+        user = get_user_by_token(user_id)
+        email = user.get("email", "")
+        name = user.get("name", "")
+        result = join_team(body.invite_code, user_id, email, name)
+        if not result:
+            raise HTTPException(status_code=404, detail="Invalid invite code.")
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Join team failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to join team.")
+
+
+@router.post("/api/teams/analysis")
+async def add_team_analysis_endpoint(body: TeamAddAnalysisRequest, user_id: str = Depends(_require_user_id)):
+    try:
+        analysis_id = add_team_analysis(body.team_id, body.report_type, body.report_id, body.title, user_id)
+        if not analysis_id:
+            raise HTTPException(status_code=400, detail="Failed to add analysis.")
+        return {"analysis_id": analysis_id, "message": "Analysis added to team workspace."}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Add team analysis failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to add analysis.")
+
+
+@router.get("/api/teams/{team_id}/analyses")
+async def list_team_analyses(team_id: str, user_id: str = Depends(_require_user_id)):
+    try:
+        return {"analyses": get_team_analyses(team_id)}
+    except Exception as e:
+        logger.error("List team analyses failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to fetch analyses.")
+
+
+# ─── Collaboration Hub: Comments ──────────────────────────────────────────────
+
+@router.post("/api/comments")
+async def create_comment_endpoint(body: CommentCreateRequest, user_id: str = Depends(_require_user_id)):
+    try:
+        user = get_user_by_token(user_id)
+        name = user.get("name", "Anonymous")
+        comment = create_comment(body.target_type, body.target_id, body.section, body.text, user_id, name)
+        return comment
+    except Exception as e:
+        logger.error("Create comment failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to create comment.")
+
+
+@router.get("/api/comments/{target_type}/{target_id}")
+async def list_comments(target_type: str, target_id: str, user_id: str = Depends(_require_user_id)):
+    try:
+        return {"comments": get_comments(target_type, target_id)}
+    except Exception as e:
+        logger.error("List comments failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to fetch comments.")
+
+
+@router.delete("/api/comments/{comment_id}")
+async def remove_comment(comment_id: str, user_id: str = Depends(_require_user_id)):
+    try:
+        deleted = delete_comment(comment_id, user_id)
+        if not deleted:
+            raise HTTPException(status_code=404, detail="Comment not found or not yours.")
+        return {"message": "Comment deleted."}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Delete comment failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to delete comment.")
+
+
+# ─── Collaboration Hub: Export ────────────────────────────────────────────────
+
+@router.post("/api/export/pdf")
+async def export_as_pdf(body: ExportRequest):
+    try:
+        data = body.report_data or {}
+        report_type = body.report_type
+        name = data.get("startup_name", data.get("project_name", "Startup"))
+        html = _build_export_html(report_type, name, data)
+        return {"content": html, "format": "html", "filename": f"{name.lower().replace(' ', '_')}_{report_type}.html"}
+    except Exception as e:
+        logger.error("PDF export failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to generate export.")
+
+
+@router.post("/api/export/notion")
+async def export_as_notion(body: ExportRequest):
+    try:
+        data = body.report_data or {}
+        report_type = body.report_type
+        name = data.get("startup_name", data.get("project_name", "Startup"))
+        md = _build_notion_markdown(report_type, name, data)
+        return {"content": md, "format": "markdown", "filename": f"{name.lower().replace(' ', '_')}_{report_type}.md"}
+    except Exception as e:
+        logger.error("Notion export failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to generate Notion export.")
+
+
+def _build_export_html(report_type: str, name: str, data: dict) -> str:
+    sections = ""
+    for key, value in data.items():
+        if isinstance(value, dict):
+            inner = "".join(f"<tr><td style='padding:4px 8px;border:1px solid #000;font-size:12px;'>{k}</td><td style='padding:4px 8px;border:1px solid #000;font-size:12px;'>{_val_to_str(v)}</td></tr>" for k, v in value.items())
+            sections += f"<h3 style='text-transform:uppercase;font-size:14px;margin:16px 0 8px;'>{key.replace('_', ' ').title()}</h3><table style='width:100%;border-collapse:collapse;margin-bottom:16px;'>{inner}</table>"
+        elif isinstance(value, list):
+            items = "".join(f"<li style='font-size:12px;margin:4px 0;'>{_val_to_str(item)}</li>" for item in value[:20])
+            sections += f"<h3 style='text-transform:uppercase;font-size:14px;margin:16px 0 8px;'>{key.replace('_', ' ').title()}</h3><ul>{items}</ul>"
+        else:
+            sections += f"<p style='font-size:12px;margin:4px 0;'><strong>{key.replace('_', ' ').title()}:</strong> {_val_to_str(value)}</p>"
+    return f"""<!DOCTYPE html><html><head><meta charset='utf-8'><title>{name} - {report_type}</title><style>body{{font-family:system-ui,-apple-system,sans-serif;max-width:800px;margin:40px auto;padding:20px;color:#000;}}h1{{font-size:24px;text-transform:uppercase;border-bottom:2px solid #000;padding-bottom:8px;}}</style></head><body><h1>{name}</h1><p style='font-size:12px;color:#666;text-transform:uppercase;letter-spacing:1px;'>{report_type} Report</p>{sections}</body></html>"""
+
+
+def _build_notion_markdown(report_type: str, name: str, data: dict) -> str:
+    lines = [f"# {name}", f"*{report_type.replace('_', ' ').title()} Report*", ""]
+    for key, value in data.items():
+        heading = key.replace("_", " ").title()
+        lines.append(f"## {heading}")
+        if isinstance(value, dict):
+            for k, v in value.items():
+                lines.append(f"- **{k.replace('_', ' ').title()}**: {_val_to_str(v)}")
+        elif isinstance(value, list):
+            for item in value[:30]:
+                if isinstance(item, dict):
+                    inner = "; ".join(f"{ik}: {_val_to_str(iv)}" for ik, iv in list(item.items())[:5])
+                    lines.append(f"- {inner}")
+                else:
+                    lines.append(f"- {_val_to_str(item)}")
+        else:
+            lines.append(f"{_val_to_str(value)}")
+        lines.append("")
+    return "\n".join(lines)
+
+
+def _val_to_str(val) -> str:
+    if isinstance(val, dict):
+        return "; ".join(f"{k}: {_val_to_str(v)}" for k, v in val.items())
+    if isinstance(val, list):
+        return ", ".join(_val_to_str(v) for v in val[:5])
+    return str(val)
 
 
 @router.get("/api/analytics", response_model=AnalyticsResponse)

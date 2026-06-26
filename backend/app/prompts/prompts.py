@@ -1257,3 +1257,736 @@ Return a JSON object with this exact structure:
 
 Rules: All content must reference the startup's specific name, features, users, competitors, and metrics. No generic filler text. Pitch deck slides should be ready to copy into a presentation. The readiness score should honestly assess the startup based on the provided scores and risks.
 Return ONLY the JSON object. No other text."""
+
+
+MARKETING_HUB_PROMPT = """You are a branding expert, copywriter, and growth marketer. Based on the startup idea details below, generate a complete marketing asset package with six sections: Landing Page Copy, Brand Names, Logo Ideas, Taglines, Social Media Launch Plan, and SEO Keywords. Every item must be specific to this startup — no generic placeholders.
+
+STARTUP DETAILS:
+- Name: {startup_name}
+- Pitch: {pitch}
+- Problem: {problem}
+- Solution: {solution}
+- Target Users: {target_users}
+- Industry: {industry}
+- Business Model: {business_model}
+- Location: {location}
+- MVP Features: {mvp_features}
+- Competitors: {competitors}
+- Market Demand Score (0-10): {market_demand}
+- Uniqueness Score (0-10): {uniqueness}
+- Feasibility Score (0-10): {feasibility}
+- Key Risks: {risks}
+- Monetization Model: {monetization_model}
+
+Return a JSON object with this exact structure:
+{{
+    "landing_page_copy": {{
+        "hero_headline": "A powerful, benefit-driven headline (under 12 words)",
+        "subheadline": "Supporting line that clarifies the value (1-2 sentences)",
+        "value_proposition": "Clear, unique value proposition (2-3 sentences explaining why this startup matters)",
+        "key_features": [
+            {{"feature": "Feature name", "description": "Benefit-focused description (1-2 sentences)"}},
+            {{"feature": "Feature 2", "description": "Description"}},
+            {{"feature": "Feature 3", "description": "Description"}},
+            {{"feature": "Feature 4", "description": "Description"}},
+            {{"feature": "Feature 5", "description": "Description"}}
+        ],
+        "benefits": ["Benefit 1 specific to target users", "Benefit 2", "Benefit 3", "Benefit 4"],
+        "social_proof": {{
+            "testimonial_placeholder": "A realistic testimonial from a target user (2-3 sentences)",
+            "stat_placeholder": "e.g. 'Join 10,000+ founders already using this platform'",
+            "trust_badges": ["badge type 1", "badge type 2"]
+        }},
+        "faqs": [
+            {{"question": "FAQ question 1", "answer": "Clear, concise answer (1-2 sentences)"}},
+            {{"question": "FAQ question 2", "answer": "Clear answer"}},
+            {{"question": "FAQ question 3", "answer": "Clear answer"}}
+        ],
+        "cta": {{
+            "primary_cta": "Main call-to-action button text (e.g. 'Start Building Free')",
+            "secondary_cta": "Secondary CTA text (e.g. 'See How It Works')",
+            "cta_description": "Brief text under the CTA to reduce friction (1 sentence)"
+        }},
+        "footer": {{
+            "tagline": "Company tagline for footer (5-8 words)",
+            "links": ["Product", "Features", "Pricing", "About", "Blog", "Contact"],
+            "copyright": "© 2024 {startup_name}. All rights reserved."
+        }}
+    }},
+    "brand_names": [
+        {{
+            "name": "Brand Name 1",
+            "explanation": "Why this name fits the startup (1-2 sentences)",
+            "style": "Modern / Premium / Tech / Creative / Minimal / Bold",
+            "is_memorable": true,
+            "is_scalable": true
+        }}
+    ],
+    "logo_ideas": [
+        {{
+            "style": "Minimalist / Abstract / Mascot / Geometric / Lettermark / Wordmark",
+            "colors": ["Primary color hex", "Secondary color hex", "Accent color hex"],
+            "typography": "Font style recommendation (1 sentence)",
+            "icon_suggestion": "Icon or symbol concept (1-2 sentences)",
+            "brand_personality": "The personality the logo should convey (1 sentence)",
+            "ai_image_prompt": "A detailed prompt for AI image generation tools like Midjourney or DALL-E (2-3 sentences)"
+        }}
+    ],
+    "taglines": {{
+        "professional": ["tagline 1", "tagline 2", "tagline 3"],
+        "modern": ["tagline 1", "tagline 2", "tagline 3"],
+        "premium": ["tagline 1", "tagline 2", "tagline 3", "tagline 4"],
+        "creative": ["tagline 1", "tagline 2", "tagline 3"],
+        "minimal": ["tagline 1", "tagline 2", "tagline 3"],
+        "startup_focused": ["tagline 1", "tagline 2", "tagline 3"]
+    }},
+    "social_media_launch": {{
+        "strategy_overview": "Overall 30-day launch strategy narrative (3-4 sentences specific to this startup)",
+        "platforms": [
+            {{
+                "platform": "LinkedIn",
+                "content_ideas": [
+                    {{"day": 1, "post_type": "Founder Story / Product Tease", "content": "Specific post content idea referencing the startup's mission (1-2 sentences)", "hashtags": ["#Startup", "#founderstory"]}},
+                    {{"day": 5, "post_type": "Problem Post", "content": "Post highlighting the problem this startup solves", "hashtags": ["#problem"]}},
+                    {{"day": 10, "post_type": "Feature Highlight", "content": "Post showcasing a specific feature", "hashtags": ["#feature"]}},
+                    {{"day": 15, "post_type": "Customer Story / Use Case", "content": "Post showing real value", "hashtags": ["#usecase"]}},
+                    {{"day": 20, "post_type": "Launch Announcement", "content": "Launch post with link and CTA", "hashtags": ["#launch"]}},
+                    {{"day": 30, "post_type": "Milestone / Reflection", "content": "Post-launch reflection and next steps", "hashtags": ["#milestone"]}}
+                ],
+                "posting_frequency": "e.g. 4-5 times per week",
+                "engagement_strategy": "How to engage with the audience on this platform (2-3 sentences)"
+            }},
+            {{
+                "platform": "X (Twitter)",
+                "content_ideas": [
+                    {{"day": 2, "post_type": "Thread", "content": "A thread about the problem/solution (2-3 sentence teaser)", "hashtags": ["#thread"]}},
+                    {{"day": 7, "post_type": "Tip", "content": "Helpful tip related to the startup's domain", "hashtags": ["#tips"]}},
+                    {{"day": 14, "post_type": "Launch Countdown", "content": "Countdown post", "hashtags": ["#comingsoon"]}},
+                    {{"day": 21, "post_type": "Launch", "content": "Launch tweet with link", "hashtags": ["#launch"]}}
+                ],
+                "posting_frequency": "e.g. 2-3 times daily",
+                "engagement_strategy": "Strategy (2-3 sentences)"
+            }},
+            {{
+                "platform": "Instagram",
+                "content_ideas": [
+                    {{"day": 3, "post_type": "Visual Tease", "content": "Image/carousel showing product concept", "hashtags": ["#comingsoon"]}},
+                    {{"day": 8, "post_type": "Behind the Scenes", "content": "Building process content", "hashtags": ["#buildinpublic"]}},
+                    {{"day": 16, "post_type": "Launch", "content": "Launch post with visual", "hashtags": ["#launch"]}}
+                ],
+                "posting_frequency": "e.g. 3-4 times per week",
+                "engagement_strategy": "Strategy (2-3 sentences)"
+            }},
+            {{
+                "platform": "Facebook",
+                "content_ideas": [
+                    {{"day": 4, "post_type": "Community Post", "content": "Engage relevant groups", "hashtags": ["#startup"]}},
+                    {{"day": 12, "post_type": "Video Tease", "content": "Short video demo", "hashtags": ["#demo"]}},
+                    {{"day": 25, "post_type": "Launch", "content": "Launch announcement", "hashtags": ["#launch"]}}
+                ],
+                "posting_frequency": "e.g. 2-3 times per week",
+                "engagement_strategy": "Strategy (2-3 sentences)"
+            }},
+            {{
+                "platform": "TikTok",
+                "content_ideas": [
+                    {{"day": 6, "post_type": "Trend Hook", "content": "Trending audio with startup angle", "hashtags": ["#startup"]}},
+                    {{"day": 18, "post_type": "Educational", "content": "Quick tip related to the startup", "hashtags": ["#learn"]}},
+                    {{"day": 28, "post_type": "Launch", "content": "Launch announcement video", "hashtags": ["#launch"]}}
+                ],
+                "posting_frequency": "e.g. 1-2 times daily",
+                "engagement_strategy": "Strategy (2-3 sentences)"
+            }},
+            {{
+                "platform": "Reddit",
+                "content_ideas": [
+                    {{"day": 1, "post_type": "Ask Me Anything", "content": "AMA in relevant subreddit", "hashtags": []}},
+                    {{"day": 11, "post_type": "Value Post", "content": "Share helpful resource", "hashtags": []}},
+                    {{"day": 22, "post_type": "Launch Post", "content": "Share launch in r/startups or relevant sub", "hashtags": []}}
+                ],
+                "posting_frequency": "e.g. 2-3 times per week",
+                "engagement_strategy": "Strategy (2-3 sentences)"
+            }}
+        ],
+        "launch_day_checklist": [
+            "Checklist item 1 specific to this startup",
+            "Checklist item 2",
+            "Checklist item 3",
+            "Checklist item 4",
+            "Checklist item 5",
+            "Checklist item 6",
+            "Checklist item 7",
+            "Checklist item 8"
+        ]
+    }},
+    "seo_keywords": {{
+        "primary_keywords": [
+            {{"keyword": "primary keyword 1", "search_intent": "Informational / Commercial / Transactional / Navigational", "difficulty": "Low / Medium / High", "content_idea": "Blog post or page targeting this keyword (1 sentence)"}},
+            {{"keyword": "primary keyword 2", "search_intent": "Commercial", "difficulty": "Medium", "content_idea": "Content idea"}},
+            {{"keyword": "primary keyword 3", "search_intent": "Transactional", "difficulty": "High", "content_idea": "Content idea"}}
+        ],
+        "secondary_keywords": [
+            {{"keyword": "secondary keyword 1", "search_intent": "Informational", "content_idea": "Content idea"}},
+            {{"keyword": "secondary keyword 2", "search_intent": "Navigational", "content_idea": "Content idea"}}
+        ],
+        "long_tail_keywords": [
+            {{"keyword": "long-tail phrase 1", "search_intent": "Informational", "content_idea": "Content idea"}},
+            {{"keyword": "long-tail phrase 2", "search_intent": "Commercial", "content_idea": "Content idea"}},
+            {{"keyword": "long-tail phrase 3", "search_intent": "Transactional", "content_idea": "Content idea"}}
+        ],
+        "blog_topics": [
+            {{"title": "Blog post title 1", "target_keyword": "primary keyword this targets", "description": "Brief description (1 sentence)"}},
+            {{"title": "Blog post title 2", "target_keyword": "keyword", "description": "Brief description"}},
+            {{"title": "Blog post title 3", "target_keyword": "keyword", "description": "Brief description"}},
+            {{"title": "Blog post title 4", "target_keyword": "keyword", "description": "Brief description"}},
+            {{"title": "Blog post title 5", "target_keyword": "keyword", "description": "Brief description"}}
+        ],
+        "seo_tips": ["SEO optimization tip 1 specific to this startup", "Tip 2", "Tip 3", "Tip 4"]
+    }}
+}}
+
+Generate 10-20 brand names. Generate 3-4 logo concepts. Generate 15-20 taglines total across all categories. All content must be specific to {startup_name} and its target audience, industry, and competitors.
+Return ONLY the JSON object. No other text."""
+
+DEVELOPMENT_HUB_PROMPT = """You are a senior technical architect and developer. Generate a complete development hub for {startup_name}, a startup in the {industry} industry.
+
+Context:
+- Pitch: {pitch}
+- Problem: {problem}
+- Solution: {solution}
+- Target Users: {target_users}
+- MVP Features: {mvp_features}
+- Competitors: {competitors}
+- Business Model: {business_model}
+- Tech Stack (if any): {tech_stack}
+
+Generate the following 5 sections in STRICT JSON format:
+
+{{
+    "database_schema": {{
+        "entities": [
+            {{
+                "name": "Entity name (e.g. User)",
+                "description": "What this entity represents",
+                "attributes": [
+                    {{"name": "field_name", "type": "Data type (UUID, String, Integer, Float, Boolean, DateTime, JSON, etc.)", "constraints": "PRIMARY KEY, NOT NULL, UNIQUE, FOREIGN KEY -> Entity.field, DEFAULT, etc.", "description": "Purpose of this field"}}
+                ],
+                "relationships": ["Relationship description (e.g. has many Orders)", "Another relationship"]
+            }}
+        ],
+        "indexes": [
+            {{"name": "idx_fieldname", "fields": ["field1"], "type": "B-tree / Unique / Composite / Full-Text", "purpose": "Why this index is needed"}}
+        ],
+        "er_diagram_summary": "Text description of how entities relate (1-2 sentences)",
+        "design_notes": ["Design consideration 1", "Design consideration 2", "Design consideration 3"]
+    }},
+    "api_endpoints": {{
+        "endpoints": [
+            {{
+                "method": "GET / POST / PUT / PATCH / DELETE",
+                "path": "/api/v1/resource",
+                "auth_required": true/false,
+                "description": "What this endpoint does",
+                "request_body": "JSON structure if applicable, or N/A",
+                "response": "JSON structure or description",
+                "status_codes": ["200 OK", "201 Created", "400 Bad Request", "401 Unauthorized", "404 Not Found", "500 Internal Server Error"]
+            }}
+        ],
+        "api_design_notes": ["API design note 1", "API design note 2"]
+    }},
+    "project_structure": {{
+        "root_folder": "{startup_name}",
+        "folders": [
+            {{"path": "src/", "purpose": "Source code root", "children": [
+                {{"path": "src/components/", "purpose": "Reusable UI components"}},
+                {{"path": "src/pages/", "purpose": "Page-level components"}},
+                {{"path": "src/services/", "purpose": "API client and external service integrations"}},
+                {{"path": "src/utils/", "purpose": "Helper functions and utilities"}},
+                {{"path": "src/hooks/", "purpose": "Custom React hooks"}},
+                {{"path": "src/styles/", "purpose": "CSS and style files"}}
+            ]}},
+            {{"path": "backend/", "purpose": "Server-side code", "children": [
+                {{"path": "backend/routes/", "purpose": "API route handlers"}},
+                {{"path": "backend/services/", "purpose": "Business logic layer"}},
+                {{"path": "backend/models/", "purpose": "Data models and schemas"}},
+                {{"path": "backend/middleware/", "purpose": "Express/FastAPI middleware"}},
+                {{"path": "backend/config/", "purpose": "Configuration files"}}
+            ]}},
+            {{"path": "database/", "purpose": "Database migrations and seeds"}},
+            {{"path": "tests/", "purpose": "Test files mirroring source structure"}},
+            {{"path": "docs/", "purpose": "Documentation"}},
+            {{"path": "scripts/", "purpose": "Deployment and utility scripts"}},
+            {{"path": ".github/", "purpose": "CI/CD workflows"}}
+        ],
+        "key_files": [
+            {{"path": "README.md", "purpose": "Project overview and setup instructions"}},
+            {{"path": "package.json / pyproject.toml / Cargo.toml", "purpose": "Dependencies and project metadata"}},
+            {{"path": ".env.example", "purpose": "Environment variable template"}},
+            {{"path": "docker-compose.yml", "purpose": "Local development environment"}},
+            {{"path": ".gitignore", "purpose": "Git ignore rules"}}
+        ],
+        "architectural_notes": ["Architecture note 1", "Architecture note 2", "Architecture note 3"]
+    }},
+    "readme": {{
+        "project_name": "{startup_name}",
+        "description": "2-3 sentence compelling description",
+        "features": ["Feature 1 with brief description", "Feature 2", "Feature 3", "Feature 4", "Feature 5", "Feature 6"],
+        "tech_stack": ["Technology 1", "Technology 2", "Technology 3", "Technology 4"],
+        "getting_started": {{
+            "prerequisites": ["Requirement 1", "Requirement 2"],
+            "installation": ["Step 1: Clone the repo", "Step 2: Install dependencies", "Step 3: Set up environment", "Step 4: Run migrations", "Step 5: Start the server"],
+            "development": ["Run `command` to start", "Run `command` for tests", "Run `command` for linting"]
+        }},
+        "api_documentation": "Brief note about where API docs live (e.g. /api/docs or link)",
+        "contributing": ["Fork the repo", "Create a feature branch", "Submit a pull request"],
+        "license": "License name (e.g. MIT)",
+        "readme_notes": ["Note 1 about positioning", "Note 2 about audience"]
+    }},
+    "deployment_guide": {{
+        "environments": [
+            {{"name": "Development", "purpose": "Local development", "hosting": "localhost", "url": "http://localhost:3000"}},
+            {{"name": "Staging", "purpose": "Pre-production testing", "hosting": "e.g. Vercel preview / Heroku", "url": "https://staging.{startup_name}.com"}},
+            {{"name": "Production", "purpose": "Live public site", "hosting": "e.g. AWS / Vercel / DigitalOcean", "url": "https://{startup_name}.com"}}
+        ],
+        "docker": {{
+            "dockerfile": "Multi-stage Dockerfile suggestion (1-2 sentences)",
+            "docker_compose": "docker-compose.yml overview (1-2 sentences)"
+        }},
+        "ci_cd": {{
+            "provider": "e.g. GitHub Actions",
+            "pipeline_steps": ["Checkout", "Install dependencies", "Run lint", "Run tests", "Build", "Deploy to staging", "Run integration tests", "Deploy to production"]
+        }},
+        "hosting_options": [
+            {{"platform": "Vercel / Netlify", "frontend": true/false, "backend": false, "estimated_cost": "Free tier or ~$X/mo", "notes": "Notes about this option"}},
+            {{"platform": "Railway / Render / Fly.io", "frontend": true/false, "backend": true/false, "estimated_cost": "~$X/mo", "notes": "Notes about this option"}},
+            {{"platform": "AWS (ECS / Lambda)", "frontend": true/false, "backend": true/false, "estimated_cost": "~$X/mo", "notes": "Notes about this option"}}
+        ],
+        "environment_variables": [
+            {{"key": "DATABASE_URL", "description": "Connection string", "required": true}},
+            {{"key": "API_KEY", "description": "Service API key", "required": true}},
+            {{"key": "JWT_SECRET", "description": "Auth secret", "required": true}}
+        ],
+        "deployment_steps": ["Step 1: Configure environment", "Step 2: Set up database", "Step 3: Deploy backend", "Step 4: Deploy frontend", "Step 5: Configure domain", "Step 6: Set up monitoring"],
+        "post_deployment": ["Set up logging", "Configure alerts", "Set up backups", "Monitor performance"],
+        "deployment_notes": ["Security note", "Scaling note", "Cost optimization note"]
+    }}
+}}
+
+Generate at least 5-8 entities for the database schema. Generate at least 8-12 API endpoints covering CRUD + auth + analytics. Generate realistic deployment steps for {startup_name}.
+Return ONLY the JSON object. No other text."""
+
+GROWTH_HUB_PROMPT = """You are a world-class growth strategist. Generate a complete growth hub for {startup_name}, a startup in the {industry} industry.
+
+Context:
+- Pitch: {pitch}
+- Problem: {problem}
+- Solution: {solution}
+- Target Users: {target_users}
+- MVP Features: {mvp_features}
+- Competitors: {competitors}
+- Business Model: {business_model}
+- Market Demand Score: {market_demand}
+- Uniqueness Score: {uniqueness}
+- Feasibility Score: {feasibility}
+- Risks: {risks}
+- Monetization Model: {monetization_model}
+
+Generate the following 5 sections in STRICT JSON format:
+
+{{
+    "growth_plan": {{
+        "overview": "2-3 sentence summary of the growth strategy for {startup_name}",
+        "phase_1_30_days": {{
+            "title": "Days 1-30: Launch & Validate",
+            "focus": "Primary focus of this phase (1 sentence)",
+            "goals": ["Goal 1", "Goal 2", "Goal 3", "Goal 4"],
+            "actions": [
+                {{"day": 1, "action": "Specific action item", "owner": "e.g. Founder / Marketing Lead", "metrics": "e.g. 100 signups", "priority": "P0 / P1 / P2"}},
+                {{"day": 5, "action": "Specific action item", "owner": "Role", "metrics": "Target metric", "priority": "Priority level"}},
+                {{"day": 10, "action": "Specific action item", "owner": "Role", "metrics": "Target metric", "priority": "Priority level"}},
+                {{"day": 15, "action": "Specific action item", "owner": "Role", "metrics": "Target metric", "priority": "Priority level"}},
+                {{"day": 21, "action": "Specific action item", "owner": "Role", "metrics": "Target metric", "priority": "Priority level"}},
+                {{"day": 28, "action": "Specific action item", "owner": "Role", "metrics": "Target metric", "priority": "Priority level"}}
+            ],
+            "success_criteria": ["Criterion 1", "Criterion 2", "Criterion 3"]
+        }},
+        "phase_2_60_days": {{
+            "title": "Days 31-60: Build & Optimize",
+            "focus": "Primary focus of this phase (1 sentence)",
+            "goals": ["Goal 1", "Goal 2", "Goal 3", "Goal 4"],
+            "actions": [
+                {{"day": 35, "action": "Specific action item", "owner": "Role", "metrics": "Target metric", "priority": "Priority level"}},
+                {{"day": 42, "action": "Specific action item", "owner": "Role", "metrics": "Target metric", "priority": "Priority level"}},
+                {{"day": 50, "action": "Specific action item", "owner": "Role", "metrics": "Target metric", "priority": "Priority level"}},
+                {{"day": 58, "action": "Specific action item", "owner": "Role", "metrics": "Target metric", "priority": "Priority level"}}
+            ],
+            "success_criteria": ["Criterion 1", "Criterion 2", "Criterion 3"]
+        }},
+        "phase_3_90_days": {{
+            "title": "Days 61-90: Scale & Expand",
+            "focus": "Primary focus of this phase (1 sentence)",
+            "goals": ["Goal 1", "Goal 2", "Goal 3", "Goal 4"],
+            "actions": [
+                {{"day": 65, "action": "Specific action item", "owner": "Role", "metrics": "Target metric", "priority": "Priority level"}},
+                {{"day": 72, "action": "Specific action item", "owner": "Role", "metrics": "Target metric", "priority": "Priority level"}},
+                {{"day": 80, "action": "Specific action item", "owner": "Role", "metrics": "Target metric", "priority": "Priority level"}},
+                {{"day": 88, "action": "Specific action item", "owner": "Role", "metrics": "Target metric", "priority": "Priority level"}}
+            ],
+            "success_criteria": ["Criterion 1", "Criterion 2", "Criterion 3"]
+        }},
+        "key_milestones": [
+            {{"title": "Milestone 1", "deadline": "Day X", "description": "What this milestone is", "verification": "How to verify it's complete"}},
+            {{"title": "Milestone 2", "deadline": "Day X", "description": "What this milestone is", "verification": "How to verify it's complete"}},
+            {{"title": "Milestone 3", "deadline": "Day X", "description": "What this milestone is", "verification": "How to verify it's complete"}}
+        ]
+    }},
+    "kpi_dashboard": {{
+        "overview": "1-2 sentences describing the KPI strategy",
+        "kpis": [
+            {{
+                "name": "KPI Name (e.g. Monthly Active Users)",
+                "category": "Acquisition / Activation / Retention / Revenue / Referral / Engagement",
+                "current_estimate": "Baseline estimate",
+                "30_day_target": "Target value",
+                "60_day_target": "Target value",
+                "90_day_target": "Target value",
+                "measurement_frequency": "Daily / Weekly / Monthly",
+                "formula": "How this KPI is calculated",
+                "why_it_matters": "Why this KPI is important for {startup_name}"
+            }}
+        ],
+        "leading_indicators": ["Leading indicator 1", "Leading indicator 2", "Leading indicator 3"],
+        "lagging_indicators": ["Lagging indicator 1", "Lagging indicator 2"],
+        "review_cadence": "Weekly growth review cadence description (1-2 sentences)"
+    }},
+    "north_star_metric": {{
+        "metric_name": "The North Star Metric for {startup_name}",
+        "definition": "Clear definition (1 sentence)",
+        "formula": "How to calculate it",
+        "why_this_metric": "Why this is THE most important metric (2-3 sentences)",
+        "input_metrics": [
+            {{"name": "Input metric 1", "lever": "How to improve this input", "current_estimate": "Estimated current value"}},
+            {{"name": "Input metric 2", "lever": "How to improve this input", "current_estimate": "Estimated current value"}},
+            {{"name": "Input metric 3", "lever": "How to improve this input", "current_estimate": "Estimated current value"}}
+        ],
+        "target": "North Star target for Year 1",
+        "alignment_questions": ["Question 1 to ask about decisions", "Question 2", "Question 3"]
+    }},
+    "user_acquisition": {{
+        "overview": "1-2 sentence acquisition strategy summary",
+        "channels": [
+            {{
+                "name": "Channel name (e.g. Content Marketing, Paid Ads, Social Media, Referrals, Partnerships, SEO, Email, Community)",
+                "strategy": "Strategy for this channel (2-3 sentences)",
+                "estimated_cac": "$X per user",
+                "estimated_ltv": "$X per user",
+                "timeline_to_roi": "e.g. 30 days / 60 days",
+                "effort": "Low / Medium / High",
+                "impact": "Low / Medium / High",
+                "tactics": ["Tactic 1", "Tactic 2", "Tactic 3"]
+            }}
+        ],
+        "recommended_budget_split": [
+            {{"channel": "Channel name", "percentage": 30, "rationale": "Why this allocation (1 sentence)"}},
+            {{"channel": "Channel name", "percentage": 25, "rationale": "Why this allocation (1 sentence)"}},
+            {{"channel": "Channel name", "percentage": 20, "rationale": "Why this allocation (1 sentence)"}},
+            {{"channel": "Channel name", "percentage": 15, "rationale": "Why this allocation (1 sentence)"}},
+            {{"channel": "Channel name", "percentage": 10, "rationale": "Why this allocation (1 sentence)"}}
+        ],
+        "viral_loop": "Description of any viral loop mechanism (if applicable)"
+    }},
+    "growth_hacks": [
+        {{
+            "title": "Growth hack title",
+            "description": "2-3 sentence description",
+            "implementation": "2-3 sentence implementation plan",
+            "expected_impact": "Low / Medium / High / Very High",
+            "time_to_implement": "e.g. 1 day / 1 week / 2 weeks",
+            "resources_needed": ["Resource 1", "Resource 2"],
+            "success_metric": "How to measure success"
+        }}
+    ]
+}}
+
+Generate at least 6-8 KPIs. Generate at least 5 acquisition channels. Generate at least 6-8 growth hacks. All content must be specific to {startup_name} and its industry.
+Return ONLY the JSON object. No other text."""
+
+FINANCIAL_PLANNING_PROMPT = """You are a world-class financial analyst and startup CFO. Generate a complete financial plan for {startup_name}, a startup in the {industry} industry.
+
+Context:
+- Pitch: {pitch}
+- Problem: {problem}
+- Solution: {solution}
+- Target Users: {target_users}
+- MVP Features: {mvp_features}
+- Competitors: {competitors}
+- Business Model: {business_model}
+- Monetization Model: {monetization_model}
+- Industry: {industry}
+- Location: {location}
+
+Generate the following 5 sections in STRICT JSON format:
+
+{{
+    "budget_planner": {{
+        "overview": "1-2 sentence summary of the budget strategy",
+        "currency": "USD",
+        "monthly_budget": {{
+            "total": 50000,
+            "categories": [
+                {{"name": "Salaries & Wages", "amount": 25000, "percentage": 50, "notes": "Breakdown of team roles and costs"}},
+                {{"name": "Infrastructure & Tools", "amount": 5000, "percentage": 10, "notes": "Cloud hosting, SaaS tools, licenses"}},
+                {{"name": "Marketing & Advertising", "amount": 8000, "percentage": 16, "notes": "Paid ads, content marketing, social media"}},
+                {{"name": "Operations & Admin", "amount": 4000, "percentage": 8, "notes": "Office, legal, accounting, insurance"}},
+                {{"name": "R&D & Product", "amount": 5000, "percentage": 10, "notes": "Product development, prototyping, testing"}},
+                {{"name": "Contingency Fund", "amount": 3000, "percentage": 6, "notes": "Unexpected expenses buffer"}}
+            ]
+        }},
+        "annual_budget_total": 600000,
+        "budget_assumptions": ["Assumption 1", "Assumption 2", "Assumption 3"],
+        "cost_optimization_tips": ["Tip 1", "Tip 2", "Tip 3"]
+    }},
+    "burn_rate": {{
+        "monthly_burn_rate": 50000,
+        "annual_burn_rate": 600000,
+        "current_runway_months": 18,
+        "total_funding_raised": 900000,
+        "burn_rate_by_category": [
+            {{"category": "Salaries", "monthly": 25000, "annual": 300000, "percentage": 50}},
+            {{"category": "Marketing", "monthly": 8000, "annual": 96000, "percentage": 16}},
+            {{"category": "Infrastructure", "monthly": 5000, "annual": 60000, "percentage": 10}},
+            {{"category": "Operations", "monthly": 4000, "annual": 48000, "percentage": 8}},
+            {{"category": "R&D", "monthly": 5000, "annual": 60000, "percentage": 10}},
+            {{"category": "Contingency", "monthly": 3000, "annual": 36000, "percentage": 6}}
+        ],
+        "runway_scenarios": [
+            {{"scenario": "Optimistic (revenue by month 6)", "runway_months": 24, "description": "If revenue starts earlier than expected"}},
+            {{"scenario": "Base Case (revenue by month 12)", "runway_months": 18, "description": "Expected revenue timeline"}},
+            {{"scenario": "Conservative (no revenue)", "runway_months": 12, "description": "If revenue takes longer"}}
+        ],
+        "burn_rate_assumptions": ["Assumption 1", "Assumption 2", "Assumption 3"],
+        "reduction_strategies": ["Strategy 1", "Strategy 2", "Strategy 3"]
+    }},
+    "break_even": {{
+        "fixed_costs_monthly": 35000,
+        "variable_costs_per_unit": 5.00,
+        "average_revenue_per_unit": 29.99,
+        "contribution_margin": 24.99,
+        "break_even_units_monthly": 1401,
+        "break_even_revenue_monthly": 42000,
+        "break_even_months": 14,
+        "months_to_break_even": 14,
+        "break_even_chart": [
+            {{"month": 1, "revenue": 2000, "costs": 50000, "cumulative_profit": -48000}},
+            {{"month": 3, "revenue": 8000, "costs": 48000, "cumulative_profit": -130000}},
+            {{"month": 6, "revenue": 25000, "costs": 45000, "cumulative_profit": -280000}},
+            {{"month": 9, "revenue": 35000, "costs": 42000, "cumulative_profit": -370000}},
+            {{"month": 12, "revenue": 42000, "costs": 40000, "cumulative_profit": -420000}},
+            {{"month": 14, "revenue": 50000, "costs": 42000, "cumulative_profit": -400000}},
+            {{"month": 18, "revenue": 65000, "costs": 45000, "cumulative_profit": -250000}},
+            {{"month": 24, "revenue": 100000, "costs": 55000, "cumulative_profit": 50000}}
+        ],
+        "assumptions": ["Assumption 1", "Assumption 2", "Assumption 3", "Assumption 4"],
+        "sensitivity_analysis": [
+            {{"variable": "Price change +/- 10%", "impact": "Changes break-even by X months", "recommendation": "What to do"}},
+            {{"variable": "Fixed cost change +/- 20%", "impact": "Changes break-even by X months", "recommendation": "What to do"}},
+            {{"variable": "Customer volume +/- 30%", "impact": "Changes break-even by X months", "recommendation": "What to do"}}
+        ]
+    }},
+    "revenue_projection": {{
+        "overview": "1-2 sentence summary",
+        "projection_type": "Conservative / Base Case / Optimistic",
+        "currency": "USD",
+        "monthly_projections": [
+            {{"month": 1, "users": 200, "revenue": 2000, "growth_rate": "N/A", "notes": "Launch month"}},
+            {{"month": 3, "users": 800, "revenue": 8000, "growth_rate": "100% MoM initially", "notes": "Early traction"}},
+            {{"month": 6, "users": 2500, "revenue": 25000, "growth_rate": "40% MoM", "notes": "Scaling"}},
+            {{"month": 9, "users": 5000, "revenue": 35000, "growth_rate": "20% MoM", "notes": "Steady growth"}},
+            {{"month": 12, "users": 8000, "revenue": 42000, "growth_rate": "10% MoM", "notes": "Year 1 milestone"}},
+            {{"month": 18, "users": 15000, "revenue": 65000, "growth_rate": "8% MoM", "notes": "Year 2 growth"}},
+            {{"month": 24, "users": 25000, "revenue": 100000, "growth_rate": "5% MoM", "notes": "Year 2 target"}}
+        ],
+        "yearly_summary": [
+            {{"year": 1, "total_revenue": 250000, "total_costs": 580000, "net_profit": -330000, "total_users": 8000}},
+            {{"year": 2, "total_revenue": 850000, "total_costs": 650000, "net_profit": 200000, "total_users": 25000}},
+            {{"year": 3, "total_revenue": 2500000, "total_costs": 1200000, "net_profit": 1300000, "total_users": 60000}}
+        ],
+        "revenue_streams": [
+            {{"name": "Stream 1 (e.g. Subscriptions)", "percentage": 60, "monthly_projection_year_1": 25000, "monthly_projection_year_2": 60000}},
+            {{"name": "Stream 2 (e.g. One-time purchases)", "percentage": 25, "monthly_projection_year_1": 10000, "monthly_projection_year_2": 25000}},
+            {{"name": "Stream 3 (e.g. Enterprise)", "percentage": 15, "monthly_projection_year_1": 5000, "monthly_projection_year_2": 15000}}
+        ],
+        "assumptions": ["Assumption 1", "Assumption 2", "Assumption 3"],
+        "risks_and_mitigations": [
+            {{"risk": "Risk description", "impact": "High / Medium / Low", "mitigation": "Mitigation strategy"}}
+        ]
+    }},
+    "profit_estimator": {{
+        "overview": "1-2 sentence summary of profitability outlook",
+        "currency": "USD",
+        "monthly_estimates": [
+            {{"month": 1, "revenue": 2000, "cogs": 200, "gross_profit": 1800, "operating_expenses": 48000, "net_profit": -46200, "margin": "-2310%"}},
+            {{"month": 3, "revenue": 8000, "cogs": 800, "gross_profit": 7200, "operating_expenses": 45000, "net_profit": -37800, "margin": "-472%"}},
+            {{"month": 6, "revenue": 25000, "cogs": 2500, "gross_profit": 22500, "operating_expenses": 42000, "net_profit": -19500, "margin": "-78%"}},
+            {{"month": 9, "revenue": 35000, "cogs": 3500, "gross_profit": 31500, "operating_expenses": 40000, "net_profit": -8500, "margin": "-24%"}},
+            {{"month": 12, "revenue": 42000, "cogs": 4200, "gross_profit": 37800, "operating_expenses": 38000, "net_profit": -200, "margin": "-0.5%"}},
+            {{"month": 15, "revenue": 55000, "cogs": 5500, "gross_profit": 49500, "operating_expenses": 40000, "net_profit": 9500, "margin": "17%"}},
+            {{"month": 18, "revenue": 65000, "cogs": 6500, "gross_profit": 58500, "operating_expenses": 42000, "net_profit": 16500, "margin": "25%"}},
+            {{"month": 24, "revenue": 100000, "cogs": 10000, "gross_profit": 90000, "operating_expenses": 50000, "net_profit": 40000, "margin": "40%"}}
+        ],
+        "key_ratios": [
+            {{"name": "Gross Margin Target", "value": "80%", "industry_benchmark": "70-85%", "status": "On Track / Needs Improvement"}},
+            {{"name": "Operating Margin Target", "value": "20%", "industry_benchmark": "15-25%", "status": "On Track"}},
+            {{"name": "Net Profit Margin Target", "value": "15%", "industry_benchmark": "10-20%", "status": "On Track"}},
+            {{"name": "CAC Payback Period", "value": "6 months", "industry_benchmark": "5-8 months", "status": "On Track"}}
+        ],
+        "profitability_timeline": "When {startup_name} is expected to become profitable (1-2 sentences)",
+        "optimization_levers": ["Lever 1 to improve profitability", "Lever 2", "Lever 3", "Lever 4"],
+        "assumptions": ["Assumption 1", "Assumption 2", "Assumption 3"]
+    }}
+}}
+
+Generate realistic numbers based on {startup_name}'s industry and business model. All monetary values should be internally consistent. 
+Return ONLY the JSON object. No other text."""
+
+LAUNCH_HUB_PROMPT = """You are a startup launch strategist. Generate a complete launch hub for {startup_name}, a startup in the {industry} industry.
+
+Context:
+- Pitch: {pitch}
+- Problem: {problem}
+- Solution: {solution}
+- Target Users: {target_users}
+- MVP Features: {mvp_features}
+- Competitors: {competitors}
+- Business Model: {business_model}
+- Monetization Model: {monetization_model}
+- Risks: {risks}
+
+Generate the following 4 sections in STRICT JSON format:
+
+{{
+    "product_hunt_checklist": {{
+        "overview": "2-3 sentence strategy for launching on Product Hunt",
+        "items": [
+            {{"id": "ph_1", "text": "Create a compelling tagline (max 60 chars)", "category": "Preparation", "priority": "P0", "estimated_time": "1 day", "details": "Specific guidance for {startup_name}"}},
+            {{"id": "ph_2", "text": "Write a killer first comment", "category": "Content", "priority": "P0", "estimated_time": "1 day", "details": "Specific guidance"}},
+            {{"id": "ph_3", "text": "Prepare product images and GIF demo", "category": "Assets", "priority": "P0", "estimated_time": "2 days", "details": "Specific guidance"}},
+            {{"id": "ph_4", "text": "Build a hunter relationship", "category": "Outreach", "priority": "P0", "estimated_time": "3 days", "details": "Specific guidance"}},
+            {{"id": "ph_5", "text": "Prepare launch day announcement posts", "category": "Content", "priority": "P1", "estimated_time": "1 day", "details": "Specific guidance"}},
+            {{"id": "ph_6", "text": "Schedule social media campaign", "category": "Marketing", "priority": "P1", "estimated_time": "2 days", "details": "Specific guidance"}},
+            {{"id": "ph_7", "text": "Prepare email list for launch day", "category": "Outreach", "priority": "P0", "estimated_time": "2 days", "details": "Specific guidance"}},
+            {{"id": "ph_8", "text": "Set up analytics to track launch performance", "category": "Analytics", "priority": "P1", "estimated_time": "1 day", "details": "Specific guidance"}},
+            {{"id": "ph_9", "text": "Create a launch video (30-60 sec)", "category": "Assets", "priority": "P1", "estimated_time": "3 days", "details": "Specific guidance"}},
+            {{"id": "ph_10", "text": "Engage with every comment on launch day", "category": "Community", "priority": "P0", "estimated_time": "1 day", "details": "Specific guidance"}},
+            {{"id": "ph_11", "text": "Post-launch thank you and update", "category": "Community", "priority": "P1", "estimated_time": "1 day", "details": "Specific guidance"}}
+        ],
+        "total_items": 11,
+        "launch_day_timeline": {{
+            "00_00": "Launch goes live on Product Hunt",
+            "00_30": "Share launch link with your inner circle",
+            "01_00": "Post on social media with launch link",
+            "02_00": "Send email to mailing list",
+            "04_00": "Engage with early comments and upvotes",
+            "08_00": "Post update on LinkedIn/Twitter with traction",
+            "12_00": "Mid-day engagement push",
+            "18_00": "Evening engagement and thank you messages",
+            "23_00": "Final engagement and post-launch reflection"
+        }},
+        "tips": ["Specific tip for {startup_name}", "Another tip", "Another tip"]
+    }},
+    "app_store_checklist": {{
+        "overview": "2-3 sentence strategy for {startup_name}'s app store launch",
+        "platform": "Web / iOS / Android / Cross-platform",
+        "items": [
+            {{"id": "as_1", "text": "Prepare app screenshots and preview video", "category": "Assets", "priority": "P0", "estimated_time": "3 days", "details": "Specific guidance"}},
+            {{"id": "as_2", "text": "Write compelling app description and subtitle", "category": "Content", "priority": "P0", "estimated_time": "1 day", "details": "Specific guidance"}},
+            {{"id": "as_3", "text": "Research and select 10+ relevant keywords", "category": "ASO", "priority": "P0", "estimated_time": "1 day", "details": "Specific guidance"}},
+            {{"id": "as_4", "text": "Design app icon", "category": "Design", "priority": "P0", "estimated_time": "2 days", "details": "Specific guidance"}},
+            {{"id": "as_5", "text": "Set up app analytics and crash reporting", "category": "Technical", "priority": "P1", "estimated_time": "1 day", "details": "Specific guidance"}},
+            {{"id": "as_6", "text": "Prepare privacy policy and terms of service", "category": "Legal", "priority": "P0", "estimated_time": "2 days", "details": "Specific guidance"}},
+            {{"id": "as_7", "text": "Set up in-app purchases / subscription (if applicable)", "category": "Monetization", "priority": "P1", "estimated_time": "2 days", "details": "Specific guidance"}},
+            {{"id": "as_8", "text": "Test on multiple devices and OS versions", "category": "Testing", "priority": "P0", "estimated_time": "3 days", "details": "Specific guidance"}},
+            {{"id": "as_9", "text": "Prepare app store rating prompt strategy", "category": "Growth", "priority": "P1", "estimated_time": "1 day", "details": "Specific guidance"}},
+            {{"id": "as_10", "text": "Submit for review with proper metadata", "category": "Launch", "priority": "P0", "estimated_time": "1 day", "details": "Specific guidance"}}
+        ],
+        "total_items": 10,
+        "review_time_estimate": "e.g. 24-48 hours for iOS, 2-3 hours for Android",
+        "aso_tips": ["Keyword tip 1", "Keyword tip 2", "Keyword tip 3"],
+        "tips": ["Specific app store tip for {startup_name}", "Another tip"]
+    }},
+    "beta_launch_plan": {{
+        "overview": "2-3 sentence strategy for {startup_name}'s beta launch",
+        "phases": [
+            {{
+                "phase": "Pre-Beta",
+                "duration": "e.g. 2 weeks",
+                "goals": ["Goal 1", "Goal 2", "Goal 3"],
+                "actions": [
+                    {{"day": -14, "action": "Specific action", "owner": "Role", "details": "Details"}},
+                    {{"day": -10, "action": "Specific action", "owner": "Role", "details": "Details"}},
+                    {{"day": -7, "action": "Specific action", "owner": "Role", "details": "Details"}}
+                ]
+            }},
+            {{
+                "phase": "Closed Beta",
+                "duration": "e.g. 4 weeks",
+                "goals": ["Goal 1", "Goal 2", "Goal 3", "Goal 4"],
+                "actions": [
+                    {{"day": 1, "action": "Specific action", "owner": "Role", "details": "Details"}},
+                    {{"day": 7, "action": "Specific action", "owner": "Role", "details": "Details"}},
+                    {{"day": 14, "action": "Specific action", "owner": "Role", "details": "Details"}},
+                    {{"day": 21, "action": "Specific action", "owner": "Role", "details": "Details"}},
+                    {{"day": 28, "action": "Specific action", "owner": "Role", "details": "Details"}}
+                ]
+            }},
+            {{
+                "phase": "Open Beta",
+                "duration": "e.g. 2 weeks",
+                "goals": ["Goal 1", "Goal 2", "Goal 3"],
+                "actions": [
+                    {{"day": 1, "action": "Specific action", "owner": "Role", "details": "Details"}},
+                    {{"day": 7, "action": "Specific action", "owner": "Role", "details": "Details"}},
+                    {{"day": 14, "action": "Specific action", "owner": "Role", "details": "Details"}}
+                ]
+            }}
+        ],
+        "beta_tester_criteria": ["Criterion 1", "Criterion 2", "Criterion 3", "Criterion 4"],
+        "feedback_collection": "How to collect and organize beta feedback (2-3 sentences)",
+        "success_metrics": ["Metric 1", "Metric 2", "Metric 3"],
+        "tips": ["Tip 1", "Tip 2", "Tip 3"]
+    }},
+    "first_100_customers": {{
+        "overview": "2-3 sentence strategy to acquire the first 100 customers for {startup_name}",
+        "target_segment": "Description of the ideal first customer segment",
+        "channels": [
+            {{
+                "name": "Channel name",
+                "tactic": "Specific tactic (2-3 sentences)",
+                "estimated_reach": "e.g. 500 people",
+                "estimated_conversions": "e.g. 20-30 customers",
+                "cost": "e.g. Free / ~$100 / Time investment",
+                "timeline": "e.g. 2 weeks"
+            }}
+        ],
+        "incentive_strategy": "Strategy for early adopter incentives (1-2 sentences)",
+        "referral_program": "Description of referral mechanism (1-2 sentences)",
+        "weekly_targets": [
+            {{"week": 1, "target": 5, "actions": ["Action 1", "Action 2"], "expected_source": "Source"}},
+            {{"week": 2, "target": 10, "actions": ["Action 1", "Action 2"], "expected_source": "Source"}},
+            {{"week": 3, "target": 15, "actions": ["Action 1", "Action 2"], "expected_source": "Source"}},
+            {{"week": 4, "target": 20, "actions": ["Action 1", "Action 2"], "expected_source": "Source"}},
+            {{"week": 5, "target": 25, "actions": ["Action 1", "Action 2"], "expected_source": "Source"}},
+            {{"week": 6, "target": 25, "actions": ["Action 1", "Action 2"], "expected_source": "Source"}}
+        ],
+        "milestones": [
+            {{"customers": 10, "celebration": "How to celebrate", "signal": "What this validates"}},
+            {{"customers": 50, "celebration": "How to celebrate", "signal": "What this validates"}},
+            {{"customers": 100, "celebration": "How to celebrate", "signal": "What this validates"}}
+        ],
+        "risks": ["Risk 1", "Risk 2"],
+        "tips": ["Tip specific to {startup_name}", "Another tip", "Another tip"]
+    }}
+}}
+
+Generate 11 Product Hunt checklist items, 10 App Store items, 3 beta phases with detailed actions, and 6 week-by-week targets for first 100 customers. All content must be specific to {startup_name}.
+Return ONLY the JSON object. No other text."""
