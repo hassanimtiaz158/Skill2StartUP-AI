@@ -188,7 +188,7 @@ export function AppNav() {
               onClose={closeDropdowns}
             />
             {navLink('Dashboard', '/dashboard')}
-            {navLink('Pricing', '/#pricing')}
+            {navLink('Pricing', '/pricing')}
             <button onClick={() => setShowDemo(true)} className="flex items-center gap-1.5 px-3 py-2 text-[13px] font-semibold tracking-wide text-[#6A6A6A] hover:text-[#0A0A0A] transition-all duration-200">
               <Play className="h-3.5 w-3.5" /> Demo
             </button>
@@ -241,6 +241,7 @@ export function AppNav() {
                 </div>
                 {RESOURCES.map(r => <MobileLink key={r.path} to={r.path} label={r.label} sub={r.desc} onClick={() => setMobileOpen(false)} />)}
                 <MobileLink to="/dashboard" label="Dashboard" onClick={() => setMobileOpen(false)} />
+                <MobileLink to="/pricing" label="Pricing" sub="Plans for every stage" onClick={() => setMobileOpen(false)} />
                 <div className="pt-4 space-y-2 px-4">
                   {session?.user ? (
                     <>

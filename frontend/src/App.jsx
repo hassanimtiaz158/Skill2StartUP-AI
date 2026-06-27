@@ -19,6 +19,7 @@ import GrowthHubPage from './pages/GrowthHubPage.jsx';
 import FinancialPlanPage from './pages/FinancialPlanPage.jsx';
 import LaunchHubPage from './pages/LaunchHubPage.jsx';
 import CollaborationHubPage from './pages/CollaborationHubPage.jsx';
+import PricingPage from './pages/PricingPage.jsx';
 
 export default function App() {
   return (
@@ -40,6 +41,7 @@ export default function App() {
       <Route path="/financial-plan" element={<FinancialPlanPage />} />
       <Route path="/launch-hub" element={<LaunchHubPage />} />
       <Route path="/collaboration" element={<CollaborationHubPage />} />
+      <Route path="/pricing" element={<PricingPage />} />
       <Route path="/dashboard" element={<DashboardPage />} />
       <Route path="/startups/:planId" element={<StartupDetailPage />} />
       <Route path="*" element={<NotFoundPage />} />
