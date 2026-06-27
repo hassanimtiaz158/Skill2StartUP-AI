@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Play, Rocket, ChevronDown, Menu, X, User, LogOut, Settings, LayoutDashboard, BookOpen, HelpCircle } from 'lucide-react';
+import { Play, Rocket, ChevronDown, Menu, X, User, LogOut, Settings, LayoutDashboard, BookOpen, HelpCircle, Lightbulb, Users, Brain, Briefcase, Target, Globe } from 'lucide-react';
 import DemoVideoModal from './DemoVideoModal.jsx';
 import { logoutAccount } from '../services/api.js';
 import { clearSession, getSession } from '../services/storage.js';
@@ -13,6 +13,14 @@ const FEATURES = [
   { label: 'Growth Hub', path: '/growth-hub', desc: 'KPIs, acquisition & growth plans' },
   { label: 'Financial Planning', path: '/financial-plan', desc: 'Budget, burn & projections' },
   { label: 'Launch Hub', path: '/launch-hub', desc: 'Checklists & customer strategy' },
+];
+
+const STRATEGIES = [
+  { label: 'First 100 Customers', path: '/first-100-customers', desc: 'Find & convert early adopters' },
+  { label: 'Decision Engine', path: '/decision-engine', desc: 'Go / Pivot / Drop decisions' },
+  { label: 'Business Planning', path: '/business-planning', desc: 'BMC, Lean canvas & revenue' },
+  { label: 'Customer Insights', path: '/customer-insights', desc: 'Personas, journeys & pain points' },
+  { label: 'Market Intelligence', path: '/market-intelligence', desc: 'Market size, trends & competition' },
 ];
 
 const RESOURCES = [
@@ -187,6 +195,13 @@ export function AppNav() {
               onToggle={() => setOpenDropdown(openDropdown === 'features' ? null : 'features')}
               onClose={closeDropdowns}
             />
+            <DropdownMenu
+              label="Strategies"
+              items={STRATEGIES}
+              isOpen={openDropdown === 'strategies'}
+              onToggle={() => setOpenDropdown(openDropdown === 'strategies' ? null : 'strategies')}
+              onClose={closeDropdowns}
+            />
             {navLink('Dashboard', '/dashboard')}
             {navLink('Pricing', '/pricing')}
             <button onClick={() => setShowDemo(true)} className="flex items-center gap-1.5 px-3 py-2 text-[13px] font-semibold tracking-wide text-[#6A6A6A] hover:text-[#0A0A0A] transition-all duration-200">
@@ -236,6 +251,10 @@ export function AppNav() {
                   <div className="px-4 text-[10px] font-bold uppercase tracking-widest text-[#8A8A8A]">Features</div>
                 </div>
                 {FEATURES.map(f => <MobileLink key={f.path} to={f.path} label={f.label} sub={f.desc} onClick={() => setMobileOpen(false)} />)}
+                <div className="pt-3 pb-1">
+                  <div className="px-4 text-[10px] font-bold uppercase tracking-widest text-[#8A8A8A]">Strategies</div>
+                </div>
+                {STRATEGIES.map(s => <MobileLink key={s.path} to={s.path} label={s.label} sub={s.desc} onClick={() => setMobileOpen(false)} />)}
                 <div className="pt-3 pb-1">
                   <div className="px-4 text-[10px] font-bold uppercase tracking-widest text-[#8A8A8A]">Resources</div>
                 </div>

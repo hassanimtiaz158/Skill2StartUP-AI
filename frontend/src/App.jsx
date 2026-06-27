@@ -20,6 +20,11 @@ import FinancialPlanPage from './pages/FinancialPlanPage.jsx';
 import LaunchHubPage from './pages/LaunchHubPage.jsx';
 import CollaborationHubPage from './pages/CollaborationHubPage.jsx';
 import PricingPage from './pages/PricingPage.jsx';
+import First100CustomersPage from './pages/First100CustomersPage.jsx';
+import DecisionEnginePage from './pages/DecisionEnginePage.jsx';
+import BusinessPlanningPage from './pages/BusinessPlanningPage.jsx';
+import CustomerInsightsPage from './pages/CustomerInsightsPage.jsx';
+import MarketIntelligencePage from './pages/MarketIntelligencePage.jsx';
 
 export default function App() {
   return (
@@ -40,6 +45,11 @@ export default function App() {
       <Route path="/growth-hub" element={<GrowthHubPage />} />
       <Route path="/financial-plan" element={<FinancialPlanPage />} />
       <Route path="/launch-hub" element={<LaunchHubPage />} />
+      <Route path="/first-100-customers" element={<First100CustomersPage />} />
+      <Route path="/decision-engine" element={<DecisionEnginePage />} />
+      <Route path="/business-planning" element={<BusinessPlanningPage />} />
+      <Route path="/customer-insights" element={<CustomerInsightsPage />} />
+      <Route path="/market-intelligence" element={<MarketIntelligencePage />} />
       <Route path="/collaboration" element={<CollaborationHubPage />} />
       <Route path="/pricing" element={<PricingPage />} />
       <Route path="/dashboard" element={<DashboardPage />} />
