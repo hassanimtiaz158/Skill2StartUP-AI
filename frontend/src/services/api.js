@@ -129,6 +129,26 @@ export async function requestPasswordReset(email) {
   }
 }
 
+export async function verifyResetToken(token) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.post('/api/auth/verify-reset-token', { token });
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function resetPassword(token, newPassword) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.post('/api/auth/reset-password', { token, new_password: newPassword });
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
 export async function generateIdeas(profile) {
   try {
     assertApiConfigured();

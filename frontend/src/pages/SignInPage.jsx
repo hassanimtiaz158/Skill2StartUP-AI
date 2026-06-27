@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
-import { requestPasswordReset, signInAccount } from '../services/api.js';
+import { signInAccount } from '../services/api.js';
 import { setSession } from '../services/storage.js';
 
 export default function SignInPage() {
@@ -9,7 +9,6 @@ export default function SignInPage() {
   const [form, setForm] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [resetLoading, setResetLoading] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
 
@@ -27,20 +26,6 @@ export default function SignInPage() {
       setError(requestError.message);
     } finally {
       setLoading(false);
-    }
-  }
-
-  async function handleForgotPassword() {
-    setError(''); setNotice('');
-    if (!form.email) { setError('Enter your email first, then click forgot.'); return; }
-    setResetLoading(true);
-    try {
-      const result = await requestPasswordReset(form.email);
-      setNotice(result.message);
-    } catch (requestError) {
-      setError(requestError.message);
-    } finally {
-      setResetLoading(false);
     }
   }
 
@@ -96,10 +81,10 @@ export default function SignInPage() {
                   <input type="checkbox" className="h-4 w-4 border-2 border-[#0A0A0A] appearance-none checked:bg-[#0A0A0A] cursor-pointer shrink-0" />
                   <span className="text-xs font-bold uppercase tracking-wide text-[#3A3A3A]">Remember me</span>
                 </label>
-                <button type="button" onClick={handleForgotPassword} disabled={resetLoading}
-                  className="text-xs font-black uppercase tracking-wide underline hover:text-[#000000] disabled:opacity-50 transition-colors">
-                  {resetLoading ? 'Sending...' : 'Forgot?'}
-                </button>
+                <Link to="/forgot-password"
+                  className="text-xs font-black uppercase tracking-wide underline hover:text-[#000000] transition-colors">
+                  Forgot?
+                </Link>
               </div>
 
               <button type="submit" disabled={loading}

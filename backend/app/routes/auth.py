@@ -11,6 +11,8 @@ from app.services.auth_service import (
     get_user_by_token,
     logout_user,
     request_password_reset,
+    verify_reset_token,
+    reset_password,
 )
 
 logger = logging.getLogger(__name__)
@@ -45,14 +47,49 @@ def signin(payload: SignInRequest):
 @router.post("/forgot-password")
 def forgot_password(payload: ForgotPasswordRequest):
     try:
-        request_password_reset(payload.email)
+        token = request_password_reset(payload.email)
+        return {
+            "message": "Password reset instructions have been sent to your email.",
+            "reset_token": token,
+        }
     except AuthError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     except Exception as exc:
         logger.error("Password reset request failed: %s", exc, exc_info=True)
-    return {
-        "message": "If an account exists for this email, password reset support will contact you. For now, create a new account if you cannot access the old one.",
-    }
+        raise HTTPException(status_code=500, detail="Failed to process reset request. Please try again.")
+
+
+@router.post("/verify-reset-token")
+def verify_reset_token_endpoint(body: dict):
+    token = body.get("token", "")
+    if not token:
+        raise HTTPException(status_code=400, detail="Reset token is required.")
+    try:
+        result = verify_reset_token(token)
+        return {"message": "Token is valid.", "email": result["email"]}
+    except AuthError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except Exception as exc:
+        logger.error("Token verification failed: %s", exc, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to verify token.")
+
+
+@router.post("/reset-password")
+def reset_password_endpoint(body: dict):
+    token = body.get("token", "")
+    new_password = body.get("new_password", "")
+    if not token:
+        raise HTTPException(status_code=400, detail="Reset token is required.")
+    if not new_password:
+        raise HTTPException(status_code=400, detail="New password is required.")
+    try:
+        reset_password(token, new_password)
+        return {"message": "Password has been reset successfully. You can now sign in with your new password."}
+    except AuthError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except Exception as exc:
+        logger.error("Password reset failed: %s", exc, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to reset password. Please try again.")
 
 
 @router.get("/me", response_model=UserResponse)

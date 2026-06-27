@@ -2,15 +2,16 @@ import hashlib
 import hmac
 import re
 import secrets
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from bson import ObjectId
 from pymongo.errors import DuplicateKeyError
 
-from app.database import users
+from app.database import users, password_resets
 
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 HASH_ITERATIONS = 210_000
+RESET_TOKEN_EXPIRY_MINUTES = 15
 
 
 class AuthError(Exception):
@@ -93,15 +94,56 @@ def authenticate_user(email: str, password: str) -> dict:
     return {"token": token, "user": _public_user(user)}
 
 
-def request_password_reset(email: str) -> bool:
+def request_password_reset(email: str) -> str:
     clean_email = _normalize_email(email)
     user = users.find_one({"email": clean_email})
     if not user:
-        return False
+        raise AuthError("No account found with this email address.")
+    password_resets.delete_many({"email": clean_email})
+    token = secrets.token_urlsafe(48)
+    password_resets.insert_one({
+        "token": token,
+        "email": clean_email,
+        "user_id": user["_id"],
+        "created_at": datetime.utcnow(),
+        "expires_at": datetime.utcnow() + timedelta(minutes=RESET_TOKEN_EXPIRY_MINUTES),
+    })
+    return token
+
+
+def verify_reset_token(token: str) -> dict:
+    if not token:
+        raise AuthError("Reset token is required.")
+    doc = password_resets.find_one({"token": token})
+    if not doc:
+        raise AuthError("Invalid or expired reset token.")
+    if doc["expires_at"] < datetime.utcnow():
+        password_resets.delete_one({"_id": doc["_id"]})
+        raise AuthError("Reset token has expired. Please request a new one.")
+    return {"email": doc["email"], "token": token}
+
+
+def reset_password(token: str, new_password: str) -> bool:
+    if not token:
+        raise AuthError("Reset token is required.")
+    if len(new_password) < 8:
+        raise AuthError("Password must be at least 8 characters.")
+    doc = password_resets.find_one({"token": token})
+    if not doc:
+        raise AuthError("Invalid or expired reset token.")
+    if doc["expires_at"] < datetime.utcnow():
+        password_resets.delete_one({"_id": doc["_id"]})
+        raise AuthError("Reset token has expired. Please request a new one.")
+    salt, password_hash = _hash_password(new_password)
     users.update_one(
-        {"_id": user["_id"]},
-        {"$set": {"password_reset_requested_at": datetime.utcnow()}},
+        {"_id": doc["user_id"]},
+        {"$set": {
+            "password_salt": salt,
+            "password_hash": password_hash,
+            "updated_at": datetime.utcnow(),
+        }},
     )
+    password_resets.delete_one({"_id": doc["_id"]})
     return True
 
 

@@ -60,7 +60,8 @@ def _mock_mongo():
          patch("app.database.client", mock_client), \
          patch("app.services.database_service.founder_profiles") as mock_fp, \
          patch("app.services.database_service.startup_plans") as mock_sp, \
-         patch("app.services.auth_service.users") as mock_users:
+         patch("app.services.auth_service.users") as mock_users, \
+         patch("app.services.auth_service.password_resets") as mock_pr:
         # Make the ping command used in lifespan and health check succeed
         mock_client.admin.command = MagicMock(return_value=True)
 
@@ -71,12 +72,16 @@ def _mock_mongo():
         mock_users.insert_one.return_value = MagicMock(inserted_id=ObjectId())
         mock_users.find_one.return_value = None
         mock_users.update_one.return_value = MagicMock(modified_count=1)
+        mock_pr.delete_many.return_value = MagicMock()
+        mock_pr.insert_one.return_value = MagicMock(inserted_id=ObjectId())
+        mock_pr.find_one.return_value = None
 
         yield {
             "client": mock_client,
             "founder_profiles": mock_fp,
             "startup_plans": mock_sp,
             "users": mock_users,
+            "password_resets": mock_pr,
         }
 
 
@@ -183,8 +188,25 @@ async def test_forgot_password_returns_generic_message(client: AsyncClient, _moc
         json={"email": "student@example.com"},
     )
 
+    assert response.status_code == 400
+    assert "No account found" in response.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_forgot_password_existing_email_returns_success(client: AsyncClient, _mock_mongo):
+    _mock_mongo["users"].find_one.return_value = {
+        "_id": ObjectId(),
+        "email": "student@example.com",
+    }
+
+    response = await client.post(
+        "/api/auth/forgot-password",
+        json={"email": "student@example.com"},
+    )
+
     assert response.status_code == 200
     assert "message" in response.json()
+    assert "reset_token" in response.json()
 
 
 @pytest.mark.asyncio
