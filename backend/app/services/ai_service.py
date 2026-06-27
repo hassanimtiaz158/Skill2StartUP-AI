@@ -1,7 +1,10 @@
 import asyncio
 import json
+import logging
 import random
 import secrets
+
+logger = logging.getLogger(__name__)
 
 from app.config import AI_PROVIDER
 from app.services.ai_errors import AIServiceError, AIRateLimitError
@@ -54,6 +57,29 @@ _SUMMARY_MARKERS = [
     "give me the full picture", "complete overview",
     "summarize the analysis", "overview of everything",
 ]
+
+_GREETING_RESPONSES = {
+    "mentor": "Hello! I'm your startup mentor. How can I help you move your startup forward today?",
+    "product_manager": "Hey there! I'm your product advisor. What product question can I help you with?",
+    "marketing": "Hi! I'm your marketing advisor. What marketing challenge can I help you tackle?",
+    "technical": "Hello! I'm your technical advisor. What tech question do you have?",
+    "investor": "Hi! I'm your investor advisor. What fundraising question can I help with?",
+}
+
+
+def _stringify_list_fields(data: dict) -> dict:
+    """Convert list fields to comma-separated strings for prompts that expect strings."""
+    result = dict(data)
+    for key in ("target_users", "mvp_features", "competitors", "risks"):
+        if isinstance(result.get(key), list):
+            if key == "competitors":
+                result[key] = ", ".join(
+                    c.get("name", str(c)) if isinstance(c, dict) else str(c)
+                    for c in result[key]
+                )
+            else:
+                result[key] = ", ".join(str(item) for item in result[key])
+    return result
 
 
 def _detect_chat_intent(question: str) -> str:
@@ -429,101 +455,67 @@ _ADVISOR_PROMPTS = {
 
 
 async def generate_ai_cofounder_chat(advisor_type: str, question: str, startup_context: dict) -> dict:
+    intent = _detect_chat_intent(question)
+
+    if intent == "greeting":
+        greeting = _GREETING_RESPONSES.get(advisor_type, "Hello! How can I help you with your startup?")
+        return {"answer": greeting}
+    if intent == "casual":
+        return {"answer": "I'm here to help! Feel free to ask me anything about your startup."}
+
     prompt_template = _ADVISOR_PROMPTS.get(advisor_type)
     if not prompt_template:
         raise AIServiceError(f"Unknown advisor type: {advisor_type}")
 
-    context = dict(startup_context)
-    for key in ("target_users", "mvp_features", "competitors", "risks"):
-        if isinstance(context.get(key), list):
-            context[key] = ", ".join(
-                c.get("name", str(c)) if isinstance(c, dict) else str(c)
-                for c in context[key]
-            ) if key == "competitors" else ", ".join(context[key])
-
+    context = _stringify_list_fields(startup_context)
     context["question"] = question
-    prompt = prompt_template.format(**context)
-    return await _generate(prompt)
+
+    try:
+        prompt = prompt_template.format(**context)
+        return await _generate(prompt)
+    except KeyError as e:
+        logger.error("Missing field in advisor context: %s", e)
+        return {"answer": f"I need more context to answer that. Could you provide more details about your startup?"}
+    except Exception as e:
+        logger.error("Advisor chat failed: %s", e)
+        return {"answer": "I encountered an error processing your question. Please try again."}
 
 
 async def generate_investor_tools(data: dict) -> dict:
-    for key in ("target_users", "mvp_features"):
-        if isinstance(data.get(key), list):
-            data[key] = ", ".join(data[key])
-    if isinstance(data.get("competitors"), list):
-        data["competitors"] = ", ".join(
-            c.get("name", str(c)) if isinstance(c, dict) else str(c)
-            for c in data["competitors"]
-        )
-    if isinstance(data.get("risks"), list):
-        data["risks"] = ", ".join(data["risks"])
+    data = _stringify_list_fields(data)
+    data.setdefault("revenue_potential", "0")
     prompt = INVESTOR_TOOLS_PROMPT.format(**data)
     return await _generate(prompt)
 
 
 async def generate_marketing_hub(data: dict) -> dict:
-    for key in ("target_users", "mvp_features"):
-        if isinstance(data.get(key), list):
-            data[key] = ", ".join(data[key])
-    if isinstance(data.get("competitors"), list):
-        data["competitors"] = ", ".join(
-            c.get("name", str(c)) if isinstance(c, dict) else str(c)
-            for c in data["competitors"]
-        )
-    if isinstance(data.get("risks"), list):
-        data["risks"] = ", ".join(data["risks"])
+    data = _stringify_list_fields(data)
+    data.setdefault("revenue_potential", "0")
     prompt = MARKETING_HUB_PROMPT.format(**data)
     return await _generate(prompt)
 
 
 async def generate_development_hub(data: dict) -> dict:
-    for key in ("target_users", "mvp_features"):
-        if isinstance(data.get(key), list):
-            data[key] = ", ".join(data[key])
-    if isinstance(data.get("competitors"), list):
-        data["competitors"] = ", ".join(
-            c.get("name", str(c)) if isinstance(c, dict) else str(c)
-            for c in data["competitors"]
-        )
+    data = _stringify_list_fields(data)
     data.setdefault("tech_stack", "")
     prompt = DEVELOPMENT_HUB_PROMPT.format(**data)
     return await _generate(prompt)
 
 
 async def generate_growth_hub(data: dict) -> dict:
-    for key in ("target_users", "mvp_features", "risks"):
-        if isinstance(data.get(key), list):
-            data[key] = ", ".join(data[key])
-    if isinstance(data.get("competitors"), list):
-        data["competitors"] = ", ".join(
-            c.get("name", str(c)) if isinstance(c, dict) else str(c)
-            for c in data["competitors"]
-        )
+    data = _stringify_list_fields(data)
+    data.setdefault("revenue_potential", "0")
     prompt = GROWTH_HUB_PROMPT.format(**data)
     return await _generate(prompt)
 
 
 async def generate_financial_plan(data: dict) -> dict:
-    for key in ("target_users", "mvp_features"):
-        if isinstance(data.get(key), list):
-            data[key] = ", ".join(data[key])
-    if isinstance(data.get("competitors"), list):
-        data["competitors"] = ", ".join(
-            c.get("name", str(c)) if isinstance(c, dict) else str(c)
-            for c in data["competitors"]
-        )
+    data = _stringify_list_fields(data)
     prompt = FINANCIAL_PLANNING_PROMPT.format(**data)
     return await _generate(prompt)
 
 
 async def generate_launch_hub(data: dict) -> dict:
-    for key in ("target_users", "mvp_features", "risks"):
-        if isinstance(data.get(key), list):
-            data[key] = ", ".join(data[key])
-    if isinstance(data.get("competitors"), list):
-        data["competitors"] = ", ".join(
-            c.get("name", str(c)) if isinstance(c, dict) else str(c)
-            for c in data["competitors"]
-        )
+    data = _stringify_list_fields(data)
     prompt = LAUNCH_HUB_PROMPT.format(**data)
     return await _generate(prompt)
