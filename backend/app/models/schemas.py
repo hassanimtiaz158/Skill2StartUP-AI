@@ -1450,3 +1450,42 @@ class ExportResponse(BaseModel):
     content: str = ""
     format: str = ""
     filename: str = ""
+
+
+# ─── Saved Ideas (Centralized Idea Registry) ──────────────────────────────────
+
+class SavedIdeaCreate(BaseModel):
+    title: str = ""
+    description: str = ""
+    idea_data: dict = {}
+    analysis: dict = {}
+    plan: dict = {}
+    profile: dict = {}
+
+
+class SavedIdeaResponse(BaseModel):
+    id: str = ""
+    user_id: str = ""
+    title: str = ""
+    description: str = ""
+    idea_data: dict = {}
+    analysis: dict = {}
+    plan: dict = {}
+    profile: dict = {}
+    hub_reports: dict = {}
+    created_at: str = ""
+    updated_at: str = ""
+
+
+class SavedIdeasListResponse(BaseModel):
+    ideas: list = []
+
+
+class SavedIdeaUpdate(BaseModel):
+    title: str | None = None
+    description: str | None = None
+    idea_data: dict | None = None
+    analysis: dict | None = None
+    plan: dict | None = None
+    profile: dict | None = None
+    hub_reports: dict | None = None

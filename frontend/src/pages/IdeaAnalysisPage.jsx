@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Check, RefreshCw, Users, Target, Shield, TrendingUp, Lightbulb, Code, DollarSign, AlertTriangle, BarChart3, UserCheck, FileText, Share2, Send, MessageCircle, Copy, CheckCheck, Mic, Square, Mail, Shuffle } from 'lucide-react';
 import { AppNav } from '../components/PageShell.jsx';
 import { readValue, saveValue } from '../services/storage.js';
-import { analyzeIdea, analyzeIdeaStream, chatAboutIdeaStream, shareAnalysis, estimateMarketSize, runDebate, sendEmailReport, saveBuildProgress, loadBuildProgress, saveAnalysisProgress } from '../services/api.js';
+import { analyzeIdea, analyzeIdeaStream, chatAboutIdeaStream, shareAnalysis, estimateMarketSize, runDebate, sendEmailReport, saveBuildProgress, loadBuildProgress, saveAnalysisProgress, createSavedIdea } from '../services/api.js';
 
 function ScoreBar({ label, value, icon: Icon }) {
   const pct = Math.max(0, Math.min(100, Number(value || 0) * 10));
@@ -515,6 +515,8 @@ export default function IdeaAnalysisPage() {
   const [voiceInputIdea, setVoiceInputIdea] = useState('');
   const [savingProgress, setSavingProgress] = useState(false);
   const [progressSaved, setProgressSaved] = useState(false);
+  const [savingIdea, setSavingIdea] = useState(false);
+  const [ideaSaved, setIdeaSaved] = useState(false);
 
   async function handleSaveProgress() {
     if (!result) return;
@@ -528,6 +530,37 @@ export default function IdeaAnalysisPage() {
       setError(err.message);
     } finally {
       setSavingProgress(false);
+    }
+  }
+
+  async function handleSaveToIdeas() {
+    if (!result) return;
+    setSavingIdea(true);
+    setIdeaSaved(false);
+    try {
+      const title = result.startup_name || result.refined_idea || ideaForm?.startup_idea || 'Untitled Idea';
+      const description = result.pitch || result.problem || '';
+      await createSavedIdea({
+        title,
+        description,
+        idea_data: {
+          startup_name: result.startup_name || '',
+          pitch: result.pitch || '',
+          problem: result.problem || '',
+          solution: result.solution || '',
+          target_users: result.target_users || [],
+          ...result,
+        },
+        analysis: result,
+        plan: {},
+        profile: readValue('profile') || {},
+      });
+      setIdeaSaved(true);
+      setTimeout(() => setIdeaSaved(false), 4000);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSavingIdea(false);
     }
   }
 
@@ -616,6 +649,10 @@ export default function IdeaAnalysisPage() {
                     className="h-12 px-6 border-2 border-[#0A0A0A] bg-white text-xs font-black uppercase tracking-widest inline-flex items-center justify-center gap-2 hover:bg-[#0A0A0A] hover:text-[#F5F3EE] transition-colors disabled:opacity-50">
                     <BarChart3 className="h-4 w-4" /> {savingProgress ? 'Saving...' : 'Save Progress'}
                   </button>
+                  <button type="button" onClick={handleSaveToIdeas} disabled={savingIdea}
+                    className="h-12 px-6 border-2 border-[#0A0A0A] bg-[#0A0A0A] text-[#F5F3EE] text-xs font-black uppercase tracking-widest inline-flex items-center justify-center gap-2 hover:bg-transparent hover:text-[#0A0A0A] transition-colors disabled:opacity-50">
+                    <Lightbulb className="h-4 w-4" /> {savingIdea ? 'Saving...' : 'Save to Ideas'}
+                  </button>
                   <button type="button" onClick={() => setEmailModal(true)}
                     className="h-12 px-6 border-2 border-[#0A0A0A] bg-white text-xs font-black uppercase tracking-widest inline-flex items-center justify-center gap-2 hover:bg-[#0A0A0A] hover:text-[#F5F3EE] transition-colors">
                     <Mail className="h-4 w-4" /> Email
@@ -632,6 +669,11 @@ export default function IdeaAnalysisPage() {
               {progressSaved && (
                 <div className="w-full border-2 border-[#0A0A0A] bg-[#0A0A0A] text-[#F5F3EE] px-4 py-3 text-xs font-black uppercase tracking-widest flex items-center gap-2">
                   <Check className="h-4 w-4" /> Progress saved successfully.
+                </div>
+              )}
+              {ideaSaved && (
+                <div className="w-full border-2 border-[#0A0A0A] bg-[#0A0A0A] text-[#F5F3EE] px-4 py-3 text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                  <Check className="h-4 w-4" /> Idea saved! Access it from any feature page.
                 </div>
               )}
               <button type="button" onClick={handleRegenerate} disabled={loading}

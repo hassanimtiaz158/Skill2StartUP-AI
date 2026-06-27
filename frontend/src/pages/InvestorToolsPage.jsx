@@ -4,6 +4,8 @@ import { AppNav } from '../components/PageShell.jsx';
 import { Sparkles, Save, ArrowRight, Rocket, FileText, TrendingUp, DollarSign, BarChart3, Target, Lightbulb, AlertTriangle, Check, Copy, CheckCheck, Layers, Download } from 'lucide-react';
 import { generateInvestorTools, saveInvestorTools } from '../services/api.js';
 import { getSession, readValue, saveValue } from '../services/storage.js';
+import IdeaSelector from '../components/IdeaSelector.jsx';
+import { useIdea } from '../contexts/IdeaContext.jsx';
 
 const TABS = [
   { key: 'pitch_deck', label: 'Pitch Deck', icon: Layers },
@@ -57,6 +59,7 @@ function CopyButton({ text }) {
 }
 
 export default function InvestorToolsPage() {
+  const { selectedIdea: savedIdea } = useIdea();
   const [activeTab, setActiveTab] = useState('pitch_deck');
   const [result, setResult] = useState(readValue('investorTools')); // fallback read, won't cause issues
   const [loading, setLoading] = useState(false);
@@ -64,7 +67,7 @@ export default function InvestorToolsPage() {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const profile = readValue('profile');
-  const selectedIdea = readValue('selectedIdea');
+  const selectedIdea = savedIdea?.idea_data || readValue('selectedIdea');
   const plan = readValue('plan');
   const analysis = readValue('ideaAnalysis');
 
@@ -152,6 +155,8 @@ export default function InvestorToolsPage() {
               </Link>
             </div>
           </div>
+
+          <IdeaSelector />
 
           {!selectedIdea && (
             <div className="border-2 border-[#0A0A0A] bg-white p-8 text-center">

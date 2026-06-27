@@ -4,6 +4,8 @@ import { AppNav } from '../components/PageShell.jsx';
 import { Sparkles, Save, Copy, CheckCheck, TrendingUp, Target, Zap, Users, Lightbulb, Calendar } from 'lucide-react';
 import { generateGrowthHub, saveGrowthHub } from '../services/api.js';
 import { getSession, readValue, saveValue } from '../services/storage.js';
+import IdeaSelector from '../components/IdeaSelector.jsx';
+import { useIdea } from '../contexts/IdeaContext.jsx';
 
 const TABS = [
   { key: 'plan', label: 'Growth Plan', icon: Calendar },
@@ -39,6 +41,7 @@ function PriorityBadge({ priority }) {
 }
 
 export default function GrowthHubPage() {
+  const { selectedIdea: savedIdea } = useIdea();
   const [activeTab, setActiveTab] = useState('plan');
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -46,7 +49,7 @@ export default function GrowthHubPage() {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const profile = readValue('profile');
-  const selectedIdea = readValue('selectedIdea');
+  const selectedIdea = savedIdea?.idea_data || readValue('selectedIdea');
   const plan = readValue('plan');
   const analysis = readValue('ideaAnalysis');
 
@@ -62,16 +65,16 @@ export default function GrowthHubPage() {
         pitch: selectedIdea.pitch,
         problem: selectedIdea.problem,
         solution: selectedIdea.solution,
-        target_users: selectedIdea.target_users,
+        target_users: Array.isArray(selectedIdea.target_users) ? selectedIdea.target_users.join(', ') : (selectedIdea.target_users || ''),
         industry: profile?.preferred_industry || '',
         location: '',
         business_model: planData.revenue_model?.pricing_model || analysis?.monetization_model || '',
-        mvp_features: planData.mvp_features || selectedIdea.mvp_features || [],
-        competitors: planData.competitors || selectedIdea.competitors || [],
+        mvp_features: Array.isArray(planData.mvp_features || selectedIdea.mvp_features) ? (planData.mvp_features || selectedIdea.mvp_features).join(', ') : (planData.mvp_features || selectedIdea.mvp_features || ''),
+        competitors: Array.isArray(planData.competitors || selectedIdea.competitors) ? (planData.competitors || selectedIdea.competitors).join(', ') : (planData.competitors || selectedIdea.competitors || ''),
         market_demand: Number(analysis?.market_demand_score || 0),
         uniqueness: Number(analysis?.uniqueness_score || 0),
         feasibility: Number(analysis?.feasibility_score || 0),
-        risks: planData.risks || analysis?.risks || [],
+        risks: Array.isArray(planData.risks || analysis?.risks) ? (planData.risks || analysis?.risks).join(', ') : (planData.risks || analysis?.risks || ''),
         monetization_model: analysis?.monetization_model || '',
       };
       const res = await generateGrowthHub(data);
@@ -164,6 +167,8 @@ export default function GrowthHubPage() {
             )}
           </div>
         </div>
+
+        <IdeaSelector />
 
         {error && <div className="mb-6 p-4 bg-red-50 border-2 border-red-500 text-red-700 text-xs font-bold uppercase">{error}</div>}
         {notice && <div className="mb-6 p-4 bg-green-50 border-2 border-green-600 text-green-800 text-xs font-bold uppercase">{notice}</div>}

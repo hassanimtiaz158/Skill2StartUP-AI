@@ -4,6 +4,8 @@ import { AppNav } from '../components/PageShell.jsx';
 import { Sparkles, Save, Copy, CheckCheck, Database, Code, FolderTree, BookOpen, Cloud, Server } from 'lucide-react';
 import { generateDevelopmentHub, saveDevelopmentHub } from '../services/api.js';
 import { getSession, readValue, saveValue } from '../services/storage.js';
+import IdeaSelector from '../components/IdeaSelector.jsx';
+import { useIdea } from '../contexts/IdeaContext.jsx';
 
 const TABS = [
   { key: 'database', label: 'DB Schema', icon: Database },
@@ -47,6 +49,7 @@ function CodeBlock({ code, language = 'json' }) {
 }
 
 export default function DevelopmentHubPage() {
+  const { selectedIdea: savedIdea } = useIdea();
   const [activeTab, setActiveTab] = useState('database');
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -54,7 +57,7 @@ export default function DevelopmentHubPage() {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const profile = readValue('profile');
-  const selectedIdea = readValue('selectedIdea');
+  const selectedIdea = savedIdea?.idea_data || readValue('selectedIdea');
   const plan = readValue('plan');
   const analysis = readValue('ideaAnalysis');
 
@@ -70,13 +73,13 @@ export default function DevelopmentHubPage() {
         pitch: selectedIdea.pitch,
         problem: selectedIdea.problem,
         solution: selectedIdea.solution,
-        target_users: selectedIdea.target_users,
+        target_users: Array.isArray(selectedIdea.target_users) ? selectedIdea.target_users.join(', ') : (selectedIdea.target_users || ''),
         industry: profile?.preferred_industry || '',
         location: '',
         business_model: planData.revenue_model?.pricing_model || analysis?.monetization_model || '',
-        mvp_features: planData.mvp_features || selectedIdea.mvp_features || [],
-        competitors: planData.competitors || selectedIdea.competitors || [],
-        tech_stack: planData.tech_stack || selectedIdea.tech_stack || '',
+        mvp_features: Array.isArray(planData.mvp_features || selectedIdea.mvp_features) ? (planData.mvp_features || selectedIdea.mvp_features).join(', ') : (planData.mvp_features || selectedIdea.mvp_features || ''),
+        competitors: Array.isArray(planData.competitors || selectedIdea.competitors) ? (planData.competitors || selectedIdea.competitors).join(', ') : (planData.competitors || selectedIdea.competitors || ''),
+        tech_stack: Array.isArray(planData.tech_stack || selectedIdea.tech_stack) ? (planData.tech_stack || selectedIdea.tech_stack).join(', ') : (planData.tech_stack || selectedIdea.tech_stack || ''),
       };
       const res = await generateDevelopmentHub(data);
       setResult(res);
@@ -131,6 +134,8 @@ export default function DevelopmentHubPage() {
             )}
           </div>
         </div>
+
+        <IdeaSelector />
 
         {error && <div className="mb-6 p-4 bg-red-50 border-2 border-red-500 text-red-700 text-xs font-bold uppercase">{error}</div>}
         {notice && <div className="mb-6 p-4 bg-green-50 border-2 border-green-600 text-green-800 text-xs font-bold uppercase">{notice}</div>}

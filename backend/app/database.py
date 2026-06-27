@@ -34,6 +34,7 @@ team_invites = db["team_invites"]
 team_analyses = db["team_analyses"]
 comments = db["comments"]
 users = db["users"]
+saved_ideas = db["saved_ideas"]
 
 
 def ensure_indexes():
@@ -65,6 +66,7 @@ def ensure_indexes():
         founder_profiles.create_index([("created_at", DESCENDING)])
         users.create_index([("email", ASCENDING)], unique=True)
         users.create_index([("created_at", DESCENDING)])
+        saved_ideas.create_index([("user_id", ASCENDING), ("created_at", DESCENDING)])
         logger.info("MongoDB indexes ensured.")
     except Exception as e:
         logger.warning("Failed to create MongoDB indexes: %s", e)

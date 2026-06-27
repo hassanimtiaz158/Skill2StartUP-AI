@@ -2,7 +2,7 @@ import logging
 import secrets
 from datetime import datetime
 from bson import ObjectId, errors as bson_errors
-from app.database import founder_profiles, startup_plans, saved_analyses, customer_strategies, decision_reports, business_plans, customer_insights, market_intelligence, ai_cofounder_chats, investor_tools, marketing_hub, development_hubs, growth_hubs, financial_plans, launch_hubs, teams, team_invites, team_analyses, comments
+from app.database import founder_profiles, startup_plans, saved_analyses, customer_strategies, decision_reports, business_plans, customer_insights, market_intelligence, ai_cofounder_chats, investor_tools, marketing_hub, development_hubs, growth_hubs, financial_plans, launch_hubs, teams, team_invites, team_analyses, comments, saved_ideas
 
 logger = logging.getLogger(__name__)
 
@@ -651,4 +651,79 @@ def delete_comment(comment_id: str, user_id: str) -> bool:
     except (bson_errors.InvalidId, TypeError):
         return False
     result = comments.delete_one({"_id": obj_id, "user_id": user_id})
+    return result.deleted_count > 0
+
+
+# ─── Saved Ideas (Centralized Idea Registry) ──────────────────────────────────
+
+def save_saved_idea(user_id: str, title: str, description: str, idea_data: dict, analysis: dict, plan: dict, profile: dict) -> str:
+    doc = {
+        "user_id": user_id,
+        "title": title,
+        "description": description,
+        "idea_data": idea_data,
+        "analysis": analysis,
+        "plan": plan,
+        "profile": profile,
+        "hub_reports": {},
+        "created_at": datetime.utcnow(),
+        "updated_at": datetime.utcnow(),
+    }
+    result = saved_ideas.insert_one(doc)
+    return str(result.inserted_id)
+
+
+def get_saved_ideas(user_id: str) -> list:
+    docs = list(saved_ideas.find({"user_id": user_id}).sort("created_at", -1))
+    for d in docs:
+        d["_id"] = str(d["_id"])
+        d["id"] = str(d["_id"])
+        d["created_at"] = d["created_at"].isoformat() if hasattr(d["created_at"], "isoformat") else str(d["created_at"])
+        d["updated_at"] = d["updated_at"].isoformat() if hasattr(d["updated_at"], "isoformat") else str(d["updated_at"])
+    return docs
+
+
+def get_saved_idea(idea_id: str, user_id: str) -> dict | None:
+    try:
+        obj_id = ObjectId(idea_id)
+    except (bson_errors.InvalidId, TypeError):
+        return None
+    doc = saved_ideas.find_one({"_id": obj_id, "user_id": user_id})
+    if not doc:
+        return None
+    doc["_id"] = str(doc["_id"])
+    doc["id"] = str(doc["_id"])
+    doc["created_at"] = doc["created_at"].isoformat() if hasattr(doc["created_at"], "isoformat") else str(doc["created_at"])
+    doc["updated_at"] = doc["updated_at"].isoformat() if hasattr(doc["updated_at"], "isoformat") else str(doc["updated_at"])
+    return doc
+
+
+def update_saved_idea(idea_id: str, user_id: str, updates: dict) -> bool:
+    try:
+        obj_id = ObjectId(idea_id)
+    except (bson_errors.InvalidId, TypeError):
+        return False
+    updates["updated_at"] = datetime.utcnow()
+    result = saved_ideas.update_one({"_id": obj_id, "user_id": user_id}, {"$set": updates})
+    return result.modified_count > 0
+
+
+def update_saved_idea_hub_reports(idea_id: str, user_id: str, hub_key: str, report_data: dict) -> bool:
+    try:
+        obj_id = ObjectId(idea_id)
+    except (bson_errors.InvalidId, TypeError):
+        return False
+    result = saved_ideas.update_one(
+        {"_id": obj_id, "user_id": user_id},
+        {"$set": {f"hub_reports.{hub_key}": report_data, "updated_at": datetime.utcnow()}}
+    )
+    return result.modified_count > 0
+
+
+def delete_saved_idea(idea_id: str, user_id: str) -> bool:
+    try:
+        obj_id = ObjectId(idea_id)
+    except (bson_errors.InvalidId, TypeError):
+        return False
+    result = saved_ideas.delete_one({"_id": obj_id, "user_id": user_id})
     return result.deleted_count > 0

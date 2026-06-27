@@ -4,6 +4,8 @@ import { AppNav, BrandLink } from '../components/PageShell.jsx';
 import { Sparkles, Send, MessageCircle, User, Lightbulb, Code, DollarSign, Megaphone, ArrowRight, Rocket, Save, Trash2 } from 'lucide-react';
 import { generateAICofounderChat, saveAICofounderChat, getAICofounderChatHistory, deleteAICofounderChat } from '../services/api.js';
 import { getSession, readValue } from '../services/storage.js';
+import IdeaSelector from '../components/IdeaSelector.jsx';
+import { useIdea } from '../contexts/IdeaContext.jsx';
 
 const ADVISORS = [
   {
@@ -177,10 +179,11 @@ function AdvisorPanel({ advisor, startupContext }) {
 }
 
 export default function AICofounderPage() {
+  const { selectedIdea: savedIdea } = useIdea();
   const [activeAdvisor, setActiveAdvisor] = useState(ADVISORS[0].id);
   const profile = readValue('profile');
-  const analysis = readValue('ideaAnalysis');
-  const selectedIdea = readValue('selectedIdea');
+  const analysis = savedIdea?.analysis || readValue('ideaAnalysis');
+  const selectedIdea = savedIdea?.idea_data || readValue('selectedIdea');
   const plan = readValue('plan');
 
   const startupContext = {
@@ -217,6 +220,8 @@ export default function AICofounderPage() {
               <ArrowRight className="h-4 w-4" /> Results
             </Link>
           </div>
+
+          <IdeaSelector />
 
           {!selectedIdea && (
             <div className="border-2 border-[#0A0A0A] bg-white p-8 text-center">

@@ -4,6 +4,8 @@ import { AppNav } from '../components/PageShell.jsx';
 import { Sparkles, Save, Copy, CheckCheck, Rocket, Smartphone, FlaskConical, Users, CheckSquare, Square, Clock, Target } from 'lucide-react';
 import { generateLaunchHub, saveLaunchHub, updateLaunchHubChecks } from '../services/api.js';
 import { getSession, readValue, saveValue } from '../services/storage.js';
+import IdeaSelector from '../components/IdeaSelector.jsx';
+import { useIdea } from '../contexts/IdeaContext.jsx';
 
 const TABS = [
   { key: 'product_hunt', label: 'Product Hunt', icon: Rocket },
@@ -54,6 +56,7 @@ function ChecklistItem({ item, checked, onToggle }) {
 }
 
 export default function LaunchHubPage() {
+  const { selectedIdea: savedIdea } = useIdea();
   const [activeTab, setActiveTab] = useState('product_hunt');
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -63,7 +66,7 @@ export default function LaunchHubPage() {
   const [checkedItems, setCheckedItems] = useState({});
   const [savedReportId, setSavedReportId] = useState(null);
   const profile = readValue('profile');
-  const selectedIdea = readValue('selectedIdea');
+  const selectedIdea = savedIdea?.idea_data || readValue('selectedIdea');
   const plan = readValue('plan');
   const analysis = readValue('ideaAnalysis');
 
@@ -81,14 +84,14 @@ export default function LaunchHubPage() {
         pitch: selectedIdea.pitch,
         problem: selectedIdea.problem,
         solution: selectedIdea.solution,
-        target_users: selectedIdea.target_users,
+        target_users: Array.isArray(selectedIdea.target_users) ? selectedIdea.target_users.join(', ') : (selectedIdea.target_users || ''),
         industry: profile?.preferred_industry || '',
         location: '',
         business_model: planData.revenue_model?.pricing_model || analysis?.monetization_model || '',
-        mvp_features: planData.mvp_features || selectedIdea.mvp_features || [],
-        competitors: planData.competitors || selectedIdea.competitors || [],
+        mvp_features: Array.isArray(planData.mvp_features || selectedIdea.mvp_features) ? (planData.mvp_features || selectedIdea.mvp_features).join(', ') : (planData.mvp_features || selectedIdea.mvp_features || ''),
+        competitors: Array.isArray(planData.competitors || selectedIdea.competitors) ? (planData.competitors || selectedIdea.competitors).join(', ') : (planData.competitors || selectedIdea.competitors || ''),
         monetization_model: analysis?.monetization_model || '',
-        risks: planData.risks || analysis?.risks || [],
+        risks: Array.isArray(planData.risks || analysis?.risks) ? (planData.risks || analysis?.risks).join(', ') : (planData.risks || analysis?.risks || ''),
       };
       const res = await generateLaunchHub(data);
       setResult(res);
@@ -160,6 +163,8 @@ export default function LaunchHubPage() {
             )}
           </div>
         </div>
+
+        <IdeaSelector />
 
         {error && <div className="mb-6 p-4 bg-red-50 border-2 border-red-500 text-red-700 text-xs font-bold uppercase">{error}</div>}
         {notice && <div className="mb-6 p-4 bg-green-50 border-2 border-green-600 text-green-800 text-xs font-bold uppercase">{notice}</div>}

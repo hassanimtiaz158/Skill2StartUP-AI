@@ -4,6 +4,8 @@ import { AppNav } from '../components/PageShell.jsx';
 import { Sparkles, Save, ArrowRight, Rocket, FileText, Lightbulb, Image, Quote, Share2, Search, Copy, CheckCheck } from 'lucide-react';
 import { generateMarketingHub, saveMarketingHub } from '../services/api.js';
 import { getSession, readValue, saveValue } from '../services/storage.js';
+import IdeaSelector from '../components/IdeaSelector.jsx';
+import { useIdea } from '../contexts/IdeaContext.jsx';
 
 const TABS = [
   { key: 'landing_page', label: 'Landing Page', icon: FileText },
@@ -35,6 +37,7 @@ function Badge({ label, color = 'bg-[#0A0A0A] text-white' }) {
 }
 
 export default function MarketingHubPage() {
+  const { selectedIdea: savedIdea } = useIdea();
   const [activeTab, setActiveTab] = useState('landing_page');
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -42,7 +45,7 @@ export default function MarketingHubPage() {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const profile = readValue('profile');
-  const selectedIdea = readValue('selectedIdea');
+  const selectedIdea = savedIdea?.idea_data || readValue('selectedIdea');
   const plan = readValue('plan');
   const analysis = readValue('ideaAnalysis');
 
@@ -124,6 +127,8 @@ export default function MarketingHubPage() {
               <Link to="/results" className="h-10 px-4 border-2 border-[#0A0A0A] bg-white text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-[#0A0A0A] hover:text-[#F5F3EE] transition-colors"><ArrowRight className="h-4 w-4" /> Results</Link>
             </div>
           </div>
+
+          <IdeaSelector />
 
           {!selectedIdea && (
             <div className="border-2 border-[#0A0A0A] bg-white p-8 text-center">

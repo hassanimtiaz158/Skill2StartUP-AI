@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, Brain, Check, Download, Rocket, Save, Sparkles, Users, AlertTriangle, BarChart3, ThumbsUp, ThumbsDown, RotateCcw, DollarSign, Target, PieChart, TrendingUp, BookOpen, User, Heart, ShoppingCart, Smile, Globe, Search, Layers } from 'lucide-react';
+import { ArrowRight, Brain, Check, Download, Rocket, Save, Sparkles, Users, AlertTriangle, BarChart3, ThumbsUp, ThumbsDown, RotateCcw, DollarSign, Target, PieChart, TrendingUp, BookOpen, User, Heart, ShoppingCart, Smile, Globe, Search, Layers, Lightbulb } from 'lucide-react';
 import { AppNav } from '../components/PageShell.jsx';
-import { generateIdeas, generatePlan, savePlan, generateFirst100Customers, saveCustomerStrategy, generateDecisionEngine, saveDecisionReport, generateBusinessPlan, saveBusinessPlan, generateCustomerInsights, saveCustomerInsights, generateMarketIntelligence, saveMarketIntelligence } from '../services/api.js';
+import { generateIdeas, generatePlan, savePlan, generateFirst100Customers, saveCustomerStrategy, generateDecisionEngine, saveDecisionReport, generateBusinessPlan, saveBusinessPlan, generateCustomerInsights, saveCustomerInsights, generateMarketIntelligence, saveMarketIntelligence, createSavedIdea } from '../services/api.js';
 import { getSession, readValue, saveValue } from '../services/storage.js';
 
 function Score({ label, value }) {
@@ -82,6 +82,7 @@ export default function ResultsPage() {
   const [marketIntelligence, setMarketIntelligence] = useState(readValue('marketIntelligence'));
   const [loadingMarketIntel, setLoadingMarketIntel] = useState(false);
   const [savingMarketIntel, setSavingMarketIntel] = useState(false);
+  const [savingIdea, setSavingIdea] = useState(false);
   const [marketIntelTab, setMarketIntelTab] = useState('size');
   const topIdea = useMemo(() => {
     return [...ideas].sort((a, b) => Number(b.opportunity_score || 0) - Number(a.opportunity_score || 0))[0];
@@ -170,6 +171,32 @@ export default function ResultsPage() {
       setError(requestError.message);
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleSaveToIdeas() {
+    if (!selectedIdea) return;
+    setError('');
+    setNotice('');
+    if (!getSession()?.token) {
+      setError('Sign in to save this idea.');
+      return;
+    }
+    setSavingIdea(true);
+    try {
+      await createSavedIdea({
+        title: selectedIdea.startup_name || 'Untitled Idea',
+        description: selectedIdea.pitch || '',
+        idea_data: selectedIdea,
+        analysis: analysis || {},
+        plan: plan || {},
+        profile: profile || {},
+      });
+      setNotice('Idea saved! Access it from any feature page.');
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setSavingIdea(false);
     }
   }
 
@@ -608,6 +635,9 @@ export default function ResultsPage() {
                       <div className="flex gap-3">
                         <button onClick={handleSave} disabled={saving} className="h-10 px-4 border-2 border-[#0A0A0A] bg-[#0A0A0A] text-[#F5F3EE] text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-white hover:text-[#0A0A0A] transition-colors disabled:opacity-50">
                           <Save className="h-4 w-4" /> {saving ? 'Saving' : 'Save'}
+                        </button>
+                        <button onClick={handleSaveToIdeas} disabled={savingIdea} className="h-10 px-4 border-2 border-[#0A0A0A] bg-white text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-[#0A0A0A] hover:text-[#F5F3EE] transition-colors disabled:opacity-50">
+                          <Lightbulb className="h-4 w-4" /> {savingIdea ? 'Saving...' : 'Save to Ideas'}
                         </button>
                         <button onClick={() => handleDownload('json')} className="h-10 px-4 border-2 border-[#0A0A0A] bg-white text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-[#0A0A0A] hover:text-[#F5F3EE] transition-colors">
                           <Download className="h-4 w-4" /> JSON

@@ -1072,3 +1072,65 @@ export async function exportAsNotion(reportType, reportData) {
     throw new Error(apiError(error));
   }
 }
+
+// ─── Saved Ideas (Centralized Idea Registry) ──────────────────────────────────
+
+export async function getSavedIdeas() {
+  try {
+    assertApiConfigured();
+    const { data } = await api.get('/api/saved-ideas');
+    return data.ideas || [];
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function createSavedIdea(payload) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.post('/api/saved-ideas', payload);
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function getSavedIdeaById(ideaId) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.get(`/api/saved-ideas/${ideaId}`);
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function updateSavedIdea(ideaId, updates) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.put(`/api/saved-ideas/${ideaId}`, updates);
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function updateSavedIdeaHubReport(ideaId, hubKey, reportData) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.patch(`/api/saved-ideas/${ideaId}/hub-reports`, { hub_key: hubKey, report_data: reportData });
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
+
+export async function deleteSavedIdea(ideaId) {
+  try {
+    assertApiConfigured();
+    const { data } = await api.delete(`/api/saved-ideas/${ideaId}`);
+    return data;
+  } catch (error) {
+    throw new Error(apiError(error));
+  }
+}
