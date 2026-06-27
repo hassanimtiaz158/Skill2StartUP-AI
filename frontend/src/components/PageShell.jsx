@@ -188,6 +188,11 @@ export function AppNav() {
           {/* Desktop Nav */}
           <div className="hidden lg:flex items-center gap-1">
             {navLink('Home', '/')}
+            {navLink('Dashboard', '/dashboard')}
+            {navLink('Pricing', '/pricing')}
+            <button onClick={() => setShowDemo(true)} className="flex items-center gap-1.5 px-3 py-2 text-[13px] font-semibold tracking-wide text-[#6A6A6A] hover:text-[#0A0A0A] transition-all duration-200">
+              <Play className="h-3.5 w-3.5" /> Demo
+            </button>
             <DropdownMenu
               label="Features"
               items={FEATURES}
@@ -202,11 +207,6 @@ export function AppNav() {
               onToggle={() => setOpenDropdown(openDropdown === 'strategies' ? null : 'strategies')}
               onClose={closeDropdowns}
             />
-            {navLink('Dashboard', '/dashboard')}
-            {navLink('Pricing', '/pricing')}
-            <button onClick={() => setShowDemo(true)} className="flex items-center gap-1.5 px-3 py-2 text-[13px] font-semibold tracking-wide text-[#6A6A6A] hover:text-[#0A0A0A] transition-all duration-200">
-              <Play className="h-3.5 w-3.5" /> Demo
-            </button>
             <DropdownMenu
               label="Resources"
               items={RESOURCES}
@@ -247,6 +247,12 @@ export function AppNav() {
             <div className="pt-[72px] px-4 pb-8">
               <div className="space-y-1">
                 <MobileLink to="/" label="Home" onClick={() => setMobileOpen(false)} />
+                <MobileLink to="/dashboard" label="Dashboard" onClick={() => setMobileOpen(false)} />
+                <MobileLink to="/pricing" label="Pricing" sub="Plans for every stage" onClick={() => setMobileOpen(false)} />
+                <button onClick={() => { setMobileOpen(false); setShowDemo(true); }} className="flex items-center gap-3 px-4 py-2.5 border-l-2 border-l-transparent hover:border-l-[#0A0A0A] hover:bg-[#F0EEE9] transition-all duration-150 w-full text-left">
+                  <div className="text-[14px] font-semibold text-[#0A0A0A] flex items-center gap-2"><Play className="h-3.5 w-3.5" /> Demo</div>
+                  <div className="text-[11px] text-[#8A8A8A] mt-0.5">See the platform in action</div>
+                </button>
                 <div className="pt-3 pb-1">
                   <div className="px-4 text-[10px] font-bold uppercase tracking-widest text-[#8A8A8A]">Features</div>
                 </div>
@@ -259,8 +265,6 @@ export function AppNav() {
                   <div className="px-4 text-[10px] font-bold uppercase tracking-widest text-[#8A8A8A]">Resources</div>
                 </div>
                 {RESOURCES.map(r => <MobileLink key={r.path} to={r.path} label={r.label} sub={r.desc} onClick={() => setMobileOpen(false)} />)}
-                <MobileLink to="/dashboard" label="Dashboard" onClick={() => setMobileOpen(false)} />
-                <MobileLink to="/pricing" label="Pricing" sub="Plans for every stage" onClick={() => setMobileOpen(false)} />
                 <div className="pt-4 space-y-2 px-4">
                   {session?.user ? (
                     <>
