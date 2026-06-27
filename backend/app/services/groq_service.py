@@ -66,9 +66,9 @@ def _generate_sync(prompt: str) -> dict:
             raise AIServiceError(
                 "Groq blocked this request with 403/1010. This is usually an account, region, network, or provider access restriction rather than a bad API key. Try another network/VPN, confirm the key works in Groq Playground, or switch AI_PROVIDER back to gemini."
             ) from exc
-        raise AIServiceError(f"Groq API error {exc.code}: {body}") from exc
+        raise AIServiceError(f"Groq API error {exc.code}. Please try again.") from exc
     except urllib.error.URLError as exc:
-        raise AIServiceError(f"Groq API connection failed: {exc.reason}") from exc
+        raise AIServiceError("Groq API connection failed. Please try again.") from exc
 
     data = json.loads(raw)
     content = data.get("choices", [{}])[0].get("message", {}).get("content", "")

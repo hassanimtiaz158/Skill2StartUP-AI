@@ -1,6 +1,6 @@
 import logging
 import secrets
-from datetime import datetime
+from datetime import datetime, timezone
 from bson import ObjectId, errors as bson_errors
 from app.database import founder_profiles, startup_plans, saved_analyses, customer_strategies, decision_reports, business_plans, customer_insights, market_intelligence, ai_cofounder_chats, investor_tools, marketing_hub, development_hubs, growth_hubs, financial_plans, launch_hubs, teams, team_invites, team_analyses, comments, saved_ideas
 
@@ -13,7 +13,7 @@ def serialize_doc(doc: dict) -> dict:
 
 
 def save_founder_profile(profile: dict) -> str:
-    profile["created_at"] = datetime.utcnow()
+    profile["created_at"] = datetime.now(timezone.utc)
     result = founder_profiles.insert_one(profile)
     return str(result.inserted_id)
 
@@ -23,7 +23,7 @@ def save_startup_plan(plan: dict, profile: dict, user_id: str | None = None) -> 
         "plan": plan,
         "profile": profile,
         "user_id": user_id,
-        "created_at": datetime.utcnow(),
+        "created_at": datetime.now(timezone.utc),
     }
     result = startup_plans.insert_one(doc)
     return str(result.inserted_id)
@@ -40,7 +40,7 @@ def save_idea_analysis(analysis: dict, idea_form: dict, user_id: str | None = No
         "analysis": analysis,
         "idea_form": idea_form,
         "user_id": user_id,
-        "created_at": datetime.utcnow(),
+        "created_at": datetime.now(timezone.utc),
     }
     result = saved_analyses.insert_one(doc)
     return str(result.inserted_id)
@@ -71,7 +71,7 @@ def save_shared_analysis(analysis: dict, idea_form: dict) -> str:
         "token": token,
         "analysis": analysis,
         "idea_form": idea_form,
-        "created_at": datetime.utcnow(),
+        "created_at": datetime.now(timezone.utc),
     }
     from app.database import shared_analyses
     shared_analyses.insert_one(doc)
@@ -92,10 +92,10 @@ def save_build_progress(token: str, day: int, completed_tasks: list[str], notes:
     from app.database import build_progress
     doc = build_progress.find_one({"token": token})
     if not doc:
-        doc = {"token": token, "days": {}, "created_at": datetime.utcnow()}
+        doc = {"token": token, "days": {}, "created_at": datetime.now(timezone.utc)}
     if "days" not in doc:
         doc["days"] = {}
-    doc["days"][str(day)] = {"completed_tasks": completed_tasks, "notes": notes, "updated_at": datetime.utcnow().isoformat()}
+    doc["days"][str(day)] = {"completed_tasks": completed_tasks, "notes": notes, "updated_at": datetime.now(timezone.utc).isoformat()}
     build_progress.replace_one({"token": token}, doc, upsert=True)
     return {"days": doc["days"]}
 
@@ -113,7 +113,7 @@ def track_event(event: str, properties: dict | None = None) -> None:
     analytics_events.insert_one({
         "event": event,
         "properties": properties or {},
-        "created_at": datetime.utcnow(),
+        "created_at": datetime.now(timezone.utc),
     })
 
 
@@ -164,7 +164,7 @@ def save_customer_strategy(strategy: dict, idea_context: dict, user_id: str | No
         "strategy": strategy,
         "idea_context": idea_context,
         "user_id": user_id,
-        "created_at": datetime.utcnow(),
+        "created_at": datetime.now(timezone.utc),
     }
     result = customer_strategies.insert_one(doc)
     return str(result.inserted_id)
@@ -181,7 +181,7 @@ def save_decision_report(report: dict, idea_context: dict, user_id: str | None =
         "report": report,
         "idea_context": idea_context,
         "user_id": user_id,
-        "created_at": datetime.utcnow(),
+        "created_at": datetime.now(timezone.utc),
     }
     result = decision_reports.insert_one(doc)
     return str(result.inserted_id)
@@ -211,7 +211,7 @@ def save_business_plan(plan: dict, idea_context: dict, user_id: str | None = Non
         "plan": plan,
         "idea_context": idea_context,
         "user_id": user_id,
-        "created_at": datetime.utcnow(),
+        "created_at": datetime.now(timezone.utc),
     }
     result = business_plans.insert_one(doc)
     return str(result.inserted_id)
@@ -241,7 +241,7 @@ def save_customer_insights(insights: dict, idea_context: dict, user_id: str | No
         "insights": insights,
         "idea_context": idea_context,
         "user_id": user_id,
-        "created_at": datetime.utcnow(),
+        "created_at": datetime.now(timezone.utc),
     }
     result = customer_insights.insert_one(doc)
     return str(result.inserted_id)
@@ -284,7 +284,7 @@ def save_market_intelligence(report: dict, idea_context: dict, user_id: str | No
         "report": report,
         "idea_context": idea_context,
         "user_id": user_id,
-        "created_at": datetime.utcnow(),
+        "created_at": datetime.now(timezone.utc),
     }
     result = market_intelligence.insert_one(doc)
     return str(result.inserted_id)
@@ -314,7 +314,7 @@ def save_ai_cofounder_chat(advisor_type: str, messages: list, user_id: str | Non
         "advisor_type": advisor_type,
         "messages": messages,
         "user_id": user_id,
-        "created_at": datetime.utcnow(),
+        "created_at": datetime.now(timezone.utc),
     }
     result = ai_cofounder_chats.insert_one(doc)
     return str(result.inserted_id)
@@ -346,7 +346,7 @@ def save_investor_tools(report: dict, idea_context: dict, user_id: str | None = 
         "report": report,
         "idea_context": idea_context,
         "user_id": user_id,
-        "created_at": datetime.utcnow(),
+        "created_at": datetime.now(timezone.utc),
     }
     result = investor_tools.insert_one(doc)
     return str(result.inserted_id)
@@ -376,7 +376,7 @@ def save_marketing_hub(report: dict, idea_context: dict, user_id: str | None = N
         "report": report,
         "idea_context": idea_context,
         "user_id": user_id,
-        "created_at": datetime.utcnow(),
+        "created_at": datetime.now(timezone.utc),
     }
     result = marketing_hub.insert_one(doc)
     return str(result.inserted_id)
@@ -408,7 +408,7 @@ def save_development_hub(report: dict, idea_context: dict, user_id: str | None =
         "report": report,
         "idea_context": idea_context,
         "user_id": user_id,
-        "created_at": datetime.utcnow(),
+        "created_at": datetime.now(timezone.utc),
     }
     result = development_hubs.insert_one(doc)
     return str(result.inserted_id)
@@ -439,7 +439,7 @@ def save_growth_hub(report: dict, idea_context: dict, user_id: str | None = None
         "report": report,
         "idea_context": idea_context,
         "user_id": user_id,
-        "created_at": datetime.utcnow(),
+        "created_at": datetime.now(timezone.utc),
     }
     result = growth_hubs.insert_one(doc)
     return str(result.inserted_id)
@@ -470,7 +470,7 @@ def save_financial_plan(report: dict, idea_context: dict, user_id: str | None = 
         "report": report,
         "idea_context": idea_context,
         "user_id": user_id,
-        "created_at": datetime.utcnow(),
+        "created_at": datetime.now(timezone.utc),
     }
     result = financial_plans.insert_one(doc)
     return str(result.inserted_id)
@@ -502,7 +502,7 @@ def save_launch_hub(report: dict, checked_items: list[str] | None = None, idea_c
         "checked_items": checked_items or [],
         "idea_context": idea_context or {},
         "user_id": user_id,
-        "created_at": datetime.utcnow(),
+        "created_at": datetime.now(timezone.utc),
     }
     result = launch_hubs.insert_one(doc)
     return str(result.inserted_id)
@@ -547,8 +547,8 @@ def create_team(name: str, description: str, owner_id: str, owner_email: str, ow
         "description": description,
         "owner_id": owner_id,
         "invite_code": invite_code,
-        "members": [{"user_id": owner_id, "email": owner_email, "name": owner_name, "role": "owner", "joined_at": datetime.utcnow().isoformat()}],
-        "created_at": datetime.utcnow(),
+        "members": [{"user_id": owner_id, "email": owner_email, "name": owner_name, "role": "owner", "joined_at": datetime.now(timezone.utc).isoformat()}],
+        "created_at": datetime.now(timezone.utc),
     }
     result = teams.insert_one(doc)
     doc["_id"] = str(result.inserted_id)
@@ -562,7 +562,7 @@ def get_user_teams(user_id: str) -> list:
     for d in docs:
         d["_id"] = str(d["_id"])
         d["id"] = str(d["_id"])
-        d["created_at"] = d.get("created_at", datetime.utcnow()).isoformat() if hasattr(d.get("created_at"), "isoformat") else str(d.get("created_at", ""))
+        d["created_at"] = d.get("created_at", datetime.now(timezone.utc)).isoformat() if hasattr(d.get("created_at"), "isoformat") else str(d.get("created_at", ""))
     return docs
 
 
@@ -583,7 +583,7 @@ def join_team(invite_code: str, user_id: str, email: str, name: str) -> dict | N
     already_member = any(m.get("user_id") == user_id for m in team.get("members", []))
     if already_member:
         return {"_id": str(team["_id"]), "already_member": True}
-    new_member = {"user_id": user_id, "email": email, "name": name, "role": "viewer", "joined_at": datetime.utcnow().isoformat()}
+    new_member = {"user_id": user_id, "email": email, "name": name, "role": "viewer", "joined_at": datetime.now(timezone.utc).isoformat()}
     teams.update_one({"_id": team["_id"]}, {"$push": {"members": new_member}})
     team["members"].append(new_member)
     team["_id"] = str(team["_id"])
@@ -603,7 +603,7 @@ def add_team_analysis(team_id: str, report_type: str, report_id: str, title: str
         "report_id": report_id,
         "title": title,
         "added_by": added_by,
-        "created_at": datetime.utcnow(),
+        "created_at": datetime.now(timezone.utc),
     }
     result = team_analyses.insert_one(doc)
     return str(result.inserted_id)
@@ -624,8 +624,8 @@ def create_comment(target_type: str, target_id: str, section: str, text: str, us
         "text": text,
         "user_id": user_id,
         "user_name": user_name,
-        "created_at": datetime.utcnow(),
-        "updated_at": datetime.utcnow(),
+        "created_at": datetime.now(timezone.utc),
+        "updated_at": datetime.now(timezone.utc),
     }
     result = comments.insert_one(doc)
     doc["_id"] = str(result.inserted_id)
@@ -666,8 +666,8 @@ def save_saved_idea(user_id: str, title: str, description: str, idea_data: dict,
         "plan": plan,
         "profile": profile,
         "hub_reports": {},
-        "created_at": datetime.utcnow(),
-        "updated_at": datetime.utcnow(),
+        "created_at": datetime.now(timezone.utc),
+        "updated_at": datetime.now(timezone.utc),
     }
     result = saved_ideas.insert_one(doc)
     return str(result.inserted_id)
@@ -703,7 +703,7 @@ def update_saved_idea(idea_id: str, user_id: str, updates: dict) -> bool:
         obj_id = ObjectId(idea_id)
     except (bson_errors.InvalidId, TypeError):
         return False
-    updates["updated_at"] = datetime.utcnow()
+    updates["updated_at"] = datetime.now(timezone.utc)
     result = saved_ideas.update_one({"_id": obj_id, "user_id": user_id}, {"$set": updates})
     return result.modified_count > 0
 
@@ -715,7 +715,7 @@ def update_saved_idea_hub_reports(idea_id: str, user_id: str, hub_key: str, repo
         return False
     result = saved_ideas.update_one(
         {"_id": obj_id, "user_id": user_id},
-        {"$set": {f"hub_reports.{hub_key}": report_data, "updated_at": datetime.utcnow()}}
+        {"$set": {f"hub_reports.{hub_key}": report_data, "updated_at": datetime.now(timezone.utc)}}
     )
     return result.modified_count > 0
 

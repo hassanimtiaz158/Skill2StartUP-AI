@@ -6,6 +6,7 @@ import { generateInvestorTools, saveInvestorTools } from '../services/api.js';
 import { getSession, readValue, saveValue } from '../services/storage.js';
 import IdeaSelector from '../components/IdeaSelector.jsx';
 import { useIdea } from '../contexts/IdeaContext.jsx';
+import { CopyButton, Badge } from '../components/SharedUI.jsx';
 
 const TABS = [
   { key: 'pitch_deck', label: 'Pitch Deck', icon: Layers },
@@ -39,22 +40,6 @@ function ScoreBar({ label, value }) {
         <div className="h-full bg-[#0A0A0A] transition-all" style={{ width: `${Math.max(0, Math.min(100, value))}%` }} />
       </div>
     </div>
-  );
-}
-
-function CopyButton({ text }) {
-  const [copied, setCopied] = useState(false);
-  const handleCopy = useCallback(() => {
-    navigator.clipboard.writeText(text).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  }, [text]);
-  return (
-    <button onClick={handleCopy} className="h-8 px-3 border-2 border-[#0A0A0A] text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 hover:bg-[#0A0A0A] hover:text-[#F5F3EE] transition-colors">
-      {copied ? <CheckCheck className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-      {copied ? 'Copied' : 'Copy'}
-    </button>
   );
 }
 

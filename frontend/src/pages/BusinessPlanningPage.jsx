@@ -6,6 +6,7 @@ import { generateBusinessPlan, saveBusinessPlan } from '../services/api.js';
 import { getSession, readValue, saveValue } from '../services/storage.js';
 import IdeaSelector from '../components/IdeaSelector.jsx';
 import { useIdea } from '../contexts/IdeaContext.jsx';
+import { CopyButton, Badge } from '../components/SharedUI.jsx';
 
 const TABS = [
   { key: 'bmc', label: 'Business Model Canvas', icon: Briefcase },
@@ -13,26 +14,6 @@ const TABS = [
   { key: 'revenue', label: 'Revenue Forecast', icon: TrendingUp },
   { key: 'pricing', label: 'Pricing Strategy', icon: DollarSign },
 ];
-
-function CopyButton({ text }) {
-  const [copied, setCopied] = useState(false);
-  const handleCopy = useCallback(() => {
-    navigator.clipboard.writeText(text).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  }, [text]);
-  return (
-    <button onClick={handleCopy} className="h-8 px-3 border-2 border-[#0A0A0A] text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 hover:bg-[#0A0A0A] hover:text-[#F5F3EE] transition-colors">
-      {copied ? <CheckCheck className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-      {copied ? 'Copied' : 'Copy'}
-    </button>
-  );
-}
-
-function Badge({ label, color = 'bg-[#0A0A0A] text-white' }) {
-  return <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 ${color}`}>{label}</span>;
-}
 
 export default function BusinessPlanningPage() {
   const { selectedIdea: savedIdea } = useIdea();

@@ -47,16 +47,14 @@ def signin(payload: SignInRequest):
 @router.post("/forgot-password")
 def forgot_password(payload: ForgotPasswordRequest):
     try:
-        token = request_password_reset(payload.email)
-        return {
-            "message": "Password reset instructions have been sent to your email.",
-            "reset_token": token,
-        }
-    except AuthError as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
+        request_password_reset(payload.email)
+    except AuthError:
+        pass
     except Exception as exc:
         logger.error("Password reset request failed: %s", exc, exc_info=True)
-        raise HTTPException(status_code=500, detail="Failed to process reset request. Please try again.")
+    return {
+        "message": "If an account exists with this email, password reset instructions have been sent.",
+    }
 
 
 @router.post("/verify-reset-token")
@@ -65,8 +63,8 @@ def verify_reset_token_endpoint(body: dict):
     if not token:
         raise HTTPException(status_code=400, detail="Reset token is required.")
     try:
-        result = verify_reset_token(token)
-        return {"message": "Token is valid.", "email": result["email"]}
+        verify_reset_token(token)
+        return {"message": "Token is valid."}
     except AuthError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     except Exception as exc:

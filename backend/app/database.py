@@ -74,7 +74,3 @@ def ensure_indexes():
         logger.info("MongoDB indexes ensured.")
     except Exception as e:
         logger.warning("Failed to create MongoDB indexes: %s", e)
-
-
-def get_db():
-    return db

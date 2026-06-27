@@ -35,18 +35,6 @@ class RoadmapTask(BaseModel):
     status: Literal["Pending", "In Progress", "Done"] = "Pending"
 
 
-class ReadmeContent(BaseModel):
-    project_name: str
-    problem: str
-    solution: str
-    features: list[str]
-    tech_stack: list[str]
-    architecture: str
-    setup_steps: list[str]
-    future_improvements: list[str]
-    markdown: str
-
-
 class SignUpRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     email: str = Field(..., min_length=3, max_length=254)
@@ -1293,10 +1281,6 @@ class ChecklistItem(BaseModel):
     priority: str
     estimated_time: str
     details: str
-
-
-class LaunchDayTimeline(BaseModel):
-    pass
 
 
 class ProductHuntChecklist(BaseModel):

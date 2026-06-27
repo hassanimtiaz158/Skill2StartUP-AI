@@ -89,7 +89,7 @@ from app.services.ai_service import (
     generate_launch_hub,
 )
 from app.services.ai_errors import AIServiceError, AIRateLimitError
-from app.services.auth_service import get_user_by_token
+from app.services.auth_service import get_user_by_token, get_user_by_id
 from app.services.database_service import save_shared_analysis, get_shared_analysis, save_build_progress, get_build_progress, track_event, get_analytics_summary, save_idea_analysis, get_saved_idea_analyses, delete_saved_idea_analysis, save_customer_strategy, get_customer_strategies, delete_customer_strategy, save_decision_report, get_decision_reports, delete_decision_report, save_business_plan, get_business_plans, delete_business_plan, save_customer_insights, get_customer_insights_list, delete_customer_insights, save_market_intelligence, get_market_intelligence_list, delete_market_intelligence, save_ai_cofounder_chat, get_ai_cofounder_chats, delete_ai_cofounder_chat, save_investor_tools, get_investor_tools_list, delete_investor_tools, save_marketing_hub, get_marketing_hub_list, delete_marketing_hub, save_development_hub, get_development_hub_list, delete_development_hub, save_growth_hub, get_growth_hub_list, delete_growth_hub, save_financial_plan, get_financial_plan_list, delete_financial_plan, save_launch_hub, get_launch_hub_list, update_launch_hub_checks, delete_launch_hub, create_team, get_user_teams, get_team_by_invite_code, join_team, add_team_analysis, get_team_analyses, create_comment, get_comments, delete_comment
 from app.services.email_service import send_email
 
@@ -1375,9 +1375,9 @@ async def remove_launch_hub(report_id: str, user_id: str = Depends(_require_user
 @router.post("/api/teams/create")
 async def create_team_endpoint(body: TeamCreateRequest, user_id: str = Depends(_require_user_id)):
     try:
-        user = get_user_by_token(user_id)
-        email = user.get("email", "")
-        name = user.get("name", "")
+        user = get_user_by_id(user_id)
+        email = user.get("email", "") if user else ""
+        name = user.get("name", "") if user else ""
         team = create_team(body.name, body.description, user_id, email, name)
         return team
     except Exception as e:
@@ -1411,9 +1411,9 @@ async def get_team_by_code(invite_code: str):
 @router.post("/api/teams/join")
 async def join_team_endpoint(body: TeamJoinRequest, user_id: str = Depends(_require_user_id)):
     try:
-        user = get_user_by_token(user_id)
-        email = user.get("email", "")
-        name = user.get("name", "")
+        user = get_user_by_id(user_id)
+        email = user.get("email", "") if user else ""
+        name = user.get("name", "") if user else ""
         result = join_team(body.invite_code, user_id, email, name)
         if not result:
             raise HTTPException(status_code=404, detail="Invalid invite code.")
@@ -1453,8 +1453,8 @@ async def list_team_analyses(team_id: str, user_id: str = Depends(_require_user_
 @router.post("/api/comments")
 async def create_comment_endpoint(body: CommentCreateRequest, user_id: str = Depends(_require_user_id)):
     try:
-        user = get_user_by_token(user_id)
-        name = user.get("name", "Anonymous")
+        user = get_user_by_id(user_id)
+        name = user.get("name", "Anonymous") if user else "Anonymous"
         comment = create_comment(body.target_type, body.target_id, body.section, body.text, user_id, name)
         return comment
     except Exception as e:

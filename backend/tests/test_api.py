@@ -6,7 +6,7 @@ Gemini API calls are mocked so no real API key is needed.
 """
 
 import asyncio
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest.mock import patch, MagicMock
 
 import pytest
@@ -146,7 +146,7 @@ async def test_signin_returns_user_session(client: AsyncClient, _mock_mongo):
         "email": "student@example.com",
         "password_salt": salt,
         "password_hash": password_hash,
-        "created_at": datetime.utcnow(),
+        "created_at": datetime.now(timezone.utc),
     }
 
     response = await client.post(
@@ -170,7 +170,7 @@ async def test_signin_invalid_password_returns_401(client: AsyncClient, _mock_mo
         "email": "student@example.com",
         "password_salt": salt,
         "password_hash": password_hash,
-        "created_at": datetime.utcnow(),
+        "created_at": datetime.now(timezone.utc),
     }
 
     response = await client.post(
@@ -188,8 +188,8 @@ async def test_forgot_password_returns_generic_message(client: AsyncClient, _moc
         json={"email": "student@example.com"},
     )
 
-    assert response.status_code == 400
-    assert "No account found" in response.json()["detail"]
+    assert response.status_code == 200
+    assert "message" in response.json()
 
 
 @pytest.mark.asyncio
@@ -206,7 +206,6 @@ async def test_forgot_password_existing_email_returns_success(client: AsyncClien
 
     assert response.status_code == 200
     assert "message" in response.json()
-    assert "reset_token" in response.json()
 
 
 @pytest.mark.asyncio
@@ -217,7 +216,7 @@ async def test_me_and_logout_use_bearer_token(client: AsyncClient, _mock_mongo):
         "name": "Student Builder",
         "email": "student@example.com",
         "tokens": ["token-123"],
-        "created_at": datetime.utcnow(),
+        "created_at": datetime.now(timezone.utc),
     }
 
     me_response = await client.get("/api/auth/me", headers={"Authorization": "Bearer token-123"})
@@ -355,7 +354,7 @@ async def test_save_and_list_plans_roundtrip(client: AsyncClient, _mock_mongo):
         "name": "Student Builder",
         "email": "student@example.com",
         "tokens": ["token-123"],
-        "created_at": datetime.utcnow(),
+        "created_at": datetime.now(timezone.utc),
     }
     mock_plan_doc = {
         "_id": str(ObjectId(plan_id)),
@@ -425,7 +424,7 @@ async def test_delete_plan(client: AsyncClient, _mock_mongo):
         "name": "Student Builder",
         "email": "student@example.com",
         "tokens": ["token-123"],
-        "created_at": datetime.utcnow(),
+        "created_at": datetime.now(timezone.utc),
     }
     with patch("app.routes.startups.delete_startup_plan", return_value=True):
         response = await client.delete(
@@ -445,7 +444,7 @@ async def test_delete_plan_not_found(client: AsyncClient, _mock_mongo):
         "name": "Student Builder",
         "email": "student@example.com",
         "tokens": ["token-123"],
-        "created_at": datetime.utcnow(),
+        "created_at": datetime.now(timezone.utc),
     }
     with patch("app.routes.startups.delete_startup_plan", return_value=False):
         response = await client.delete(

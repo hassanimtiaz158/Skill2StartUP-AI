@@ -2,7 +2,7 @@ import hashlib
 import hmac
 import re
 import secrets
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from bson import ObjectId
 from pymongo.errors import DuplicateKeyError
@@ -59,7 +59,7 @@ def create_user(name: str, email: str, password: str) -> dict:
         raise AuthError("Name is required.")
     clean_email = _normalize_email(email)
     salt, password_hash = _hash_password(password)
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     token = _new_token()
     doc = {
         "name": clean_name,
@@ -89,7 +89,7 @@ def authenticate_user(email: str, password: str) -> dict:
     token = _new_token()
     users.update_one(
         {"_id": user["_id"]},
-        {"$push": {"tokens": token}, "$set": {"updated_at": datetime.utcnow()}},
+        {"$push": {"tokens": token}, "$set": {"updated_at": datetime.now(timezone.utc)}},
     )
     return {"token": token, "user": _public_user(user)}
 
@@ -98,15 +98,15 @@ def request_password_reset(email: str) -> str:
     clean_email = _normalize_email(email)
     user = users.find_one({"email": clean_email})
     if not user:
-        raise AuthError("No account found with this email address.")
+        return ""
     password_resets.delete_many({"email": clean_email})
     token = secrets.token_urlsafe(48)
     password_resets.insert_one({
         "token": token,
         "email": clean_email,
         "user_id": user["_id"],
-        "created_at": datetime.utcnow(),
-        "expires_at": datetime.utcnow() + timedelta(minutes=RESET_TOKEN_EXPIRY_MINUTES),
+        "created_at": datetime.now(timezone.utc),
+        "expires_at": datetime.now(timezone.utc) + timedelta(minutes=RESET_TOKEN_EXPIRY_MINUTES),
     })
     return token
 
@@ -117,7 +117,7 @@ def verify_reset_token(token: str) -> dict:
     doc = password_resets.find_one({"token": token})
     if not doc:
         raise AuthError("Invalid or expired reset token.")
-    if doc["expires_at"] < datetime.utcnow():
+    if doc["expires_at"] < datetime.now(timezone.utc):
         password_resets.delete_one({"_id": doc["_id"]})
         raise AuthError("Reset token has expired. Please request a new one.")
     return {"email": doc["email"], "token": token}
@@ -131,7 +131,7 @@ def reset_password(token: str, new_password: str) -> bool:
     doc = password_resets.find_one({"token": token})
     if not doc:
         raise AuthError("Invalid or expired reset token.")
-    if doc["expires_at"] < datetime.utcnow():
+    if doc["expires_at"] < datetime.now(timezone.utc):
         password_resets.delete_one({"_id": doc["_id"]})
         raise AuthError("Reset token has expired. Please request a new one.")
     salt, password_hash = _hash_password(new_password)
@@ -140,7 +140,7 @@ def reset_password(token: str, new_password: str) -> bool:
         {"$set": {
             "password_salt": salt,
             "password_hash": password_hash,
-            "updated_at": datetime.utcnow(),
+            "updated_at": datetime.now(timezone.utc),
         }},
     )
     password_resets.delete_one({"_id": doc["_id"]})
@@ -154,11 +154,21 @@ def get_user_by_token(token: str) -> dict | None:
     return _public_user(user) if user else None
 
 
+def get_user_by_id(user_id: str) -> dict | None:
+    if not user_id:
+        return None
+    try:
+        user = users.find_one({"_id": ObjectId(user_id)})
+    except Exception:
+        return None
+    return _public_user(user) if user else None
+
+
 def logout_user(token: str) -> bool:
     if not token:
         return False
     result = users.update_one(
         {"tokens": token},
-        {"$pull": {"tokens": token}, "$set": {"updated_at": datetime.utcnow()}},
+        {"$pull": {"tokens": token}, "$set": {"updated_at": datetime.now(timezone.utc)}},
     )
     return result.modified_count > 0

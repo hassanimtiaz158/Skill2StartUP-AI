@@ -55,6 +55,27 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const config = error.config;
+    if (!config || config._retry) return Promise.reject(error);
+    const status = error.response?.status;
+    if (status === 429 || (status >= 500 && status < 600)) {
+      config._retry = true;
+      const retryCount = config._retryCount || 0;
+      const maxRetries = 2;
+      if (retryCount < maxRetries) {
+        config._retryCount = retryCount + 1;
+        const delay = Math.min(1000 * 2 ** retryCount, 10000);
+        await new Promise((r) => setTimeout(r, delay));
+        return api(config);
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 function apiError(error) {
   if (error.message?.includes('VITE_API_URL')) {
     return error.message;
@@ -209,6 +230,21 @@ export async function analyzeIdea(payload) {
   }
 }
 
+function getAuthHeaders() {
+  const raw = sessionStorage.getItem('skill2startup.session');
+  if (raw) {
+    try {
+      const session = JSON.parse(raw);
+      if (session?.token) {
+        return { Authorization: `Bearer ${session.token}` };
+      }
+    } catch {
+      // Ignore malformed session data.
+    }
+  }
+  return {};
+}
+
 export async function analyzeIdeaStream(payload, onToken, onDone, onError) {
   try {
     assertApiConfigured();
@@ -220,7 +256,7 @@ export async function analyzeIdeaStream(payload, onToken, onDone, onError) {
   try {
     const response = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
       body: JSON.stringify(payload),
     });
     if (!response.ok) {
@@ -282,7 +318,7 @@ export async function chatAboutIdeaStream(analysis, question, onToken, onDone, o
   try {
     const response = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
       body: JSON.stringify({ analysis, question }),
     });
     if (!response.ok) {
